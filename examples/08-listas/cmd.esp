@@ -1,0 +1,7 @@
+cmd suma do
+  total = [1, 2, 3, 4, 5]
+    |> filter(fn n => n > 2)
+    |> map(fn n => n * 10)
+    |> reduce(0, fn(acc, n) => acc + n)
+  "Total: #{total}" |> print
+end

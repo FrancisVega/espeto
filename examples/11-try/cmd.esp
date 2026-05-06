@@ -1,0 +1,16 @@
+cmd parseint do
+  arg val: str
+  flag fallback: int = 0
+
+  n = try to_int(val) rescue err => fallback
+
+  result = try_to_int(val)
+  detail = if result.ok do
+             "ok: #{result.value}"
+           else
+             "fail: #{result.error}"
+           end
+
+  "n=#{n}" |> print
+  detail |> print
+end

@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Espeto · Lenguaje funcional para construir CLIs</title>
+  <meta
+    name="description"
+    content="Lenguaje funcional pequeño para construir CLIs. Pipe-céntrico, optimizado para que los LLMs lo escriban perfecto."
+  />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap"
+    rel="stylesheet"
+  />
+
+  <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  
+  <style type="text/tailwindcss">
+    @theme {
+      --color-bg: #ffffff;
+      --color-surface: #f8f9fa;
+      --color-text-primary: #050505;
+      --color-text-secondary: #4a4a55;
+      --color-text-muted: #8b8b9c;
+      --color-border: #e4e4e9;
+      
+      /* Dark */
+      --color-bg-dark: #0a0a0c;
+      --color-surface-dark: #16161a;
+      --color-text-primary-dark: #e4e4e9;
+      --color-text-secondary-dark: #a1a1aa;
+      --color-text-muted-dark: #52525b;
+      --color-border-dark: #27272a;
+      
+      /* Colores vibrantes estilo Kotlin */
+      --color-brand-orange: #ff5e00;
+      --color-brand-purple: #7f52ff;
+      --color-brand-pink: #ff2a7a;
+    }
+
+    body {
+      background-color: var(--color-bg);
+      color: var(--color-text-primary);
+      font-family: 'JetBrains Mono', monospace;
+      font-feature-settings: "calt" 1, "rlig" 1, "liga" 1;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      transition: background-color 0.3s, color 0.3s;
+    }
+
+    body[data-theme="dark"] {
+      --color-bg: var(--color-bg-dark);
+      --color-surface: var(--color-surface-dark);
+      --color-text-primary: var(--color-text-primary-dark);
+      --color-text-secondary: var(--color-text-secondary-dark);
+      --color-text-muted: var(--color-text-muted-dark);
+      --color-border: var(--color-border-dark);
+      background-color: var(--color-bg-dark);
+      color: var(--color-text-primary-dark);
+    }
+    
+    /* Tailwind classes inherit from CSS vars */
+    body[data-theme="dark"] .bg-surface { background-color: var(--color-surface-dark); }
+    body[data-theme="dark"] .bg-white { background-color: var(--color-bg-dark); }
+    body[data-theme="dark"] .bg-gray-200 { background-color: var(--color-surface-dark); }
+    body[data-theme="dark"] .border-border { border-color: var(--color-border-dark); }
+    body[data-theme="dark"] .text-text-primary { color: var(--color-text-primary-dark); }
+    body[data-theme="dark"] .text-text-secondary { color: var(--color-text-secondary-dark); }
+    body[data-theme="dark"] code.bg-gray-200 { background-color: var(--color-surface-dark); color: var(--color-text-primary-dark); }
+    body[data-theme="dark"] code.bg-gray-200:hover { color: var(--color-text-primary-dark); }
+    body[data-theme="dark"] .hover\:bg-gray-200:hover { background-color: #374151; }
+    body[data-theme="dark"] .hover\:bg-gray-800:hover { background-color: #1f2937; }
+    body[data-theme="dark"] #theme-toggle { background-color: #27272a; }
+    body[data-theme="dark"] #theme-toggle svg { stroke: var(--color-text-primary-dark); }
+    body[data-theme="dark"] .text-white\/50 { color: #71717a; }
+    body[data-theme="dark"] .text-white\/40 { color: #52525b; }
+    body[data-theme="dark"] .bg-orange-100 { background-color: #451a03; }
+    body[data-theme="dark"] nav { background-color: rgba(10, 10, 12, 0.8); }
+
+    ::selection {
+      background-color: var(--color-brand-purple);
+      color: white;
+    }
+
+    /* Estilos de las Tabs */
+    .tab-btn {
+      @apply px-5 py-3 rounded-full text-sm font-bold uppercase tracking-widest text-text-secondary border-2 border-transparent transition-all duration-300 cursor-pointer hover:bg-surface;
+    }
+    .tab-btn.active {
+      @apply text-text-primary border-text-primary bg-white shadow-sm;
+    }
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.4s ease-out;
+    }
+    .tab-content.active {
+      display: grid;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Tarjetas de código y Terminal */
+    .code-window {
+      @apply bg-[#0d0d12] text-[#e4e4e9] rounded-2xl p-6 md:p-8 shadow-2xl relative overflow-hidden;
+      font-family: "JetBrains Mono", ui-monospace, monospace;
+      font-feature-settings: "calt" 1, "rlig" 1, "liga" 1;
+    }
+    
+    .code-window pre {
+      margin: 0;
+      font-family: "JetBrains Mono", ui-monospace, monospace;
+      font-feature-settings: "calt" 1, "rlig" 1, "liga" 1;
+    }
+    
+    h1, h2, h3, h4 {
+      @apply font-extrabold tracking-tighter text-text-primary;
+    }
+    
+    /* Gradiente de texto */
+    .text-gradient {
+      background: linear-gradient(135deg, var(--color-brand-orange), var(--color-brand-purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+  </style>
+</head>
+
+<body id="top" class="pt-20">
+
+  <nav id="nav" class="fixed top-0 left-0 right-0 z-50 py-4 transition-all duration-300 bg-white/80 backdrop-blur-md border-b border-border">
+    <div class="max-w-7xl mx-auto px-6 flex items-center justify-between gap-6">
+      <a href="#top" class="flex items-center gap-3">
+        <img src="logo.svg" class="w-8 h-8" alt="Espeto" />
+        <span class="text-2xl font-extrabold tracking-tighter uppercase">Espeto</span>
+      </a>
+      <div class="hidden md:flex items-center gap-8 text-xs font-bold uppercase tracking-widest text-text-secondary">
+        <a href="#features" class="hover:text-text-primary transition-colors">Features</a>
+        <a href="#spec" class="hover:text-text-primary transition-colors">Spec</a>
+        <a href="#roadmap" class="hover:text-text-primary transition-colors">Roadmap</a>
+        <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-200 transition-colors" aria-label="Toggle theme">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="square" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 17.657l-.707.707m12.728 0l-.707-.707M6.343 6.343l-.707.707" />
+          </svg>
+        </button>
+      </div>
+      <a href="https://github.com/tu-repo" target="_blank" class="px-4 py-2 border-2 border-black text-black font-bold text-xs uppercase tracking-widest rounded-full hover:bg-black hover:text-white transition-colors">
+        GitHub
+      </a>
+    </div>
+  </nav>
+
+  <header class="py-20 md:py-28 border-b border-border">
+    <div class="max-w-7xl mx-auto px-6 grid lg:grid-cols-[1fr_1fr] gap-12 items-center">
+      
+      <div class="z-10 relative">
+        <div class="inline-block px-3 py-1 mb-6 bg-purple-100 text-purple-800 text-xs font-bold uppercase tracking-widest rounded-full border border-purple-200">
+          v0.1 Pre-Alpha
+        </div>
+        
+        <h1 class="text-6xl md:text-[5.5rem] leading-[0.95] mb-8">
+          Funcional.<br/>
+          Minimalista.<br/>
+          <span class="text-gradient">Para CLIs.</span>
+        </h1>
+        
+        <div class="flex flex-wrap items-center gap-3 text-sm md:text-base font-bold text-text-secondary mb-12">
+          <span class="text-text-primary bg-surface px-3 py-1.5 rounded-md border border-border/50 shadow-sm">CLI first</span>
+          <span class="text-border">/</span>
+          <span class="text-text-primary bg-surface px-3 py-1.5 rounded-md border border-border/50 shadow-sm">LLM friendly</span>
+          <span class="text-border">/</span>
+          <span class="text-text-primary bg-surface px-3 py-1.5 rounded-md border border-border/50 shadow-sm">yummy DX</span>
+        </div>
+        
+        <div class="flex flex-wrap gap-4">
+          <a href="#features" class="bg-black hover:bg-gray-800 text-white text-sm font-bold uppercase tracking-widest py-4 px-8 rounded-full transition-transform hover:scale-105">
+            Explorar Espeto
+          </a>
+          <a href="#docs" class="bg-surface hover:bg-gray-200 text-text-primary text-sm font-bold uppercase tracking-widest py-4 px-8 rounded-full transition-colors flex items-center gap-2">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+            Leer Spec
+          </a>
+        </div>
+      </div>
+
+      <div class="code-window relative z-10 w-full max-w-lg mx-auto lg:ml-auto sticky top-8">
+        <div class="flex gap-2 mb-6 border-b border-white/10 pb-4">
+          <span class="text-xs text-white/50 uppercase tracking-widest">hello.esp</span>
+        </div>
+<pre class="text-sm md:text-base leading-relaxed overflow-x-auto"><span class="text-gray-500"># hello.esp</span>
+<span class="text-green-400">"sardina"</span> <span class="text-[var(--color-brand-orange)] font-bold">|></span> uppercase <span class="text-[var(--color-brand-orange)] font-bold">|></span> print
+
+<span class="text-gray-500">$ espeto run hello.esp</span>
+<span class="text-white font-bold text-lg">SARDINA</span>
+
+<span class="text-[var(--color-brand-pink)] font-bold">~/espeto ❯</span> <span class="w-2.5 h-5 bg-gray-400 animate-pulse"></span></code></pre>
+      </div>
+
+    </div>
+  </header>
+
+  <section id="features" class="py-24 bg-surface">
+    <div class="max-w-7xl mx-auto px-6">
+      
+      <div class="text-center mb-16">
+        <h2 class="text-4xl md:text-5xl mb-6">Menos ambigüedad, más precisión.</h2>
+        <p class="text-text-primary text-lg md:text-xl max-w-3xl mx-auto font-medium leading-relaxed border-l-4 border-text-primary pl-6 text-left inline-block">
+          Un lenguaje de programación pequeño, <strong class="text-[var(--color-brand-orange)]">pipe-céntrico</strong> y estructurado para que los modelos de IA lo escriban de forma perfecta, sin alucinaciones.
+        </p>
+      </div>
+
+      <div class="flex flex-wrap justify-center gap-2 md:gap-4 mb-16">
+        <button class="tab-btn active" onclick="openTab(event, 'tab-pipe')">Pipe-céntrico</button>
+        <button class="tab-btn" onclick="openTab(event, 'tab-cli')">CLI Nativo</button>
+        <button class="tab-btn" onclick="openTab(event, 'tab-llm')">LLM-Friendly</button>
+        <button class="tab-btn" onclick="openTab(event, 'tab-stdlib')">Stdlib Integrada</button>
+      </div>
+
+      <div id="tab-pipe" class="tab-content active lg:grid-cols-[1fr_1.2fr] gap-12 items-center">
+        <div>
+          <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mb-6">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand-orange)" stroke-width="2.5"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+          </div>
+          <h3 class="text-3xl mb-4">Todo fluye hacia adelante.</h3>
+          <p class="text-text-secondary leading-relaxed mb-6">
+            El operador <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">|></code> no es azúcar sintáctico, es la base del lenguaje. Cualquier dato pasa como primer argumento a la función de su derecha. No necesitas anidar llamadas ni declarar variables temporales. 
+          </p>
+          <ul class="space-y-3 text-sm text-text-secondary font-bold">
+            <li class="flex items-center gap-2">
+              <div class="w-1.5 h-1.5 rounded-full bg-text-primary"></div> Lectura de arriba a abajo.
+            </li>
+            <li class="flex items-center gap-2">
+              <div class="w-1.5 h-1.5 rounded-full bg-text-primary"></div> Soporta lambdas anónimas en línea.
+            </li>
+          </ul>
+        </div>
+        <div class="code-window">
+          <div class="flex gap-2 mb-6 border-b border-white/10 pb-4">
+            <span class="text-xs text-white/50 uppercase tracking-widest">Ejemplo.esp</span>
+          </div>
+<pre class="text-sm md:text-base leading-relaxed overflow-x-auto"><span class="text-white/40"># Desde una simple cadena...</span>
+<span class="text-green-400">"  sardinas frescas  "</span> 
+  |> trim 
+  |> uppercase 
+  |> print
+<span class="text-white/40"># SARDINAS FRESCAS</span>
+
+<span class="text-white/40"># Hasta transformaciones de listas</span>
+users
+  |> filter(<span class="text-[#ff2a7a]">fn</span> u => u.active)
+  |> sort_by(.age)
+  |> map(.name)
+  |> print</code></pre>
+        </div>
+      </div>
+
+      <div id="tab-cli" class="tab-content lg:grid-cols-[1fr_1.2fr] gap-12 items-center">
+        <div>
+          <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-6">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <h3 class="text-3xl mb-4">Herramientas de consola en minutos.</h3>
+          <p class="text-text-secondary leading-relaxed mb-6">
+            El 90% de los lenguajes te obligan a importar librerías pesadas para parsear argumentos. En Espeto, <code>cmd</code>, <code>arg</code> y <code>flag</code> son palabras clave del lenguaje. La validación y la página de ayuda <code>--help</code> se generan solas.
+          </p>
+        </div>
+        <div class="code-window">
+          <div class="flex gap-2 mb-6 border-b border-white/10 pb-4">
+            <span class="text-xs text-white/50 uppercase tracking-widest">Hola.esp</span>
+          </div>
+<pre class="text-sm md:text-base leading-relaxed overflow-x-auto"><span class="text-[#ff2a7a]">cmd</span> hola <span class="text-[#ff2a7a]">do</span>
+  <span class="text-[#ff2a7a]">arg</span> name: str
+  <span class="text-[#ff2a7a]">flag</span> loud: bool = <span class="text-[#ff2a7a]">false</span>
+
+  greeting = <span class="text-green-400">"Hola, #{name}!"</span>
+  greeting |> when(loud, uppercase) |> print
+<span class="text-[#ff2a7a]">end</span>
+
+<span class="text-white/40">--------------------------------</span>
+<span class="text-white/40">$ espeto run hola.esp -- --help</span>
+<span class="text-white/40">Usage: hola &lt;name&gt; [--loud]</span></code></pre>
+        </div>
+      </div>
+
+      <div id="tab-llm" class="tab-content lg:grid-cols-[1fr_1.2fr] gap-12 items-center">
+        <div>
+          <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-6">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand-purple)" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+          </div>
+          <h3 class="text-3xl mb-4">Diseñado para IAs (y humanos).</h3>
+          <p class="text-text-secondary leading-relaxed mb-6">
+            Espeto no tiene magia oscura ni azúcar sintáctico innecesario. Existe <strong>una sola forma canónica</strong> de escribir las cosas. Esto reduce drásticamente las alucinaciones cuando le pides a ChatGPT o Claude que escriban scripts por ti.
+          </p>
+        </div>
+        <div class="code-window">
+          <div class="flex gap-2 mb-6 border-b border-white/10 pb-4">
+            <span class="text-xs text-[#ff5e00] uppercase tracking-widest">Sin coerciones implícitas</span>
+          </div>
+<pre class="text-sm md:text-base leading-relaxed overflow-x-auto"><span class="text-white/40"># Fallo duro: no se mezclan tipos</span>
+1 + 1.0  <span class="text-white/40"># ERROR</span>
+
+<span class="text-white/40"># Igualdad estructural estricta</span>
+1 == 1.0 <span class="text-white/40"># false</span>
+
+<span class="text-white/40"># Truthiness explícito</span>
+<span class="text-[#ff2a7a]">if</span> "texto" <span class="text-[#ff2a7a]">do</span> <span class="text-white/40"># ERROR (requiere bool)</span>
+<span class="text-[#ff2a7a]">if</span> length(x) > 0 <span class="text-[#ff2a7a]">do</span> ... <span class="text-white/40"># CORRECTO</span></code></pre>
+        </div>
+      </div>
+
+      <div id="tab-stdlib" class="tab-content lg:grid-cols-[1fr_1.2fr] gap-12 items-center">
+        <div>
+          <div class="w-12 h-12 bg-pink-100 rounded-xl flex items-center justify-center mb-6">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand-pink)" stroke-width="2.5"><path d="M12 2H2v10l9.29 9.29c.94.94 2.48.94 3.42 0l8.29-8.29c.94-.94.94-2.48 0-3.42L12 2Z"></path><path d="M7 7h.01"></path></svg>
+          </div>
+          <h3 class="text-3xl mb-4">Todo lo necesario, ya incluido.</h3>
+          <p class="text-text-secondary leading-relaxed mb-6">
+            Aproximadamente 60 funciones listas para usar sin necesidad de imports. Manejo de JSON, lectura de archivos, transformaciones de texto y matemáticas, accesibles globalmente y optimizadas para usarse con el pipe.
+          </p>
+        </div>
+        <div class="code-window">
+          <div class="flex gap-2 mb-6 border-b border-white/10 pb-4">
+            <span class="text-xs text-white/50 uppercase tracking-widest">users.json -> cli</span>
+          </div>
+<pre class="text-sm md:text-base leading-relaxed overflow-x-auto"><span class="text-white/40"># try captura errores devolviendo </span>
+<span class="text-white/40"># o ejecutando el bloque rescue</span>
+data = <span class="text-[#ff2a7a]">try</span> "users.json" 
+  |> read 
+  |> parse_json
+<span class="text-[#ff2a7a]">rescue</span> err -> 
+  raise(<span class="text-green-400">"Error crítico: #{err}"</span>)
+
+data |> map(.email) |> print</code></pre>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ===========================================================
+       SPEC — el lenguaje en una página
+       =========================================================== -->
+  <section id="spec" class="py-24 bg-white border-t border-border">
+    <div class="max-w-5xl mx-auto px-6">
+      <div class="text-center mb-16">
+        <div class="inline-block px-3 py-1 mb-6 bg-orange-100 text-orange-800 text-xs font-bold uppercase tracking-widest rounded-full border border-orange-200">
+          Spec · v0
+        </div>
+        <h2 class="text-4xl md:text-5xl mb-6">El lenguaje, en una página.</h2>
+        <p class="text-text-secondary text-lg max-w-2xl mx-auto leading-relaxed">
+          Quince decisiones cerradas. Una sola forma canónica para cada cosa.
+        </p>
+      </div>
+
+      <div class="bg-surface rounded-2xl border border-border/50 overflow-hidden">
+        <div class="grid md:grid-cols-[11rem_1fr] gap-x-6 gap-y-2 px-6 py-5 border-b border-border/50 hover:bg-white transition-colors">
+          <div class="text-xs font-bold uppercase tracking-widest text-text-muted pt-1">Top-level</div>
+          <div class="text-text-primary leading-relaxed">
+            Solo <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">import</code>, <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">def</code>, <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">cmd</code>. Un <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">cmd</code> por fichero.
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-[11rem_1fr] gap-x-6 gap-y-2 px-6 py-5 border-b border-border/50 hover:bg-white transition-colors">
+          <div class="text-xs font-bold uppercase tracking-widest text-text-muted pt-1">cmd block</div>
+          <div class="text-text-primary leading-relaxed">
+            <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">do/end</code>. Orden: meta (<code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">desc</code>/<code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">version</code>) → declaraciones (<code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">arg</code>/<code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">flag</code>) → body.
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-[11rem_1fr] gap-x-6 gap-y-2 px-6 py-5 border-b border-border/50 hover:bg-white transition-colors">
+          <div class="text-xs font-bold uppercase tracking-widest text-text-muted pt-1">Bindings</div>
+          <div class="text-text-primary leading-relaxed">
+            <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">x = expr</code> (sin <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">let</code>). Rebinding sí. Valores inmutables.
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-[11rem_1fr] gap-x-6 gap-y-2 px-6 py-5 border-b border-border/50 hover:bg-white transition-colors">
+          <div class="text-xs font-bold uppercase tracking-widest text-text-muted pt-1">Pipe |&gt;</div>
+          <div class="text-text-primary leading-relaxed">
+            First-arg piping. RHS: llamada / nombre pelado / lambda / <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">.field</code>.
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-[11rem_1fr] gap-x-6 gap-y-2 px-6 py-5 border-b border-border/50 hover:bg-white transition-colors">
+          <div class="text-xs font-bold uppercase tracking-widest text-text-muted pt-1">Funciones</div>
+          <div class="text-text-primary leading-relaxed">
+            <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">def f(x) = expr</code> (one-liner) o <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">def f(x) do … end</code> (bloque). <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">defp</code> para privadas.
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-[11rem_1fr] gap-x-6 gap-y-2 px-6 py-5 border-b border-border/50 hover:bg-white transition-colors">
+          <div class="text-xs font-bold uppercase tracking-widest text-text-muted pt-1">Lambdas</div>
+          <div class="text-text-primary leading-relaxed">
+            <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">fn x =&gt; expr</code>, <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">fn(x,y) =&gt; expr</code>, <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">fn() =&gt; expr</code>. Solo expresión.
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-[11rem_1fr] gap-x-6 gap-y-2 px-6 py-5 border-b border-border/50 hover:bg-white transition-colors">
+          <div class="text-xs font-bold uppercase tracking-widest text-text-muted pt-1">Errores</div>
+          <div class="text-text-primary leading-relaxed">
+            Excepciones con <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">raise</code>. Auto-rescue en <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">cmd</code>. <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">try expr rescue err -&gt; …</code> para local.
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-[11rem_1fr] gap-x-6 gap-y-2 px-6 py-5 border-b border-border/50 hover:bg-white transition-colors">
+          <div class="text-xs font-bold uppercase tracking-widest text-text-muted pt-1">Módulos</div>
+          <div class="text-text-primary leading-relaxed">
+            Fichero = módulo. Imports pelados: <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">import "./x" only [a, b as c]</code>.
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-[11rem_1fr] gap-x-6 gap-y-2 px-6 py-5 border-b border-border/50 hover:bg-white transition-colors">
+          <div class="text-xs font-bold uppercase tracking-widest text-text-muted pt-1">Tipos</div>
+          <div class="text-text-primary leading-relaxed">
+            <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">int</code>, <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">float</code>, <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">str</code>, <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">bool</code>, <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">nil</code>, <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">list</code>, <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">map</code>, <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">fn</code>. <strong class="text-text-primary">Sin coerción.</strong>
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-[11rem_1fr] gap-x-6 gap-y-2 px-6 py-5 border-b border-border/50 hover:bg-white transition-colors">
+          <div class="text-xs font-bold uppercase tracking-widest text-text-muted pt-1">Igualdad</div>
+          <div class="text-text-primary leading-relaxed">
+            <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">==</code> único, estructural. <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">1 == 1.0</code> es <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">false</code>.
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-[11rem_1fr] gap-x-6 gap-y-2 px-6 py-5 border-b border-border/50 hover:bg-white transition-colors">
+          <div class="text-xs font-bold uppercase tracking-widest text-text-muted pt-1">Truthiness</div>
+          <div class="text-text-primary leading-relaxed">
+            Estricto: solo <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">bool</code> en <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">if</code>. <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">and</code>/<code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">or</code>/<code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">not</code> requieren bool.
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-[11rem_1fr] gap-x-6 gap-y-2 px-6 py-5 border-b border-border/50 hover:bg-white transition-colors">
+          <div class="text-xs font-bold uppercase tracking-widest text-text-muted pt-1">Control</div>
+          <div class="text-text-primary leading-relaxed">
+            Solo <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">if/else if/else do…end</code>, expresión-valuada. Sin ternario, sin <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">case</code> en v0.
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-[11rem_1fr] gap-x-6 gap-y-2 px-6 py-5 border-b border-border/50 hover:bg-white transition-colors">
+          <div class="text-xs font-bold uppercase tracking-widest text-text-muted pt-1">Strings</div>
+          <div class="text-text-primary leading-relaxed">
+            <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">"…"</code> con <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">#{x}</code>. Multilínea <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">"""…"""</code>. Comentarios <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">#</code>.
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-[11rem_1fr] gap-x-6 gap-y-2 px-6 py-5 border-b border-border/50 hover:bg-white transition-colors">
+          <div class="text-xs font-bold uppercase tracking-widest text-text-muted pt-1">Concat</div>
+          <div class="text-text-primary leading-relaxed">
+            Solo funciones (<code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">concat</code>, <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">join</code>). Sin operadores <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">&lt;&gt;</code>/<code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">++</code>.
+          </div>
+        </div>
+
+        <div class="grid md:grid-cols-[11rem_1fr] gap-x-6 gap-y-2 px-6 py-5 hover:bg-white transition-colors">
+          <div class="text-xs font-bold uppercase tracking-widest text-text-muted pt-1">Stdlib</div>
+          <div class="text-text-primary leading-relaxed">
+            ~60 funciones auto-cargadas. <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">snake_case</code>. <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">?</code> en predicados. Sin loops. Síncrono.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===========================================================
+       STDLIB — funciones auto-cargadas
+       =========================================================== -->
+  <section id="stdlib" class="py-24 bg-surface border-t border-border">
+    <div class="max-w-7xl mx-auto px-6">
+      <div class="text-center mb-16">
+        <div class="inline-block px-3 py-1 mb-6 bg-pink-100 text-pink-800 text-xs font-bold uppercase tracking-widest rounded-full border border-pink-200">
+          Stdlib · v0
+        </div>
+        <h2 class="text-4xl md:text-5xl mb-6">~60 funciones, sin imports.</h2>
+        <p class="text-text-secondary text-lg max-w-2xl mx-auto leading-relaxed">
+          Auto-cargadas en el prelude. <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">snake_case</code>, <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">?</code> al final de los predicados, y un puñado de helpers para el pipe.
+        </p>
+      </div>
+
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="bg-white p-6 rounded-2xl border border-border/50">
+          <div class="flex items-baseline justify-between mb-4">
+            <h3 class="text-xl">I/O</h3>
+            <span class="text-xs font-bold uppercase tracking-widest text-text-muted">5</span>
+          </div>
+          <div class="flex flex-wrap gap-1.5 text-sm font-medium">
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">print</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">read</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">write</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50 text-purple-700">exists?</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">env</span>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-border/50">
+          <div class="flex items-baseline justify-between mb-4">
+            <h3 class="text-xl">Strings</h3>
+            <span class="text-xs font-bold uppercase tracking-widest text-text-muted">10</span>
+          </div>
+          <div class="flex flex-wrap gap-1.5 text-sm font-medium">
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">upcase</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">downcase</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">trim</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">split</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">join</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">replace</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">length</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50 text-purple-700">starts_with?</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50 text-purple-700">ends_with?</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50 text-purple-700">contains?</span>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-border/50">
+          <div class="flex items-baseline justify-between mb-4">
+            <h3 class="text-xl">Números</h3>
+            <span class="text-xs font-bold uppercase tracking-widest text-text-muted">11</span>
+          </div>
+          <div class="flex flex-wrap gap-1.5 text-sm font-medium">
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">to_int</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">to_float</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">to_str</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">abs</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">round</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">floor</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">ceil</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">min</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">max</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">div</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">mod</span>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-border/50">
+          <div class="flex items-baseline justify-between mb-4">
+            <h3 class="text-xl">Listas</h3>
+            <span class="text-xs font-bold uppercase tracking-widest text-text-muted">17</span>
+          </div>
+          <div class="flex flex-wrap gap-1.5 text-sm font-medium">
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">length</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">head</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">tail</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">concat</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">map</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">filter</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">reduce</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">each</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">find</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">sort</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">sort_by</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">reverse</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">take</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">drop</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">unique</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">range</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">zip</span>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-border/50">
+          <div class="flex items-baseline justify-between mb-4">
+            <h3 class="text-xl">Maps</h3>
+            <span class="text-xs font-bold uppercase tracking-widest text-text-muted">8</span>
+          </div>
+          <div class="flex flex-wrap gap-1.5 text-sm font-medium">
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">keys</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">values</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">get</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">get_or</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">put</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">delete</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50 text-purple-700">has_key?</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">merge</span>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-border/50">
+          <div class="flex items-baseline justify-between mb-4">
+            <h3 class="text-xl">JSON</h3>
+            <span class="text-xs font-bold uppercase tracking-widest text-text-muted">2</span>
+          </div>
+          <div class="flex flex-wrap gap-1.5 text-sm font-medium">
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">parse_json</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">to_json</span>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-border/50">
+          <div class="flex items-baseline justify-between mb-4">
+            <h3 class="text-xl">Pipe helpers</h3>
+            <span class="text-xs font-bold uppercase tracking-widest text-text-muted">3</span>
+          </div>
+          <div class="flex flex-wrap gap-1.5 text-sm font-medium">
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50 text-[var(--color-brand-orange)]">when</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50 text-[var(--color-brand-orange)]">unless</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50 text-[var(--color-brand-orange)]">id</span>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-border/50">
+          <div class="flex items-baseline justify-between mb-4">
+            <h3 class="text-xl">Predicados de tipo</h3>
+            <span class="text-xs font-bold uppercase tracking-widest text-text-muted">8</span>
+          </div>
+          <div class="flex flex-wrap gap-1.5 text-sm font-medium">
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50 text-purple-700">is_int?</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50 text-purple-700">is_float?</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50 text-purple-700">is_str?</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50 text-purple-700">is_bool?</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50 text-purple-700">is_nil?</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50 text-purple-700">is_list?</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50 text-purple-700">is_map?</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50 text-purple-700">is_fn?</span>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-border/50">
+          <div class="flex items-baseline justify-between mb-4">
+            <h3 class="text-xl">Errores</h3>
+            <span class="text-xs font-bold uppercase tracking-widest text-text-muted">+ variantes</span>
+          </div>
+          <div class="flex flex-wrap gap-1.5 text-sm font-medium mb-3">
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50 text-[var(--color-brand-pink)]">raise</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50 text-[var(--color-brand-pink)]">try_*</span>
+          </div>
+          <p class="text-xs text-text-muted leading-relaxed">
+            Stdlib raisea por defecto. Las <code class="bg-gray-200 text-text-primary px-1 py-0.5 rounded text-[11px]">try_*</code> devuelven <code class="bg-gray-200 text-text-primary px-1 py-0.5 rounded text-[11px]">{ok, value}</code> estilo Result.
+          </p>
+        </div>
+      </div>
+
+      <div class="mt-10 p-6 bg-white rounded-2xl border-2 border-orange-200 flex flex-col md:flex-row md:items-center gap-4">
+        <div class="text-xs font-bold uppercase tracking-widest text-[var(--color-brand-orange)] md:flex-shrink-0">
+          Aún no en v0
+        </div>
+        <p class="text-text-secondary text-sm leading-relaxed">
+          pattern matching · regex · HTTP · fechas · async · tuples · atoms · TCO garantizado. <span class="text-text-muted">Para v1+.</span>
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===========================================================
+       ROADMAP — 10 hitos
+       =========================================================== -->
+  <section id="roadmap" class="py-24 bg-white border-t border-border">
+    <div class="max-w-4xl mx-auto px-6">
+      <div class="text-center mb-16">
+        <div class="inline-block px-3 py-1 mb-6 bg-purple-100 text-purple-800 text-xs font-bold uppercase tracking-widest rounded-full border border-purple-200">
+          Roadmap
+        </div>
+        <h2 class="text-4xl md:text-5xl mb-6">10 hitos. 10 programas.</h2>
+        <p class="text-text-secondary text-lg max-w-2xl mx-auto leading-relaxed">
+          Cada hito es <em>"el primer programa que corre end-to-end"</em>. Empezando por el cero, donde estamos hoy.
+        </p>
+      </div>
+
+      <div class="space-y-3">
+        <!-- Milestone 0 — current -->
+        <div class="flex gap-5 items-start p-5 bg-surface rounded-2xl border-2 border-text-primary shadow-sm">
+          <div class="w-14 h-14 bg-text-primary text-white rounded-full flex items-center justify-center font-extrabold text-xl flex-shrink-0">
+            00
+          </div>
+          <div class="flex-1 pt-2">
+            <div class="flex items-center gap-3 mb-1 flex-wrap">
+              <h3 class="text-xl">Setup proyecto</h3>
+              <span class="px-2 py-0.5 bg-[var(--color-brand-orange)] text-white text-[10px] font-bold uppercase tracking-widest rounded-full">Aquí</span>
+            </div>
+            <p class="text-text-secondary text-sm leading-relaxed">pnpm + tsx + vitest, layout del proyecto, errores con source spans, binario <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">espeto</code>.</p>
+          </div>
+        </div>
+
+        <div class="flex gap-5 items-start p-5 bg-white rounded-2xl border border-border">
+          <div class="w-14 h-14 bg-white text-text-secondary border-2 border-border rounded-full flex items-center justify-center font-extrabold text-xl flex-shrink-0">
+            01
+          </div>
+          <div class="flex-1 pt-2">
+            <h3 class="text-xl mb-1">El primer pipe corre</h3>
+            <p class="text-text-secondary text-sm leading-relaxed"><code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded text-xs">"hola" |&gt; print</code> — lexer, parser, evaluator base, primer builtin.</p>
+          </div>
+        </div>
+
+        <div class="flex gap-5 items-start p-5 bg-white rounded-2xl border border-border">
+          <div class="w-14 h-14 bg-white text-text-secondary border-2 border-border rounded-full flex items-center justify-center font-extrabold text-xl flex-shrink-0">
+            02
+          </div>
+          <div class="flex-1 pt-2">
+            <h3 class="text-xl mb-1">Encadenamiento</h3>
+            <p class="text-text-secondary text-sm leading-relaxed"><code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded text-xs">"x" |&gt; upcase |&gt; print</code> — más builtins, chains de pipes.</p>
+          </div>
+        </div>
+
+        <div class="flex gap-5 items-start p-5 bg-white rounded-2xl border border-border">
+          <div class="w-14 h-14 bg-white text-text-secondary border-2 border-border rounded-full flex items-center justify-center font-extrabold text-xl flex-shrink-0">
+            03
+          </div>
+          <div class="flex-1 pt-2">
+            <h3 class="text-xl mb-1">Funciones de usuario</h3>
+            <p class="text-text-secondary text-sm leading-relaxed"><code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded text-xs">def f(x) = …</code> y uso — scope, llamadas, <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded text-xs">defp</code> para privadas.</p>
+          </div>
+        </div>
+
+        <div class="flex gap-5 items-start p-5 bg-white rounded-2xl border border-border">
+          <div class="w-14 h-14 bg-white text-text-secondary border-2 border-border rounded-full flex items-center justify-center font-extrabold text-xl flex-shrink-0">
+            04
+          </div>
+          <div class="flex-1 pt-2">
+            <h3 class="text-xl mb-1">El primer CLI completo</h3>
+            <p class="text-text-secondary text-sm leading-relaxed"><code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded text-xs">hola.esp</code> — <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded text-xs">cmd</code>, <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded text-xs">arg</code>, <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded text-xs">flag</code>, interpolación, <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded text-xs">when</code>.</p>
+          </div>
+        </div>
+
+        <div class="flex gap-5 items-start p-5 bg-white rounded-2xl border border-border">
+          <div class="w-14 h-14 bg-white text-text-secondary border-2 border-border rounded-full flex items-center justify-center font-extrabold text-xl flex-shrink-0">
+            05
+          </div>
+          <div class="flex-1 pt-2">
+            <h3 class="text-xl mb-1">REPL</h3>
+            <p class="text-text-secondary text-sm leading-relaxed"><code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded text-xs">espeto repl</code> con env persistente — un sitio donde experimentar.</p>
+          </div>
+        </div>
+
+        <div class="flex gap-5 items-start p-5 bg-white rounded-2xl border border-border">
+          <div class="w-14 h-14 bg-white text-text-secondary border-2 border-border rounded-full flex items-center justify-center font-extrabold text-xl flex-shrink-0">
+            06
+          </div>
+          <div class="flex-1 pt-2">
+            <h3 class="text-xl mb-1">Imports y módulos</h3>
+            <p class="text-text-secondary text-sm leading-relaxed">Resolución de paths, <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded text-xs">import "./x" only [a, b as c]</code>, colisiones detectadas.</p>
+          </div>
+        </div>
+
+        <div class="flex gap-5 items-start p-5 bg-white rounded-2xl border border-border">
+          <div class="w-14 h-14 bg-white text-text-secondary border-2 border-border rounded-full flex items-center justify-center font-extrabold text-xl flex-shrink-0">
+            07
+          </div>
+          <div class="flex-1 pt-2">
+            <h3 class="text-xl mb-1">Control flow + colecciones + lambdas</h3>
+            <p class="text-text-secondary text-sm leading-relaxed"><code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded text-xs">if/else if/else</code>, listas, maps, lambdas, acceso a campos.</p>
+          </div>
+        </div>
+
+        <div class="flex gap-5 items-start p-5 bg-white rounded-2xl border border-border">
+          <div class="w-14 h-14 bg-white text-text-secondary border-2 border-border rounded-full flex items-center justify-center font-extrabold text-xl flex-shrink-0">
+            08
+          </div>
+          <div class="flex-1 pt-2">
+            <h3 class="text-xl mb-1">Stdlib amplia</h3>
+            <p class="text-text-secondary text-sm leading-relaxed"><code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded text-xs">users.esp</code> entero — JSON, <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded text-xs">sort_by</code>, <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded text-xs">.field</code>, <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded text-xs">try/rescue</code>.</p>
+          </div>
+        </div>
+
+        <div class="flex gap-5 items-start p-5 bg-white rounded-2xl border border-border">
+          <div class="w-14 h-14 bg-white text-text-secondary border-2 border-border rounded-full flex items-center justify-center font-extrabold text-xl flex-shrink-0">
+            09
+          </div>
+          <div class="flex-1 pt-2">
+            <h3 class="text-xl mb-1">Errores con caret</h3>
+            <p class="text-text-secondary text-sm leading-relaxed">Source spans formateados estilo gcc/rust: <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded text-xs">file.esp:3:14: msg</code> + caret bajo la posición.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===========================================================
+       WHY ESPETO + STACK
+       =========================================================== -->
+  <section class="py-24 bg-surface border-t border-border">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="grid lg:grid-cols-[1.3fr_1fr] gap-12 lg:gap-20 items-start">
+
+        <div>
+          <div class="inline-block px-3 py-1 mb-6 bg-orange-100 text-orange-800 text-xs font-bold uppercase tracking-widest rounded-full border border-orange-200">
+            ¿Por qué "Espeto"?
+          </div>
+          <h2 class="text-4xl md:text-5xl mb-6">Una brocheta de sardinas.</h2>
+          <p class="text-text-secondary text-lg leading-relaxed mb-4">
+            "Espeto", en el sur de España, es la brocheta donde se ensartan las sardinas para asarlas a la brasa.
+          </p>
+          <p class="text-text-secondary text-lg leading-relaxed mb-4">
+            Y un programa en Espeto <strong class="text-text-primary">tiene esa forma</strong>: una línea de elementos enhebrados por <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">|&gt;</code>. La metáfora se queda en la silueta del código — no en lo que pasa con los datos.
+          </p>
+          <p class="text-text-secondary text-lg leading-relaxed">
+            Un nombre con sabor a Mediterráneo le sienta bien a un lenguaje pensado con cariño.
+          </p>
+        </div>
+
+        <div>
+          <div class="inline-block px-3 py-1 mb-6 bg-purple-100 text-purple-800 text-xs font-bold uppercase tracking-widest rounded-full border border-purple-200">
+            Stack
+          </div>
+          <h3 class="text-2xl mb-6">Pequeño, sin sorpresas.</h3>
+          <div class="space-y-2.5">
+            <div class="bg-white p-4 rounded-xl border border-border/50 flex items-baseline justify-between gap-4">
+              <span class="text-xs font-bold uppercase tracking-widest text-text-muted">Runtime</span>
+              <span class="font-bold text-sm text-right">TypeScript / Node 20+</span>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-border/50 flex items-baseline justify-between gap-4">
+              <span class="text-xs font-bold uppercase tracking-widest text-text-muted">Estrategia</span>
+              <span class="font-bold text-sm text-right">Tree-walking interpreter</span>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-border/50 flex items-baseline justify-between gap-4">
+              <span class="text-xs font-bold uppercase tracking-widest text-text-muted">Parser</span>
+              <span class="font-bold text-sm text-right">Recursive descent a mano</span>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-border/50 flex items-baseline justify-between gap-4">
+              <span class="text-xs font-bold uppercase tracking-widest text-text-muted">AST</span>
+              <span class="font-bold text-sm text-right">Discriminated unions</span>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-border/50 flex items-baseline justify-between gap-4">
+              <span class="text-xs font-bold uppercase tracking-widest text-text-muted">Tooling</span>
+              <span class="font-bold text-sm text-right">pnpm · tsx · vitest</span>
+            </div>
+            <div class="bg-white p-4 rounded-xl border border-border/50 flex items-baseline justify-between gap-4">
+              <span class="text-xs font-bold uppercase tracking-widest text-text-muted">Distribución</span>
+              <span class="font-bold text-sm text-right">npm · bin <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded text-xs">espeto</code></span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <footer class="py-12 border-t border-border bg-white text-center">
+    <div class="max-w-5xl mx-auto px-6">
+      <div class="flex justify-center items-center gap-3 mb-6">
+        <img src="logo.svg" class="w-6 h-6" alt="Espeto" />
+        <span class="text-xl font-extrabold uppercase">Espeto</span>
+      </div>
+      <p class="text-xs text-text-muted uppercase tracking-widest font-bold">
+        Hecho con pipes y sin alucinaciones · 2026
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    function openTab(evt, tabId) {
+      var tabContents = document.getElementsByClassName("tab-content");
+      for (var i = 0; i < tabContents.length; i++) {
+        tabContents[i].classList.remove("active");
+      }
+      
+      var tabBtns = document.getElementsByClassName("tab-btn");
+      for (var i = 0; i < tabBtns.length; i++) {
+        tabBtns[i].classList.remove("active");
+      }
+      
+      document.getElementById(tabId).classList.add("active");
+      evt.currentTarget.classList.add("active");
+    }
+  </script>
+
+  <script>
+    var nav = document.getElementById("nav");
+window.addEventListener("scroll", function() {
+      if (window.scrollY >= 400) {
+        nav.className = "fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-border py-6 transition-all duration-300";
+      } else {
+        nav.className = "absolute top-0 left-0 right-0 z-50 py-6 transition-all duration-300";
+      }
+      // nav bg color for dark mode
+      var isDark = body.getAttribute("data-theme") === "dark";
+      nav.style.backgroundColor = isDark ? "rgba(10, 10, 12, 0.8)" : "rgba(255, 255, 255, 0.8)";
+    });
+
+    // Theme toggle
+    var toggle = document.getElementById("theme-toggle");
+    var body = document.body;
+    
+    // Load saved theme
+    var savedTheme = localStorage.getItem("theme") || "light";
+    if (savedTheme === "dark") {
+      body.setAttribute("data-theme", "dark");
+    }
+    
+    toggle.addEventListener("click", function() {
+      if (body.getAttribute("data-theme") === "dark") {
+        body.setAttribute("data-theme", "light");
+        localStorage.setItem("theme", "light");
+      } else {
+        body.setAttribute("data-theme", "dark");
+        localStorage.setItem("theme", "dark");
+      }
+    });
+  </script>
+
+</body>
+</html>

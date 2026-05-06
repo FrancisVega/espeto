@@ -1,0 +1,205 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Espeto",
+  "scopeName": "source.espeto",
+  "fileTypes": ["esp"],
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#strings" },
+    { "include": "#function-definition" },
+    { "include": "#command-definition" },
+    { "include": "#numbers" },
+    { "include": "#constants" },
+    { "include": "#keywords" },
+    { "include": "#types" },
+    { "include": "#builtins" },
+    { "include": "#operators" },
+    { "include": "#field-access" },
+    { "include": "#identifiers" },
+    { "include": "#punctuation" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.number-sign.espeto",
+          "begin": "#",
+          "end": "$",
+          "beginCaptures": {
+            "0": { "name": "punctuation.definition.comment.espeto" }
+          }
+        }
+      ]
+    },
+    "strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.espeto",
+          "begin": "\"",
+          "end": "\"",
+          "beginCaptures": {
+            "0": { "name": "punctuation.definition.string.begin.espeto" }
+          },
+          "endCaptures": {
+            "0": { "name": "punctuation.definition.string.end.espeto" }
+          },
+          "patterns": [
+            {
+              "name": "constant.character.escape.espeto",
+              "match": "\\\\[ntr\\\\\"#]"
+            },
+            {
+              "name": "meta.embedded.line.interpolation.espeto",
+              "begin": "#\\{",
+              "end": "\\}",
+              "beginCaptures": {
+                "0": { "name": "punctuation.section.embedded.begin.espeto" }
+              },
+              "endCaptures": {
+                "0": { "name": "punctuation.section.embedded.end.espeto" }
+              },
+              "patterns": [{ "include": "$self" }]
+            }
+          ]
+        }
+      ]
+    },
+    "function-definition": {
+      "match": "\\b(def|defp)\\s+([a-z_][a-zA-Z0-9_]*\\??)",
+      "captures": {
+        "1": { "name": "keyword.declaration.function.espeto" },
+        "2": { "name": "entity.name.function.espeto" }
+      }
+    },
+    "command-definition": {
+      "match": "\\b(cmd)\\s+([a-z_][a-zA-Z0-9_]*\\??)",
+      "captures": {
+        "1": { "name": "keyword.declaration.command.espeto" },
+        "2": { "name": "entity.name.function.command.espeto" }
+      }
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.float.espeto",
+          "match": "\\b\\d[\\d_]*\\.\\d[\\d_]*\\b"
+        },
+        {
+          "name": "constant.numeric.integer.espeto",
+          "match": "\\b\\d[\\d_]*\\b"
+        }
+      ]
+    },
+    "constants": {
+      "name": "constant.language.espeto",
+      "match": "\\b(true|false|nil)\\b"
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.espeto",
+          "match": "\\b(if|else|do|end)\\b"
+        },
+        {
+          "name": "keyword.declaration.function.espeto",
+          "match": "\\b(def|defp|fn)\\b"
+        },
+        {
+          "name": "keyword.declaration.command.espeto",
+          "match": "\\b(cmd|arg|flag|desc|version)\\b"
+        },
+        {
+          "name": "keyword.control.import.espeto",
+          "match": "\\b(import|only|as)\\b"
+        },
+        {
+          "name": "keyword.operator.logical.espeto",
+          "match": "\\b(and|or|not)\\b"
+        }
+      ]
+    },
+    "types": {
+      "name": "support.type.espeto",
+      "match": "\\b(int|float|str|bool|list|map)\\b"
+    },
+    "builtins": {
+      "patterns": [
+        {
+          "name": "support.function.builtin.espeto",
+          "match": "(?<![A-Za-z0-9_])(print|read|write|exists\\?|env|upcase|downcase|trim|split|join|replace|length|starts_with\\?|ends_with\\?|contains\\?|to_int|to_float|to_str|abs|round|floor|ceil|min|max|div|mod|head|tail|concat|map|filter|reduce|each|find|sort|sort_by|reverse|take|drop|unique|range|zip|keys|values|get|get_or|put|delete|has_key\\?|merge|parse_json|to_json|is_int\\?|is_float\\?|is_str\\?|is_bool\\?|is_nil\\?|is_list\\?|is_map\\?|is_fn\\?|when|unless|id|raise)(?![A-Za-z0-9_?])"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.pipe.espeto",
+          "match": "\\|>"
+        },
+        {
+          "name": "keyword.operator.lambda.espeto",
+          "match": "=>"
+        },
+        {
+          "name": "keyword.operator.comparison.espeto",
+          "match": "==|<=|>=|<|>"
+        },
+        {
+          "name": "keyword.operator.assignment.espeto",
+          "match": "="
+        },
+        {
+          "name": "keyword.operator.arithmetic.espeto",
+          "match": "[+\\-*/]"
+        }
+      ]
+    },
+    "field-access": {
+      "match": "(\\.)([a-z_][a-zA-Z0-9_]*\\??)",
+      "captures": {
+        "1": { "name": "punctuation.accessor.dot.espeto" },
+        "2": { "name": "variable.other.member.espeto" }
+      }
+    },
+    "identifiers": {
+      "name": "variable.other.espeto",
+      "match": "[a-z_][a-zA-Z0-9_]*\\??"
+    },
+    "punctuation": {
+      "patterns": [
+        {
+          "name": "punctuation.section.parens.begin.espeto",
+          "match": "\\("
+        },
+        {
+          "name": "punctuation.section.parens.end.espeto",
+          "match": "\\)"
+        },
+        {
+          "name": "punctuation.section.brackets.begin.espeto",
+          "match": "\\["
+        },
+        {
+          "name": "punctuation.section.brackets.end.espeto",
+          "match": "\\]"
+        },
+        {
+          "name": "punctuation.section.braces.begin.espeto",
+          "match": "\\{"
+        },
+        {
+          "name": "punctuation.section.braces.end.espeto",
+          "match": "\\}"
+        },
+        {
+          "name": "punctuation.separator.comma.espeto",
+          "match": ","
+        },
+        {
+          "name": "punctuation.separator.colon.espeto",
+          "match": ":"
+        }
+      ]
+    }
+  }
+}

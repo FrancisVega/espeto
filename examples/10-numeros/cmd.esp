@@ -1,0 +1,8 @@
+cmd numeros do
+  arg n: int
+  flag scale: float = 1.5
+  doubled = n * 2
+  scaled = to_float(n) * scale
+  "n=#{n} doubled=#{doubled} scaled=#{scaled}" |> print
+  "abs(-#{n})=#{abs(-n)} round(#{scale})=#{round(scale)}" |> print
+end

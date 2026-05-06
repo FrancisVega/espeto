@@ -1,0 +1,4 @@
+"  sardinas frescas  "
+	|> trim
+	|> upcase
+	|> print

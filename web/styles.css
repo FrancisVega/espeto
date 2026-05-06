@@ -1,0 +1,865 @@
+/* Espeto landing — light theme, "manual de referencia" aesthetic.
+ * Inspired by makingsoftware.com: cream paper background, single bold accent
+ * (brasa orange instead of their blue), pixel display font, serif body,
+ * mono micro-labels, dot grid texture, perforated tick dividers.
+ */
+
+:root {
+  /* Backgrounds — cream paper */
+  --bg-deep:     #f1e8d2;
+  --bg-paper:    #f5ecd8;
+  --bg-card:     #fbf5e3;
+  --bg-card-2:   #f4ead0;
+  --bg-elevated: #f8f0db;
+  --bg-code:     #fbf5e3;
+  --bg-inset:    #ede2c5;
+
+  /* Borders — warm tan */
+  --border:        #d4c098;
+  --border-strong: #b59f72;
+  --border-warm:   #8a6c4a;
+  --border-soft:   #e0d2ac;
+
+  /* Text — deep coffee */
+  --text-primary:   #1f1610;
+  --text-secondary: #4a382a;
+  --text-muted:     #7a6850;
+  --text-faint:     #a89070;
+
+  /* Accents — brasa for light bg (deeper, ink-like) */
+  --brasa:        #c8421a;
+  --brasa-bright: #e85a1a;
+  --brasa-deep:   #7a2810;
+  --ambar:        #b8761a;
+  --ambar-soft:   #d89a38;
+
+  /* Secondary accents */
+  --sardina: #2e6a5a;
+  --mar:     #1f3aa8;
+  --rosa:    #a84838;
+  --uva:     #5a3a78;
+
+  /* Syntax tokens — readable on cream */
+  --tk-keyword:      #c8421a;
+  --tk-fn-name:      #7a3a08;
+  --tk-type:         #1f3aa8;
+  --tk-const:        #5a3a78;
+  --tk-builtin:      #a05810;
+  --tk-pipe-helper:  #b8421a;
+  --tk-string:       #2e6a5a;
+  --tk-string-quote: #1f4a3e;
+  --tk-number:       #a84838;
+  --tk-comment:      #968465;
+  --tk-pipe:         #c8421a;
+  --tk-arrow:        #c8421a;
+  --tk-rocket:       #c8421a;
+  --tk-op:           #5a4530;
+  --tk-punct:        #7a6850;
+  --tk-dot:          #5a4530;
+  --tk-colon:        #7a6850;
+  --tk-interp:       #c8421a;
+  --tk-ident:        #1f1610;
+}
+
+html {
+  background: var(--bg-deep);
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: "EB Garamond", "Garamond", Georgia, "Times New Roman", serif;
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-size: 1.0625rem;
+  line-height: 1.65;
+  font-feature-settings: "kern", "liga", "onum";
+
+  /* Subtle dot grid texture — like graph paper */
+  background-image:
+    radial-gradient(rgba(138, 108, 74, 0.13) 0.7px, transparent 0.7px);
+  background-size: 18px 18px;
+  background-attachment: fixed;
+}
+
+.font-display {
+  font-family: "Pixelify Sans", "Press Start 2P", "VT323", monospace;
+  font-weight: 700;
+  letter-spacing: 0;
+  font-feature-settings: normal;
+}
+
+.font-serif {
+  font-family: "EB Garamond", Georgia, serif;
+}
+
+.font-mono {
+  font-family: "JetBrains Mono", "SF Mono", "Menlo", ui-monospace, monospace;
+  font-feature-settings: "calt", "liga";
+}
+
+/* ==========================================================================
+ * Manual conventions
+ * ========================================================================== */
+
+/* Vertical FIG_xxx labels in section margins */
+.fig-label {
+  position: absolute;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--text-muted);
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  text-transform: uppercase;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.fig-label-l { left: 1rem; top: 4rem; }
+.fig-label-r { right: 1rem; top: 4rem; transform: rotate(0deg); }
+
+/* Perforated divider — small filled squares with gaps */
+.tick-divider {
+  height: 4px;
+  border: none;
+  background: repeating-linear-gradient(
+    to right,
+    var(--border-warm) 0,
+    var(--border-warm) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+  margin: 0;
+  opacity: 0.7;
+}
+
+/* Bigger version for main section breaks */
+.tick-divider-strong {
+  height: 5px;
+  border: none;
+  background: repeating-linear-gradient(
+    to right,
+    var(--brasa) 0,
+    var(--brasa) 5px,
+    transparent 5px,
+    transparent 10px
+  );
+  margin: 0;
+  opacity: 0.85;
+}
+
+/* Drop cap for the first paragraph of marquee sections */
+.dropcap::first-letter {
+  font-family: "EB Garamond", Georgia, serif;
+  font-weight: 700;
+  font-size: 4.6em;
+  float: left;
+  line-height: 0.86;
+  margin: 0.04em 0.1em 0 0;
+  color: var(--brasa);
+}
+
+/* Section eyebrow — manual figure label "FIG_001 / HOLA PIPE" */
+.section-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--brasa);
+  margin-bottom: 1rem;
+}
+
+.section-eyebrow::before {
+  content: "";
+  width: 1.5rem;
+  height: 1px;
+  background: var(--brasa);
+}
+
+/* Number/label badges, like FIG_001 — used inline as a chip */
+.fig-tag {
+  display: inline-flex;
+  align-items: center;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.7rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.55rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-strong);
+  color: var(--brasa-deep);
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+ * Embers — bright sparks rising on cream
+ * ========================================================================== */
+
+.embers {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
+}
+
+.ember {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #ff4a1a;
+  opacity: 0;
+  box-shadow:
+    0 0 5px rgba(232, 90, 26, 0.95),
+    0 0 12px rgba(255, 122, 58, 0.6),
+    0 0 20px rgba(255, 122, 58, 0.3);
+  animation: ember-float 9s ease-in-out infinite;
+}
+
+@keyframes ember-float {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.4);
+  }
+  18% {
+    opacity: 0.95;
+  }
+  85% {
+    opacity: 0.6;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-220px) scale(1);
+  }
+}
+
+/* ==========================================================================
+ * Background warmth (very subtle on cream — like firelight glow)
+ * ========================================================================== */
+
+.brasa-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.brasa-glow::before {
+  content: "";
+  position: absolute;
+  bottom: -150px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 1100px;
+  height: 600px;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(255, 122, 58, 0.18) 0%,
+    rgba(232, 90, 26, 0.08) 35%,
+    transparent 65%
+  );
+  filter: blur(50px);
+}
+
+.section-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse 800px 300px at 50% 0%,
+    rgba(200, 66, 26, 0.06) 0%,
+    transparent 70%
+  );
+}
+
+/* ==========================================================================
+ * Code blocks
+ * ========================================================================== */
+
+pre {
+  font-family: "JetBrains Mono", "SF Mono", "Menlo", ui-monospace, monospace;
+  font-size: 0.875rem;
+  line-height: 1.7;
+  overflow-x: auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border-strong);
+  border-radius: 0;
+  padding: 1.05rem 1.35rem;
+  color: var(--text-primary);
+  position: relative;
+  /* Crisp-edged paper feel */
+  box-shadow: 2px 2px 0 var(--border);
+}
+
+pre.framed {
+  background: var(--bg-card);
+  border-color: var(--border-strong);
+  box-shadow: 3px 3px 0 var(--border-soft);
+}
+
+pre.hero-code {
+  font-size: 1.05rem;
+  padding: 1.4rem 1.7rem;
+  background: var(--bg-card);
+  border: 1.5px solid var(--brasa-deep);
+  box-shadow: 5px 5px 0 var(--brasa);
+  border-radius: 0;
+}
+
+code {
+  font-family: inherit;
+}
+
+/* Inline code */
+p code,
+li code,
+td code,
+h1 code,
+h2 code,
+h3 code,
+h4 code {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.86em;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 0.05rem 0.4rem;
+  color: var(--brasa-deep);
+  border-radius: 0;
+  white-space: nowrap;
+}
+
+/* ==========================================================================
+ * Syntax highlighting tokens
+ * ========================================================================== */
+
+.tk-keyword     { color: var(--tk-keyword); font-weight: 600; }
+.tk-fn-name     { color: var(--tk-fn-name); font-weight: 500; }
+.tk-type        { color: var(--tk-type); }
+.tk-const       { color: var(--tk-const); }
+.tk-builtin     { color: var(--tk-builtin); }
+.tk-pipe-helper { color: var(--tk-pipe-helper); }
+.tk-string      { color: var(--tk-string); }
+.tk-string-quote{ color: var(--tk-string-quote); }
+.tk-number      { color: var(--tk-number); }
+.tk-comment     { color: var(--tk-comment); font-style: italic; }
+.tk-pipe        { color: var(--tk-pipe); font-weight: 700; }
+.tk-arrow       { color: var(--tk-arrow); font-weight: 700; }
+.tk-rocket      { color: var(--tk-rocket); font-weight: 700; }
+.tk-op          { color: var(--tk-op); }
+.tk-punct       { color: var(--tk-punct); }
+.tk-dot         { color: var(--tk-dot); }
+.tk-colon       { color: var(--tk-colon); }
+.tk-interp-open,
+.tk-interp-close{ color: var(--tk-interp); font-weight: 700; }
+.tk-ident       { color: var(--tk-ident); }
+
+/* ==========================================================================
+ * Headings
+ * ========================================================================== */
+
+h1, h2, h3, h4 {
+  font-family: "EB Garamond", Georgia, serif;
+  letter-spacing: -0.005em;
+  color: var(--text-primary);
+}
+
+h2 {
+  font-size: clamp(2rem, 4.2vw, 3.2rem);
+  font-weight: 600;
+  line-height: 1.05;
+  margin-bottom: 1rem;
+  letter-spacing: -0.015em;
+}
+
+h3 {
+  font-size: 1.4rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.section-lead {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  max-width: 42rem;
+  line-height: 1.65;
+}
+
+/* Italic emphasis in cream/brasa */
+em, i {
+  font-style: italic;
+  color: var(--brasa-deep);
+}
+
+/* ==========================================================================
+ * Cards and containers
+ * ========================================================================== */
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-strong);
+  border-radius: 0;
+  padding: 1.6rem 1.75rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 2px 2px 0 var(--border-soft);
+}
+
+.card:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--border-soft);
+}
+
+.card-warm {
+  background: var(--bg-card);
+  border: 1.5px solid var(--brasa);
+  border-radius: 0;
+  padding: 1.6rem 1.75rem;
+  position: relative;
+  box-shadow: 4px 4px 0 var(--brasa-deep);
+}
+
+.card-warm::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: -1px;
+  right: -1px;
+  height: 3px;
+  background: var(--brasa);
+}
+
+/* ==========================================================================
+ * Buttons / chips
+ * ========================================================================== */
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.7rem 1.3rem;
+  background: var(--brasa);
+  color: var(--bg-card);
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 600;
+  font-size: 0.88rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1.5px solid var(--brasa-deep);
+  border-radius: 0;
+  text-decoration: none;
+  transition: transform 0.1s, box-shadow 0.1s;
+  box-shadow: 3px 3px 0 var(--brasa-deep);
+}
+
+.btn-primary:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0 var(--brasa-deep);
+}
+
+.btn-primary:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--brasa-deep);
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.7rem 1.3rem;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 500;
+  font-size: 0.88rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1.5px solid var(--border-warm);
+  border-radius: 0;
+  text-decoration: none;
+  transition: transform 0.1s, box-shadow 0.1s, border-color 0.15s;
+  box-shadow: 3px 3px 0 var(--border-strong);
+}
+
+.btn-secondary:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0 var(--border-strong);
+  border-color: var(--brasa);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.78rem;
+  padding: 0.2rem 0.55rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 0;
+  color: var(--brasa-deep);
+  margin: 0.15rem;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.chip:hover {
+  background: var(--bg-elevated);
+  border-color: var(--brasa);
+}
+
+.chip-predicate {
+  background: var(--bg-card);
+  border-color: var(--border);
+  color: var(--mar);
+}
+
+.chip-predicate:hover {
+  border-color: var(--mar);
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.7rem;
+  background: var(--bg-card);
+  border: 1px solid var(--brasa);
+  border-radius: 0;
+  font-size: 0.72rem;
+  color: var(--brasa-deep);
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 500;
+}
+
+.status-pill::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brasa);
+  box-shadow: 0 0 6px var(--brasa);
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.55; }
+  50%      { opacity: 1; }
+}
+
+/* ==========================================================================
+ * Spec table — manual reference table feel
+ * ========================================================================== */
+
+.spec-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+  font-family: "EB Garamond", Georgia, serif;
+}
+
+.spec-table tr {
+  border-bottom: 1px solid var(--border);
+  transition: background 0.1s;
+}
+
+.spec-table tr:hover {
+  background: var(--bg-card);
+}
+
+.spec-table tr:last-child {
+  border-bottom: none;
+}
+
+.spec-table th,
+.spec-table td {
+  padding: 0.85rem 1rem;
+  text-align: left;
+  vertical-align: top;
+}
+
+.spec-table th {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--brasa-deep);
+  font-weight: 500;
+  width: 22%;
+  white-space: nowrap;
+}
+
+.spec-table td {
+  color: var(--text-secondary);
+}
+
+.spec-table td strong {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* ==========================================================================
+ * Roadmap timeline
+ * ========================================================================== */
+
+.timeline {
+  position: relative;
+  padding-left: 2.75rem;
+  margin-left: 0;
+}
+
+.timeline::before {
+  content: "";
+  position: absolute;
+  left: 0.95rem;
+  top: 0.5rem;
+  bottom: 0.5rem;
+  width: 2px;
+  background: repeating-linear-gradient(
+    to bottom,
+    var(--border-warm) 0,
+    var(--border-warm) 4px,
+    transparent 4px,
+    transparent 8px
+  );
+}
+
+.milestone {
+  position: relative;
+  padding-bottom: 1.7rem;
+}
+
+.milestone:last-child {
+  padding-bottom: 0;
+}
+
+.milestone-marker {
+  position: absolute;
+  left: -2.75rem;
+  top: 0.05rem;
+  width: 1.95rem;
+  height: 1.95rem;
+  border-radius: 0;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-warm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  z-index: 1;
+}
+
+.milestone-current .milestone-marker {
+  background: var(--brasa);
+  border-color: var(--brasa-deep);
+  color: var(--bg-card);
+  box-shadow: 2px 2px 0 var(--brasa-deep);
+}
+
+.milestone-current .milestone-title {
+  color: var(--brasa-deep);
+}
+
+.milestone-title {
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.2rem;
+}
+
+.milestone-body {
+  color: var(--text-secondary);
+  font-size: 0.98rem;
+}
+
+.milestone-body code {
+  font-size: 0.85rem;
+}
+
+/* ==========================================================================
+ * Pillar cards (3 design pillars)
+ * ========================================================================== */
+
+.pillar {
+  position: relative;
+  background: var(--bg-card);
+  border: 1px solid var(--border-strong);
+  border-radius: 0;
+  padding: 1.7rem 1.8rem;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  transition: box-shadow 0.15s, transform 0.15s;
+  box-shadow: 3px 3px 0 var(--border-soft);
+}
+
+.pillar:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0 var(--border-soft);
+}
+
+.pillar-num {
+  font-family: "Pixelify Sans", "Press Start 2P", monospace;
+  font-size: 2.5rem;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--brasa);
+  margin-bottom: 0.85rem;
+  letter-spacing: 0;
+}
+
+.pillar h3 {
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 1.45rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.6rem;
+  letter-spacing: -0.005em;
+}
+
+.pillar p {
+  color: var(--text-secondary);
+  margin-bottom: 0.9rem;
+}
+
+.pillar p:last-child {
+  margin-bottom: 0;
+}
+
+/* ==========================================================================
+ * Stdlib categories
+ * ========================================================================== */
+
+.stdlib-cat {
+  background: var(--bg-card);
+  border: 1px solid var(--border-strong);
+  border-radius: 0;
+  padding: 1.1rem 1.35rem;
+  box-shadow: 2px 2px 0 var(--border-soft);
+}
+
+.stdlib-cat h4 {
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 0.7rem;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.stdlib-cat-meta {
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 0.66rem;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 400;
+}
+
+/* ==========================================================================
+ * Misc
+ * ========================================================================== */
+
+a {
+  color: var(--brasa);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.1s, color 0.1s;
+}
+
+a:hover {
+  color: var(--brasa-bright);
+  border-bottom-color: var(--brasa-bright);
+}
+
+a.btn-primary,
+a.btn-secondary {
+  border-bottom: none;
+}
+
+a.btn-primary:hover {
+  color: var(--bg-card);
+  border-bottom: none;
+}
+
+::selection {
+  background: rgba(200, 66, 26, 0.25);
+  color: var(--text-primary);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-deep);
+  border-left: 1px solid var(--border);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-warm);
+  border: 2px solid var(--bg-deep);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--brasa);
+}
+
+/* Sticky nav */
+.nav-bar {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(8px);
+  background: rgba(241, 232, 210, 0.85);
+  border-bottom: 1px solid var(--border-warm);
+}
+
+/* Section borders use tick-style instead of a single line */
+section {
+  position: relative;
+}
+
+/* Override Tailwind's border-t on sections to render as a perforated tick divider */
+section[class*="border-t"] {
+  border-top: none !important;
+}
+
+section[class*="border-t"]::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 5px;
+  background: repeating-linear-gradient(
+    to right,
+    var(--border-warm) 0,
+    var(--border-warm) 5px,
+    transparent 5px,
+    transparent 10px
+  );
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Inline gradient text helpers (used in headings) */
+.gradient-text-warm {
+  color: var(--brasa);
+}

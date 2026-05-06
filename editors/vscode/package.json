@@ -1,0 +1,28 @@
+{
+  "name": "vscode-espeto",
+  "displayName": "Espeto",
+  "description": "Syntax highlighting for the Espeto language",
+  "version": "0.1.0",
+  "publisher": "hisco",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": ["Programming Languages"],
+  "contributes": {
+    "languages": [
+      {
+        "id": "espeto",
+        "aliases": ["Espeto", "espeto"],
+        "extensions": [".esp"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "espeto",
+        "scopeName": "source.espeto",
+        "path": "./syntaxes/espeto.tmLanguage.json"
+      }
+    ]
+  }
+}

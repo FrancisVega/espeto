@@ -1,0 +1,2 @@
+Disponibles: [espada, poción]
+Precio total: 120
