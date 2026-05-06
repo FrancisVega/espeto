@@ -46,6 +46,22 @@ describe("parseCmdArgv: positional args", () => {
 		const r = parseCmdArgv(cmd, []);
 		expect(r).toEqual({ kind: "values", provided: new Map() });
 	});
+
+	it("accepts negative int as positional", () => {
+		const cmd = cmdFrom(`cmd c do\n  arg n: int\nend`);
+		const r = parseCmdArgv(cmd, ["-1"]);
+		expect(r).toMatchObject({
+			provided: new Map([["n", -1n]]),
+		});
+	});
+
+	it("accepts negative float as positional", () => {
+		const cmd = cmdFrom(`cmd c do\n  arg n: float\nend`);
+		const r = parseCmdArgv(cmd, ["-1.5"]);
+		expect(r).toMatchObject({
+			provided: new Map([["n", -1.5]]),
+		});
+	});
 });
 
 describe("parseCmdArgv: flags", () => {

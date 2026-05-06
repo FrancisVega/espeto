@@ -81,6 +81,11 @@ export function parseCmdArgv(cmd: Cmd, argv: string[]): ParseArgvResult {
 		}
 		if (tok.startsWith("-") && tok.length === 2 && tok !== "--") {
 			const ch = tok.slice(1);
+			if (ch >= "0" && ch <= "9") {
+				positional.push(tok);
+				i++;
+				continue;
+			}
 			const decl = flagByShort.get(ch);
 			if (!decl) {
 				throw new CliUsageError(`unknown flag: -${ch}`);
