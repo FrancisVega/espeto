@@ -239,7 +239,8 @@ espeto-language/
 │   ├── env.ts          # entornos / scoping
 │   ├── errors.ts       # EspetoError con source span
 │   ├── repl.ts         # REPL basado en readline
-│   ├── cli.ts          # bin: `espeto run|repl|...`
+│   ├── cli.ts          # bin: `espeto run|build|repl|...`
+│   ├── build.ts        # `espeto build`: empaqueta .esp en binario via Bun
 │   └── stdlib/
 │       ├── index.ts    # prelude (auto-load)
 │       └── io.ts, strings.ts, lists.ts, maps.ts, numbers.ts, json.ts
@@ -261,6 +262,34 @@ Por el espeto de sardinas malagueño. La brocheta donde se asan a la brasa. La m
 ## Cómo arrancar
 
 Pendiente — disponible cuando se complete el hito 0. La instalación será un `npm install -g espeto-lang` y un binario `espeto` con subcomandos `run` y `repl`.
+
+---
+
+## Distribuir como binario
+
+Un programa `.esp` se puede empaquetar en un ejecutable standalone que **no requiere Node ni espeto en la máquina destino**:
+
+```sh
+espeto build hola.esp -o hola
+./hola Mundo --loud
+# HOLA, MUNDO!
+```
+
+Resuelve recursivamente todos los `import "./..."`, así que un programa multi-fichero se empaqueta entero en un solo binario.
+
+### Cross-compilar
+
+```sh
+espeto build hola.esp -o hola --target linux-arm64
+```
+
+Targets soportados: `darwin-arm64`, `darwin-x64`, `linux-x64`, `linux-arm64`, `windows-x64`. Default: la plataforma actual.
+
+### Requisitos y caveats
+
+- Necesita [Bun](https://bun.sh) instalado en la máquina donde haces el build (no en la destino). `espeto build` lo invoca por debajo.
+- **No es un compilador AOT**: el binario embebe el intérprete + tu fuente `.esp` y la evalúa en runtime. Funcionalmente es una distribución autocontenida, no código nativo.
+- Tamaño típico: ~55-90 MB por binario (Bun runtime embebido).
 
 ---
 

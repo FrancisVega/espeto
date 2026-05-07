@@ -17,7 +17,8 @@
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"typecheck": "tsc --noEmit",
-		"build": "esbuild src/cli.ts --bundle --platform=node --target=node20 --format=esm --outfile=dist/cli.js --banner:js='#!/usr/bin/env node' && chmod +x dist/cli.js",
+		"build:manifest": "tsx scripts/build-manifest.ts",
+		"build": "pnpm build:manifest && esbuild src/cli.ts --bundle --platform=node --target=node20 --format=esm --outfile=dist/cli.js --banner:js='#!/usr/bin/env node' && chmod +x dist/cli.js && esbuild src/run.ts --bundle --platform=node --target=node20 --format=esm --outfile=dist/runtime.js && esbuild src/lsp/server.ts --bundle --platform=node --target=node20 --format=esm --outfile=dist/lsp.js --banner:js='#!/usr/bin/env node' --packages=external && chmod +x dist/lsp.js",
 		"prepublishOnly": "pnpm build && pnpm test",
 		"espeto": "tsx src/cli.ts"
 	},
@@ -27,6 +28,8 @@
 		"esbuild": "^0.28.0",
 		"tsx": "^4.21.0",
 		"typescript": "^6.0.3",
-		"vitest": "^4.1.5"
+		"vitest": "^4.1.5",
+		"vscode-languageserver": "^9.0.1",
+		"vscode-languageserver-textdocument": "^1.0.12"
 	}
 }

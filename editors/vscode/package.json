@@ -1,19 +1,36 @@
 {
   "name": "vscode-espeto",
   "displayName": "Espeto",
-  "description": "Syntax highlighting for the Espeto language",
+  "description": "Language support for Espeto: syntax highlighting, hover docs, go-to-definition.",
   "version": "0.1.0",
   "publisher": "hisco",
   "engines": {
     "vscode": "^1.75.0"
   },
-  "categories": ["Programming Languages"],
+  "categories": [
+    "Programming Languages"
+  ],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onLanguage:espeto"
+  ],
+  "scripts": {
+    "build:server": "cd ../.. && pnpm build:manifest && esbuild src/lsp/server.ts --bundle --platform=node --target=node18 --format=cjs --outfile=editors/vscode/dist/lsp.js",
+    "build:client": "esbuild src/extension.ts --bundle --platform=node --target=node18 --format=cjs --outfile=dist/extension.js --external:vscode",
+    "build": "pnpm build:server && pnpm build:client",
+    "typecheck": "tsc --noEmit"
+  },
   "contributes": {
     "languages": [
       {
         "id": "espeto",
-        "aliases": ["Espeto", "espeto"],
-        "extensions": [".esp"],
+        "aliases": [
+          "Espeto",
+          "espeto"
+        ],
+        "extensions": [
+          ".esp"
+        ],
         "configuration": "./language-configuration.json"
       }
     ],
@@ -24,5 +41,14 @@
         "path": "./syntaxes/espeto.tmLanguage.json"
       }
     ]
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "@types/vscode": "^1.118.0",
+    "esbuild": "^0.28.0",
+    "typescript": "^6.0.3"
   }
 }
