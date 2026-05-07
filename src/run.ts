@@ -4,7 +4,12 @@ import { CliUsageError } from "./cmd";
 import { Env } from "./env";
 import { EspetoError, formatError } from "./errors";
 import { CmdRuntimeError, evaluate } from "./evaluator";
-import { defaultResolver, ModuleLoader, type Resolver } from "./imports";
+import {
+	defaultResolver,
+	defineSourceBindings,
+	ModuleLoader,
+	type Resolver,
+} from "./imports";
 import { lex } from "./lexer";
 import { parse } from "./parser";
 import { loadPrelude } from "./stdlib";
@@ -29,6 +34,7 @@ export function run(
 
 	const resolver = opts.resolver ?? defaultResolver;
 	const entryAbsPath = opts.entryAbsPath ?? resolvePath(file);
+	defineSourceBindings(userEnv, entryAbsPath);
 	const loader = new ModuleLoader(preludeEnv, resolver);
 	loader.loadInto(module, userEnv, entryAbsPath, source);
 

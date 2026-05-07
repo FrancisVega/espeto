@@ -563,3 +563,49 @@ describe("imports: collisions (D6)", () => {
 		expect(out).toBe("A:hi\nB:hi\n");
 	});
 });
+
+describe("imports: __file__ / __dir__ are definition-site (closure)", () => {
+	it("imported fn returning __dir__ resolves to lib's dir, not entry's", () => {
+		const out = runWith(
+			{
+				"main.esp": `import "./sub/lib" only [where]\nprint(where())\n`,
+				"sub/lib.esp": `def where() = __dir__\n`,
+			},
+			"main.esp",
+		);
+		expect(out).toBe("/sub\n");
+	});
+
+	it("imported fn returning __file__ resolves to lib's path", () => {
+		const out = runWith(
+			{
+				"main.esp": `import "./sub/lib" only [which]\nprint(which())\n`,
+				"sub/lib.esp": `def which() = __file__\n`,
+			},
+			"main.esp",
+		);
+		expect(out).toBe("/sub/lib.esp\n");
+	});
+
+	it("imported fn composing path with interpolation uses lib's dir", () => {
+		const out = runWith(
+			{
+				"main.esp": `import "./sub/lib" only [data_path]\nprint(data_path("users.json"))\n`,
+				"sub/lib.esp": `def data_path(name) = "#{__dir__}/#{name}"\n`,
+			},
+			"main.esp",
+		);
+		expect(out).toBe("/sub/users.json\n");
+	});
+
+	it("entry's own __dir__ is unaffected by imports", () => {
+		const out = runWith(
+			{
+				"main.esp": `import "./sub/lib" only [where]\nprint(__dir__)\nprint(where())\n`,
+				"sub/lib.esp": `def where() = __dir__\n`,
+			},
+			"main.esp",
+		);
+		expect(out).toBe("/\n/sub\n");
+	});
+});

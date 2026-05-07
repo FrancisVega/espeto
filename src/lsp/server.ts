@@ -90,6 +90,21 @@ function renderResolutionHover(res: Resolution): string {
 			if (!fn) return `\`${res.name}\` (builtin)`;
 			return renderBuiltinHover(fn);
 		}
+		case "source_binding": {
+			const doc =
+				res.name === "__file__"
+					? "Absolute path of the current source file. Per-module binding; resolves to the file where the code text is defined (definition-site, closure-captured)."
+					: "Absolute directory of the current source file. Per-module binding; resolves to the directory where the code text is defined (definition-site, closure-captured).";
+			return [
+				"```espeto",
+				`${res.name}: str`,
+				"```",
+				"",
+				doc,
+				"",
+				"*magic identifier; not bound in REPL*",
+			].join("\n");
+		}
 		case "fn": {
 			const params = res.node.params.join(", ");
 			const exported = res.node.exported ? "export " : "";
@@ -169,6 +184,8 @@ function resolutionLocation(res: Resolution): Location | null {
 				},
 			};
 		}
+		case "source_binding":
+			return null;
 		case "fn":
 			return spanLocation(res.node.span);
 		case "arg":

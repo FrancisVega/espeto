@@ -30,6 +30,7 @@ import type { Span } from "../errors";
 
 export type Resolution =
 	| { kind: "builtin"; name: string }
+	| { kind: "source_binding"; name: "__file__" | "__dir__" }
 	| { kind: "fn"; node: FnDef }
 	| { kind: "arg"; node: ArgDecl }
 	| { kind: "flag"; node: FlagDecl }
@@ -190,6 +191,9 @@ export function resolveIdent(
 			for (const b of frame) {
 				if (b.name === name) return b.resolution;
 			}
+		}
+		if (name === "__file__" || name === "__dir__") {
+			return { kind: "source_binding", name };
 		}
 		if (builtinNames.has(name)) return { kind: "builtin", name };
 		return null;

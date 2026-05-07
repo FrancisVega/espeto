@@ -192,6 +192,23 @@ El lenguaje está diseñado para que un LLM lo escriba bien sin equivocarse. Eso
 
 ---
 
+## Identificadores mágicos: `__file__` / `__dir__`
+
+Cada módulo `.esp` tiene dos bindings auto-inyectados con el path absoluto del fichero fuente:
+
+```esp
+cmd active_users do
+  users = parse_json(read("#{__dir__}/users.json"))
+  users |> filter(fn(u) => get(u, "active")) |> each(print)
+end
+```
+
+- **Definition-site / closure**: si `lib.esp` define `def data_path() = "#{__dir__}/data"`, al importar y llamar desde otro módulo, `__dir__` resuelve al dir de `lib.esp` (donde vive el texto), no al del importador.
+- **REPL**: no están bindeados (no hay archivo asociado). Acceso → `undefined: __file__`.
+- **Built binaries (`espeto build`)**: los paths preservan los valores de build-time. Para shippear data junto al binario, compón en runtime con `process.cwd()`-relative o variables de entorno.
+
+---
+
 ## Roadmap de implementación
 
 Implementación por hitos. Cada hito = "primer programa que corre end-to-end".

@@ -1,5 +1,5 @@
 import { execFileSync, spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -103,5 +103,42 @@ end
 		expect(helpOut).toContain("Usage: todo <command>");
 		expect(helpOut).toContain("add");
 		expect(helpOut).toContain("remove");
+	});
+
+	it("preserves build-time __file__ and __dir__ in compiled binary", () => {
+		const src = join(tempDir, "show.esp");
+		const out = join(tempDir, "show");
+		writeFileSync(
+			src,
+			`cmd run do
+  print(__file__)
+  print(__dir__)
+end
+`,
+		);
+		build({ entryFile: src, outFile: out });
+		const result = execFileSync(out, [], { encoding: "utf-8" });
+		expect(result).toBe(`${src}\n${tempDir}\n`);
+	});
+
+	it("__dir__ in imported module resolves to imported module's build-time dir", () => {
+		const subDir = join(tempDir, "subdir");
+		mkdirSync(subDir, { recursive: true });
+		const lib = join(subDir, "lib.esp");
+		const src = join(tempDir, "entry.esp");
+		const out = join(tempDir, "entry");
+		writeFileSync(lib, "def lib_dir() = __dir__\n");
+		writeFileSync(
+			src,
+			`import "./subdir/lib" only [lib_dir]
+cmd run do
+  print(__dir__)
+  print(lib_dir())
+end
+`,
+		);
+		build({ entryFile: src, outFile: out });
+		const result = execFileSync(out, [], { encoding: "utf-8" });
+		expect(result).toBe(`${tempDir}\n${subDir}\n`);
 	});
 });

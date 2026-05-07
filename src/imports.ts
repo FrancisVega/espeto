@@ -20,6 +20,11 @@ export const defaultResolver: Resolver = (importerAbsPath, importPath) => {
 	return { absPath, source };
 };
 
+export function defineSourceBindings(env: Env, absPath: string): void {
+	env.define("__file__", absPath);
+	env.define("__dir__", dirname(absPath));
+}
+
 export type LoadedModule = {
 	absPath: string;
 	source: string;
@@ -104,6 +109,7 @@ export class ModuleLoader {
 		this.loading.push(resolved.absPath);
 		try {
 			const env = this.preludeEnv.extend();
+			defineSourceBindings(env, resolved.absPath);
 			this.loadInto(module, env, resolved.absPath, resolved.source);
 			evaluate(module, env, resolved.source, null);
 

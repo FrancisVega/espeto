@@ -167,3 +167,47 @@ end
 		}
 	});
 });
+
+describe("resolveIdent — source bindings", () => {
+	it("resolves __file__ as source_binding", () => {
+		const src = `cmd run do
+  print(__file__)
+end
+`;
+		const found = findAt(src, 2, 10);
+		expect(found?.ident.name).toBe("__file__");
+		expect(found?.resolution).toEqual({
+			kind: "source_binding",
+			name: "__file__",
+		});
+	});
+
+	it("resolves __dir__ as source_binding", () => {
+		const src = `cmd run do
+  print(__dir__)
+end
+`;
+		const found = findAt(src, 2, 10);
+		expect(found?.ident.name).toBe("__dir__");
+		expect(found?.resolution).toEqual({
+			kind: "source_binding",
+			name: "__dir__",
+		});
+	});
+
+	it("source_binding takes precedence over user-supplied builtin set", () => {
+		const src = `__file__\n`;
+		const program = setup(src);
+		const ident = findIdentAt(program, 1, 1);
+		expect(ident).not.toBeNull();
+		const resolution = resolveIdent(
+			program,
+			ident!,
+			new Set<string>(["__file__"]),
+		);
+		expect(resolution).toEqual({
+			kind: "source_binding",
+			name: "__file__",
+		});
+	});
+});

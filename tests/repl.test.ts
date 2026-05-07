@@ -188,6 +188,24 @@ describe("replEval: error reporting", () => {
 		const r = replEval(freshEnv(), "upcase()");
 		expect(r.kind).toBe("error");
 	});
+
+	it("__file__ is unbound in REPL (no source file context)", () => {
+		const r = replEval(freshEnv(), "__file__");
+		expect(r.kind).toBe("error");
+		if (r.kind === "error") {
+			expect(r.error).toBeInstanceOf(EspetoError);
+			expect((r.error as EspetoError).message).toBe("undefined: __file__");
+		}
+	});
+
+	it("__dir__ is unbound in REPL (no source file context)", () => {
+		const r = replEval(freshEnv(), "__dir__");
+		expect(r.kind).toBe("error");
+		if (r.kind === "error") {
+			expect(r.error).toBeInstanceOf(EspetoError);
+			expect((r.error as EspetoError).message).toBe("undefined: __dir__");
+		}
+	});
 });
 
 describe("replEval: imports forbidden (D7)", () => {

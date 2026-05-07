@@ -1,0 +1,7 @@
+cmd active_users do
+  users = parse_json(read("#{__dir__}/users.json"))
+  users
+    |> filter(fn(u) => get(u, "active"))
+    |> map(fn(u) => "#{get(u, "name")} (#{get(u, "age")})")
+    |> each(print)
+end
