@@ -182,6 +182,20 @@ El lenguaje está diseñado para que un LLM lo escriba bien sin equivocarse. Eso
 - **Sintaxis predecible**: siempre `def`/`defp`, siempre `do/end`, siempre `fn x => expr`.
 - **Errores con posición**: cada error trae fichero, línea, columna y un caret apuntando.
 
+#### Spec en un comando: `espeto docs`
+
+`espeto docs` imprime la referencia completa del lenguaje en markdown a stdout (sintaxis, operadores, control flow, todos los builtins con signature + ejemplo). Pensado para que un LLM aprenda Espeto sin leer el repo.
+
+```sh
+# Pegarlo a un chat
+espeto docs | pbcopy
+
+# Snapshot versionado para tu proyecto
+espeto docs > spec.md
+```
+
+**Patrón en tu proyecto Espeto:** añade un `CLAUDE.md` o `AGENTS.md` que apunte a `spec.md`, y refrescalo con `espeto docs > spec.md` cuando subas de versión. Así tu LLM tiene la referencia del lenguaje siempre a mano y no improvisa sintaxis.
+
 ### 3. CLIs como ciudadanos de primera
 
 `cmd` es un keyword nativo, no una librería. Un fichero `.esp` con un `cmd` **es** un CLI ejecutable, con `--help` auto-generado. Sin argparse, sin boilerplate, sin import de librerías de terceros para algo que es el caso de uso #1 del lenguaje.
