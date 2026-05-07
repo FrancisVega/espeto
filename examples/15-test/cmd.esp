@@ -1,4 +1,4 @@
-def saludar(name) = "Hola, #{name}!"
+import "./saludar" only [saludar]
 
 cmd hola do
   desc "ejemplo de cmd con def reusable (testeado en saludar_test.esp)"
