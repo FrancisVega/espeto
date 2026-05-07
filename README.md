@@ -368,10 +368,16 @@ espeto --help / --version
 
 ### LSP
 
-`espeto lsp` arranca un servidor LSP por stdio. Capacidades v0.1:
+`espeto lsp` arranca un servidor LSP por stdio. Capacidades:
 
 - **Hover**: docs Markdown sobre builtins (signature + summary + ejemplos), funciones locales, args, flags, locales, params de lambda/fn, `__file__`/`__dir__`.
 - **Go to definition**: builtins (a un stub generado), funciones locales, args, flags, locales.
+- **Diagnostics en vivo**: errores de lex/parse publicados en cada cambio de documento.
+- **Completion** scope-aware: keywords + builtins (con docs) + locales del cmd/fn actual (args, flags, params, lets).
+- **Find references** y **Rename** simbólico: lets, fns top-level, args, flags, params de fn/lambda y rescue err.
+- **Document symbols** (Outline) y **Folding ranges** para `cmd`/`fn`/`program`/`test`/`try` y lambdas multilínea.
+- **Signature help** al teclear `(` o `,` para builtins y fns user.
+- **Semantic tokens** (`function`/`parameter`/`variable` con modifier `defaultLibrary`) para coloreado contextual.
 
 Las docs de stdlib se extraen del JSDoc en `src/stdlib/*.ts` vía `pnpm build:manifest` y se compilan en `src/lsp/generated.ts`.
 
