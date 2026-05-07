@@ -109,6 +109,9 @@ export function findIdentAt(
 				for (const s of expr.tryBody) visitStmt(s);
 				for (const s of expr.rescueBody) visitStmt(s);
 				return;
+			case "assert":
+				visitExpr(expr.expr);
+				return;
 		}
 	};
 
@@ -140,6 +143,9 @@ export function findIdentAt(
 					if (f.default) visitExpr(f.default);
 				}
 				for (const cmd of item.cmds) visitCmd(cmd);
+				break;
+			case "test":
+				for (const s of item.body) visitStmt(s);
 				break;
 			case "assign":
 				visitExpr(item.value);
@@ -301,6 +307,9 @@ export function resolveIdent(
 				stack.pop();
 				return;
 			}
+			case "assert":
+				visitExpr(expr.expr);
+				return;
 		}
 	};
 
@@ -386,6 +395,16 @@ export function resolveIdent(
 					for (const cmd of item.cmds) {
 						if (stop) return;
 						visitCmdScope(cmd);
+					}
+					stack.pop();
+					break;
+				}
+				case "test": {
+					const testFrame: Binding[] = [];
+					stack.push(testFrame);
+					for (const s of item.body) {
+						if (stop) return;
+						visitStmt(s, testFrame);
 					}
 					stack.pop();
 					break;

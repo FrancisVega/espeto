@@ -1,5 +1,6 @@
 import type {
 	ArgDecl,
+	AssertExpr,
 	AssignStmt,
 	BinaryOpKind,
 	Call,
@@ -25,6 +26,7 @@ import type {
 	ProgramDecl,
 	Stmt,
 	StringExpr,
+	TestBlock,
 	TryExpr,
 } from "./ast";
 import { EspetoError } from "./errors";
@@ -50,6 +52,8 @@ class Parser {
 		const items: Item[] = [];
 		let cmdSeen = false;
 		let programSeen = false;
+		let testSeen = false;
+		const testNames = new Set<string>();
 		let nonImportSeen = false;
 		while (!this.match("eof")) {
 			const item = this.parseTopLevelItem();
@@ -78,6 +82,13 @@ class Parser {
 							this.source,
 						);
 					}
+					if (testSeen) {
+						throw new EspetoError(
+							"'cmd' not allowed alongside 'test' (test files must be pure: no cmd/program)",
+							item.span,
+							this.source,
+						);
+					}
 					cmdSeen = true;
 				}
 				if (item.kind === "program") {
@@ -95,7 +106,32 @@ class Parser {
 							this.source,
 						);
 					}
+					if (testSeen) {
+						throw new EspetoError(
+							"'program' not allowed alongside 'test' (test files must be pure: no cmd/program)",
+							item.span,
+							this.source,
+						);
+					}
 					programSeen = true;
+				}
+				if (item.kind === "test") {
+					if (cmdSeen || programSeen) {
+						throw new EspetoError(
+							"'test' not allowed alongside 'cmd'/'program' (test files must be pure)",
+							item.span,
+							this.source,
+						);
+					}
+					if (testNames.has(item.name)) {
+						throw new EspetoError(
+							`duplicate test name ${JSON.stringify(item.name)}`,
+							item.nameSpan,
+							this.source,
+						);
+					}
+					testNames.add(item.name);
+					testSeen = true;
 				}
 			}
 			items.push(item);
@@ -119,10 +155,56 @@ class Parser {
 		if (this.match("kw_cmd")) {
 			return this.parseCmd();
 		}
+		if (this.match("kw_test")) {
+			return this.parseTestBlock();
+		}
 		if (this.peek().type === "ident" && this.peek(1).type === "equals") {
 			return this.parseAssign();
 		}
 		return this.parseExpr();
+	}
+
+	private parseTestBlock(): TestBlock {
+		const kw = this.advance();
+		const nameTok = this.peek();
+		if (nameTok.type !== "string") {
+			throw new EspetoError(
+				`expected plain string literal for test name, got ${nameTok.type}`,
+				nameTok.span,
+				this.source,
+			);
+		}
+		this.advance();
+		this.expect("kw_do", "'do' to open test block");
+		this.skipNewlines();
+		const body: Stmt[] = [];
+		while (!this.match("kw_end")) {
+			if (this.match("eof")) {
+				throw new EspetoError(
+					"expected 'end' to close test",
+					kw.span,
+					this.source,
+				);
+			}
+			body.push(this.parseStmt());
+			this.expectStmtEnd("kw_end");
+			this.skipNewlines();
+		}
+		this.expect("kw_end", "'end' to close test");
+		if (body.length === 0) {
+			throw new EspetoError(
+				"test block must contain at least one statement",
+				kw.span,
+				this.source,
+			);
+		}
+		return {
+			kind: "test",
+			name: nameTok.value,
+			nameSpan: nameTok.span,
+			body,
+			span: kw.span,
+		};
 	}
 
 	private parseImport(): ImportItem {
@@ -541,7 +623,16 @@ class Parser {
 	}
 
 	private parseExpr(): Expr {
+		if (this.match("kw_assert")) {
+			return this.parseAssertExpr();
+		}
 		return this.parseOr();
+	}
+
+	private parseAssertExpr(): AssertExpr {
+		const kw = this.advance();
+		const expr = this.parseOr();
+		return { kind: "assert", expr, span: kw.span };
 	}
 
 	private parseOr(): Expr {

@@ -16,7 +16,8 @@ export type Expr =
 	| MapExpr
 	| FieldAccess
 	| FieldShorthand
-	| TryExpr;
+	| TryExpr
+	| AssertExpr;
 
 export type BinaryOpKind =
 	| "+"
@@ -105,6 +106,20 @@ export type TryExpr = {
 	errBinding: string;
 	errBindingSpan: Span;
 	rescueBody: Stmt[];
+	span: Span;
+};
+
+export type AssertExpr = {
+	kind: "assert";
+	expr: Expr;
+	span: Span;
+};
+
+export type TestBlock = {
+	kind: "test";
+	name: string;
+	nameSpan: Span;
+	body: Stmt[];
 	span: Span;
 };
 
@@ -232,7 +247,14 @@ export type ImportItem = {
 	span: Span;
 };
 
-export type Item = FnDef | AssignStmt | Cmd | ProgramDecl | Expr | ImportItem;
+export type Item =
+	| FnDef
+	| AssignStmt
+	| Cmd
+	| ProgramDecl
+	| Expr
+	| ImportItem
+	| TestBlock;
 
 export type Module = {
 	kind: "module";

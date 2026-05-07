@@ -24,6 +24,13 @@ export class EspetoError extends Error {
 	}
 }
 
+export class AssertionError extends EspetoError {
+	constructor(message: string, span: Span, source: string) {
+		super(message, span, source);
+		this.name = "AssertionError";
+	}
+}
+
 const MAX_FRAMES = 3;
 
 const RED = "\x1b[31m";

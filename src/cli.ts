@@ -5,7 +5,8 @@ import { fileURLToPath } from "node:url";
 import { build, BuildError, type BuildTarget } from "./build";
 import { startRepl } from "./repl";
 import { runMain } from "./run";
-import { watchAndRun } from "./watch";
+import { runTestsMain } from "./test";
+import { startTestWatcher, watchAndRun } from "./watch";
 
 const VERSION = "0.1.0";
 
@@ -22,6 +23,7 @@ const HELP = `espeto v${VERSION}
 usage:
   espeto run [-w|--watch] <file.esp> [cmd-args...]        run an Espeto program
   espeto build <file.esp> -o <out> [--target T]           bundle into a standalone binary
+  espeto test [-w|--watch] [path]                         run *_test.esp under path (default cwd)
   espeto repl                                             start interactive REPL
   espeto lsp                                              run language server (stdio)
   espeto --help                                           show this help
@@ -51,6 +53,10 @@ async function main(): Promise<number> {
 
 	if (args[0] === "build") {
 		return runBuild(args.slice(1));
+	}
+
+	if (args[0] === "test") {
+		return await runTest(args.slice(1));
 	}
 
 	if (args[0] === "repl") {
@@ -103,6 +109,13 @@ async function runRun(args: string[]): Promise<number> {
 		return 1;
 	}
 
+	if (file.endsWith("_test.esp")) {
+		stderr.write(
+			`error: test files (*_test.esp) must be run with 'espeto test'\n`,
+		);
+		return 1;
+	}
+
 	if (watch) {
 		if (!existsSync(file)) {
 			stderr.write(`error: file not found: ${file}\n`);
@@ -119,6 +132,32 @@ async function runRun(args: string[]): Promise<number> {
 		return 1;
 	}
 	return runMain(source, file, { cmdArgv });
+}
+
+async function runTest(args: string[]): Promise<number> {
+	let path: string | undefined;
+	let watch = false;
+	for (let i = 0; i < args.length; i++) {
+		const a = args[i]!;
+		if (a === "--watch" || a === "-w") {
+			watch = true;
+			continue;
+		}
+		if (a.startsWith("-") && a !== "-") {
+			stderr.write(`error: unknown flag: ${a}\n`);
+			return 1;
+		}
+		if (path !== undefined) {
+			stderr.write(`error: unexpected argument: ${a}\n`);
+			return 1;
+		}
+		path = a;
+	}
+	const root = path ?? ".";
+	if (watch) {
+		return startTestWatcher(root);
+	}
+	return runTestsMain(root);
 }
 
 function runBuild(args: string[]): number {
@@ -167,6 +206,12 @@ function runBuild(args: string[]): number {
 	if (!outFile) {
 		stderr.write("error: missing -o <output>\n\n");
 		stderr.write(HELP);
+		return 1;
+	}
+	if (entryFile.endsWith("_test.esp")) {
+		stderr.write(
+			`error: test files (*_test.esp) cannot be built into binaries\n`,
+		);
 		return 1;
 	}
 

@@ -1,4 +1,5 @@
 import type {
+	AssertExpr,
 	BinaryOp,
 	Cmd,
 	Expr,
@@ -25,7 +26,7 @@ import {
 	splitProgramArgv,
 } from "./cmd";
 import type { Env } from "./env";
-import { EspetoError } from "./errors";
+import { AssertionError, EspetoError } from "./errors";
 import { findSimilar } from "./hints";
 import {
 	isCallable,
@@ -86,6 +87,7 @@ export function evaluate(
 		if (item.kind === "cmd") continue;
 		if (item.kind === "program") continue;
 		if (item.kind === "import") continue;
+		if (item.kind === "test") continue;
 		if (item.kind === "assign") {
 			const v = evalExpr(item.value, env, source);
 			env.define(item.name, v);
@@ -267,10 +269,12 @@ function evalExpr(expr: Expr, env: Env, source: string): Value {
 			return evalFieldShorthand(expr, env, source);
 		case "try":
 			return evalTry(expr, env, source);
+		case "assert":
+			return evalAssert(expr, env, source);
 	}
 }
 
-function evalStmts(stmts: Stmt[], env: Env, source: string): Value {
+export function evalStmts(stmts: Stmt[], env: Env, source: string): Value {
 	let last: Value = null;
 	for (const stmt of stmts) {
 		if (stmt.kind === "assign") {
@@ -288,6 +292,7 @@ function evalTry(expr: TryExpr, env: Env, source: string): Value {
 		return evalStmts(expr.tryBody, env.extend(), source);
 	} catch (e) {
 		if (e instanceof CliUsageError) throw e;
+		if (e instanceof AssertionError) throw e;
 		const msg =
 			e instanceof EspetoError
 				? e.message
@@ -298,6 +303,86 @@ function evalTry(expr: TryExpr, env: Env, source: string): Value {
 		rescueEnv.define(expr.errBinding, msg);
 		return evalStmts(expr.rescueBody, rescueEnv, source);
 	}
+}
+
+function evalAssert(expr: AssertExpr, env: Env, source: string): Value {
+	const inner = expr.expr;
+	if (
+		inner.kind === "binop" &&
+		(inner.op === "==" ||
+			inner.op === "<" ||
+			inner.op === "<=" ||
+			inner.op === ">" ||
+			inner.op === ">=")
+	) {
+		const lhs = evalExpr(inner.lhs, env, source);
+		const rhs = evalExpr(inner.rhs, env, source);
+		const pass = compareValues(inner.op, lhs, rhs, inner.span, source);
+		if (pass) return null;
+		const lhsStr = formatValueForAssert(lhs);
+		const rhsStr = formatValueForAssert(rhs);
+		const msg =
+			inner.op === "=="
+				? `assertion failed\n   expected: ${rhsStr}\n        got: ${lhsStr}`
+				: `assertion failed: expected ${lhsStr} ${inner.op} ${rhsStr}`;
+		throw new AssertionError(msg, inner.span, source);
+	}
+
+	const result = evalExpr(inner, env, source);
+	if (typeof result !== "boolean") {
+		throw new EspetoError(
+			`assert requires bool, got ${typeName(result)}`,
+			inner.span,
+			source,
+		);
+	}
+	if (!result) {
+		throw new AssertionError("assertion failed", inner.span, source);
+	}
+	return null;
+}
+
+function compareValues(
+	op: "==" | "<" | "<=" | ">" | ">=",
+	lhs: Value,
+	rhs: Value,
+	span: import("./errors").Span,
+	source: string,
+): boolean {
+	if (op === "==") {
+		return equalValues(lhs, rhs, span, source);
+	}
+	if (typeof lhs === "bigint" && typeof rhs === "bigint") {
+		return compareOp(op, lhs, rhs);
+	}
+	if (typeof lhs === "number" && typeof rhs === "number") {
+		return compareOp(op, lhs, rhs);
+	}
+	if (typeof lhs === "string" && typeof rhs === "string") {
+		return compareOp(op, lhs, rhs);
+	}
+	throw new EspetoError(
+		`'${op}' requires same numeric type or strings, got ${typeName(lhs)} and ${typeName(rhs)}`,
+		span,
+		source,
+	);
+}
+
+function formatValueForAssert(v: Value): string {
+	if (v === null) return "nil";
+	if (typeof v === "string") return JSON.stringify(v);
+	if (typeof v === "bigint") return v.toString();
+	if (typeof v === "number") return floatToString(v);
+	if (typeof v === "boolean") return v ? "true" : "false";
+	if (isList(v)) return `[${v.map(formatValueForAssert).join(", ")}]`;
+	if (isMap(v)) {
+		const parts = Object.keys(v.entries).map(
+			(k) => `${k}: ${formatValueForAssert(v.entries[k]!)}`,
+		);
+		return `{${parts.join(", ")}}`;
+	}
+	if (isBuiltin(v) || isUserFn(v)) return `#fn<${v.name}>`;
+	return "?";
 }
 
 function evalMap(expr: MapExpr, env: Env, source: string): MapValue {
@@ -393,8 +478,14 @@ function evalBinaryOp(expr: BinaryOp, env: Env, source: string): Value {
 	const lhs = evalExpr(expr.lhs, env, source);
 	const rhs = evalExpr(expr.rhs, env, source);
 
-	if (expr.op === "==") {
-		return equalValues(lhs, rhs, expr.span, source);
+	if (
+		expr.op === "==" ||
+		expr.op === "<" ||
+		expr.op === "<=" ||
+		expr.op === ">" ||
+		expr.op === ">="
+	) {
+		return compareValues(expr.op, lhs, rhs, expr.span, source);
 	}
 
 	if (
@@ -447,17 +538,8 @@ function evalBinaryOp(expr: BinaryOp, env: Env, source: string): Value {
 		}
 	}
 
-	if (typeof lhs === "bigint" && typeof rhs === "bigint") {
-		return compareOp(expr.op, lhs, rhs);
-	}
-	if (typeof lhs === "number" && typeof rhs === "number") {
-		return compareOp(expr.op, lhs, rhs);
-	}
-	if (typeof lhs === "string" && typeof rhs === "string") {
-		return compareOp(expr.op, lhs, rhs);
-	}
 	throw new EspetoError(
-		`'${expr.op}' requires same numeric type or strings, got ${typeName(lhs)} and ${typeName(rhs)}`,
+		`unsupported binary op: ${expr.op}`,
 		expr.span,
 		source,
 	);
@@ -573,7 +655,8 @@ function invoke(
 				`${callee.name}: expected ${callee.arity} args, got ${args.length}`,
 			);
 		}
-		return callee.call(args, inv);
+		const ctx = callSpan === null ? null : { span: callSpan, source };
+		return callee.call(args, inv, ctx);
 	}
 	if (args.length !== callee.params.length) {
 		throw new Error(

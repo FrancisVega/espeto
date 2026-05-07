@@ -56,7 +56,9 @@ export type TokenType =
 	| "kw_not"
 	| "kw_fn"
 	| "kw_try"
-	| "kw_rescue";
+	| "kw_rescue"
+	| "kw_test"
+	| "kw_assert";
 
 export type Token = {
 	type: TokenType;
@@ -542,6 +544,8 @@ const KEYWORDS: Record<string, TokenType> = {
 	fn: "kw_fn",
 	try: "kw_try",
 	rescue: "kw_rescue",
+	test: "kw_test",
+	assert: "kw_assert",
 };
 
 function isIdentStart(ch: string): boolean {

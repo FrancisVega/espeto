@@ -1,0 +1,26 @@
+# Tests para `saludar`. Corre con: espeto test examples/15-test/
+
+def saludar(name) = "Hola, #{name}!"
+
+test "saluda con interpolación" do
+  assert saludar("mundo") == "Hola, mundo!"
+end
+
+test "respeta el nombre exacto" do
+  assert saludar("Sara") == "Hola, Sara!"
+end
+
+test "longitud esperada" do
+  result = saludar("x")
+  assert length(result) == 8
+end
+
+test "raise con assert_raise" do
+  assert_raise(fn() => raise("boom"), "boom")
+end
+
+test "comparaciones numéricas" do
+  assert 1 + 1 == 2
+  assert 5 > 3
+  assert 10 >= 10
+end

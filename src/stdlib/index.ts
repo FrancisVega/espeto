@@ -1,4 +1,5 @@
 import type { Env } from "../env";
+import { assert_raise } from "./assert";
 import { raise, try_to_float, try_to_int } from "./errors";
 import {
 	env_or,
@@ -147,4 +148,5 @@ export function loadPrelude(env: Env): void {
 	env.define("raise", raise);
 	env.define("try_to_int", try_to_int);
 	env.define("try_to_float", try_to_float);
+	env.define("assert_raise", assert_raise);
 }

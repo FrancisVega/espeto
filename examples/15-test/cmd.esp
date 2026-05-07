@@ -1,0 +1,7 @@
+def saludar(name) = "Hola, #{name}!"
+
+cmd hola do
+  desc "ejemplo de cmd con def reusable (testeado en saludar_test.esp)"
+  arg name: str
+  saludar(name) |> print
+end

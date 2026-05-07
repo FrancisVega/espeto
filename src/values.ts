@@ -1,5 +1,6 @@
 import type { Stmt } from "./ast";
 import type { Env } from "./env";
+import type { Span } from "./errors";
 
 export type Value =
 	| string
@@ -19,11 +20,16 @@ export type MapValue = {
 
 export type Invoke = (callee: BuiltinFn | UserFn, args: Value[]) => Value;
 
+export type BuiltinCtx = {
+	span: Span;
+	source: string;
+};
+
 export type BuiltinFn = {
 	kind: "builtin";
 	name: string;
 	arity: number;
-	call: (args: Value[], invoke: Invoke) => Value;
+	call: (args: Value[], invoke: Invoke, ctx: BuiltinCtx | null) => Value;
 };
 
 export type UserFn = {
