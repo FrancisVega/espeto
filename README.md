@@ -70,6 +70,19 @@ espeto run hola.esp -- --help
 # (auto-generado a partir de las declaraciones)
 ```
 
+### Modo watch
+
+Re-ejecuta el programa cada vez que cambia el fichero o cualquiera de sus imports relativos:
+
+```sh
+espeto run --watch hola.esp -- --name Mundo
+# ▸ ran in 2ms — watching 1 file
+# (editas hola.esp y guarda)
+# ▸ ran in 1ms — watching 1 file
+```
+
+También funciona como `-w`. Sigue corriendo hasta `Ctrl-C`. Los errores de parseo o runtime no matan el watcher; el siguiente cambio relanza.
+
 ### CLI realista con JSON, filtros y manejo de errores
 
 `users.esp`:
