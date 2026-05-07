@@ -96,3 +96,36 @@ describe("stdlib: id", () => {
 		expect(out).toBe("HI\n");
 	});
 });
+
+describe("pipe placeholder '_'", () => {
+	it("substitutes _ at the requested position", () => {
+		const out = captureStdout(() =>
+			run(`6 |> div(30, _) |> print`, "x.esp"),
+		);
+		expect(out).toBe("5\n");
+	});
+
+	it("falls back to first-arg injection when no _ is present", () => {
+		const out = captureStdout(() =>
+			run(`"hello" |> replace("l", "L") |> print`, "x.esp"),
+		);
+		expect(out).toBe("heLLo\n");
+	});
+
+	it("works when _ is the middle arg of a 3-arg call", () => {
+		const out = captureStdout(() =>
+			run(`"l" |> replace("hello", _, "L") |> print`, "x.esp"),
+		);
+		expect(out).toBe("heLLo\n");
+	});
+
+	it("errors when _ appears more than once", () => {
+		expect(() => run(`6 |> div(_, _)`, "x.esp")).toThrow(
+			/pipe placeholder '_' may appear at most once per call/,
+		);
+	});
+
+	it("treats _ outside a piped call as a normal undefined ident", () => {
+		expect(() => run(`div(30, _)`, "x.esp")).toThrow(/undefined: _/);
+	});
+});

@@ -7,6 +7,16 @@ import {
 	typeName,
 } from "../values";
 
+/**
+ * Number of elements in a list, characters in a string, or entries in a map.
+ *
+ * @param {str|list|map} v - the collection
+ * @returns {int} number of items
+ *
+ * @example
+ * length([1, 2, 3]) // => 3
+ * length("hi")      // => 2
+ */
 export const length: BuiltinFn = {
 	kind: "builtin",
 	name: "length",
@@ -20,6 +30,15 @@ export const length: BuiltinFn = {
 	},
 };
 
+/**
+ * First element of a list. Errors if the list is empty.
+ *
+ * @param {list} list - the list
+ * @returns {any} the first element
+ *
+ * @example
+ * head([1, 2, 3]) // => 1
+ */
 export const head: BuiltinFn = {
 	kind: "builtin",
 	name: "head",
@@ -36,6 +55,15 @@ export const head: BuiltinFn = {
 	},
 };
 
+/**
+ * All elements of a list except the first. Errors if the list is empty.
+ *
+ * @param {list} list - the list
+ * @returns {list} list without its first element
+ *
+ * @example
+ * tail([1, 2, 3]) // => [2, 3]
+ */
 export const tail: BuiltinFn = {
 	kind: "builtin",
 	name: "tail",
@@ -52,6 +80,16 @@ export const tail: BuiltinFn = {
 	},
 };
 
+/**
+ * Apply a function to each element, producing a new list.
+ *
+ * @param {list} list - source list
+ * @param {fn} fn - function called with `(item)` per element
+ * @returns {list} list of results
+ *
+ * @example
+ * map([1, 2, 3], fn(x) -> x * 2 end) // => [2, 4, 6]
+ */
 export const map: BuiltinFn = {
 	kind: "builtin",
 	name: "map",
@@ -69,6 +107,17 @@ export const map: BuiltinFn = {
 	},
 };
 
+/**
+ * Keep only elements for which the predicate returns true.
+ * Predicate must return a bool.
+ *
+ * @param {list} list - source list
+ * @param {fn} fn - predicate `(item) -> bool`
+ * @returns {list} list of items where the predicate held
+ *
+ * @example
+ * filter([1, 2, 3, 4], fn(x) -> mod(x, 2) == 0 end) // => [2, 4]
+ */
 export const filter: BuiltinFn = {
 	kind: "builtin",
 	name: "filter",
@@ -96,6 +145,17 @@ export const filter: BuiltinFn = {
 	},
 };
 
+/**
+ * Fold a list into a single accumulated value.
+ *
+ * @param {list} list - source list
+ * @param {any} init - initial accumulator
+ * @param {fn} fn - reducer `(acc, item) -> acc`
+ * @returns {any} the final accumulator
+ *
+ * @example
+ * reduce([1, 2, 3], 0, fn(acc, x) -> acc + x end) // => 6
+ */
 export const reduce: BuiltinFn = {
 	kind: "builtin",
 	name: "reduce",
@@ -117,6 +177,16 @@ export const reduce: BuiltinFn = {
 	},
 };
 
+/**
+ * Call a function for each element for its side effects. Returns nil.
+ *
+ * @param {list} list - source list
+ * @param {fn} fn - function called with `(item)` per element
+ * @returns {nil} always nil
+ *
+ * @example
+ * each(["a", "b"], print) // prints "a" then "b", returns nil
+ */
 export const each: BuiltinFn = {
 	kind: "builtin",
 	name: "each",
@@ -151,6 +221,16 @@ function expectInt(name: string, label: string, v: Value): bigint {
 	return v;
 }
 
+/**
+ * Concatenate two lists into one.
+ *
+ * @param {list} a - first list
+ * @param {list} b - second list
+ * @returns {list} all items of `a` followed by all items of `b`
+ *
+ * @example
+ * concat([1, 2], [3, 4]) // => [1, 2, 3, 4]
+ */
 export const concat: BuiltinFn = {
 	kind: "builtin",
 	name: "concat",
@@ -162,6 +242,15 @@ export const concat: BuiltinFn = {
 	},
 };
 
+/**
+ * Reverse the order of a list.
+ *
+ * @param {list} list - the list to reverse
+ * @returns {list} a new list with elements in reverse order
+ *
+ * @example
+ * reverse([1, 2, 3]) // => [3, 2, 1]
+ */
 export const reverse: BuiltinFn = {
 	kind: "builtin",
 	name: "reverse",
@@ -172,6 +261,17 @@ export const reverse: BuiltinFn = {
 	},
 };
 
+/**
+ * Take the first `n` elements of a list.
+ * Errors if `n` is negative; if `n` exceeds list length, returns the whole list.
+ *
+ * @param {list} list - source list
+ * @param {int} n - number of elements to take (must be non-negative)
+ * @returns {list} the prefix of length `n`
+ *
+ * @example
+ * take([1, 2, 3, 4], 2) // => [1, 2]
+ */
 export const take: BuiltinFn = {
 	kind: "builtin",
 	name: "take",
@@ -186,6 +286,17 @@ export const take: BuiltinFn = {
 	},
 };
 
+/**
+ * Drop the first `n` elements of a list.
+ * Errors if `n` is negative; if `n` exceeds list length, returns an empty list.
+ *
+ * @param {list} list - source list
+ * @param {int} n - number of elements to drop (must be non-negative)
+ * @returns {list} the list without its first `n` elements
+ *
+ * @example
+ * drop([1, 2, 3, 4], 2) // => [3, 4]
+ */
 export const drop: BuiltinFn = {
 	kind: "builtin",
 	name: "drop",
@@ -200,6 +311,17 @@ export const drop: BuiltinFn = {
 	},
 };
 
+/**
+ * Return the first element matching the predicate, or nil if none match.
+ * Predicate must return a bool.
+ *
+ * @param {list} list - source list
+ * @param {fn} fn - predicate `(item) -> bool`
+ * @returns {any} the first matching item, or nil
+ *
+ * @example
+ * find([1, 2, 3], fn(x) -> x > 1 end) // => 2
+ */
 export const find: BuiltinFn = {
 	kind: "builtin",
 	name: "find",
@@ -263,6 +385,17 @@ function compareSortable(name: string, a: Value, b: Value): number {
 	);
 }
 
+/**
+ * Sort a list in ascending order. All items must share a sortable type
+ * (int, float or str).
+ *
+ * @param {list} list - the list to sort
+ * @returns {list} a new sorted list
+ *
+ * @example
+ * sort([3, 1, 2])           // => [1, 2, 3]
+ * sort(["b", "a", "c"])     // => ["a", "b", "c"]
+ */
 export const sort: BuiltinFn = {
 	kind: "builtin",
 	name: "sort",
@@ -275,6 +408,17 @@ export const sort: BuiltinFn = {
 	},
 };
 
+/**
+ * Sort a list by a key extracted from each item. The keys must share
+ * a sortable type (int, float or str).
+ *
+ * @param {list} list - source list
+ * @param {fn} fn - key function `(item) -> int|float|str`
+ * @returns {list} list sorted by the key
+ *
+ * @example
+ * sort_by([{age: 30}, {age: 20}], fn(p) -> p.age end) // => [{age: 20}, {age: 30}]
+ */
 export const sort_by: BuiltinFn = {
 	kind: "builtin",
 	name: "sort_by",
@@ -291,6 +435,16 @@ export const sort_by: BuiltinFn = {
 	},
 };
 
+/**
+ * Remove duplicate items, preserving order of first occurrence.
+ * Items must be comparable by value (no functions allowed).
+ *
+ * @param {list} list - source list
+ * @returns {list} list with duplicates removed
+ *
+ * @example
+ * unique([1, 2, 2, 3, 1]) // => [1, 2, 3]
+ */
 export const unique: BuiltinFn = {
 	kind: "builtin",
 	name: "unique",
@@ -310,6 +464,19 @@ export const unique: BuiltinFn = {
 	},
 };
 
+/**
+ * Build a list of consecutive integers `[start, stop)`.
+ * Called with one arg, `start` defaults to 0. Returns an empty list if
+ * `start >= stop`.
+ *
+ * @param {int} start - inclusive lower bound (or `stop` when called with 1 arg)
+ * @param {int} stop - exclusive upper bound (optional)
+ * @returns {list} list of ints from `start` to `stop - 1`
+ *
+ * @example
+ * range(3)    // => [0, 1, 2]
+ * range(2, 5) // => [2, 3, 4]
+ */
 export const range: BuiltinFn = {
 	kind: "builtin",
 	name: "range",
@@ -336,6 +503,17 @@ export const range: BuiltinFn = {
 	},
 };
 
+/**
+ * Pair up corresponding elements from two lists into a list of [a, b] pairs.
+ * Result length is `min(length(a), length(b))`.
+ *
+ * @param {list} a - first list
+ * @param {list} b - second list
+ * @returns {list} list of two-element pairs
+ *
+ * @example
+ * zip([1, 2, 3], ["a", "b"]) // => [[1, "a"], [2, "b"]]
+ */
 export const zip: BuiltinFn = {
 	kind: "builtin",
 	name: "zip",

@@ -1,38 +1,8 @@
 import { type FSWatcher, readFileSync, watch as fsWatch } from "node:fs";
 import { dirname, resolve as resolvePath } from "node:path";
 import { stderr } from "node:process";
-import { CliUsageError } from "./cmd";
-import { EspetoError, formatError } from "./errors";
-import { CmdRuntimeError } from "./evaluator";
 import { defaultResolver, type Resolver } from "./imports";
-import { run, type RunOptions } from "./run";
-
-function runOnceCatching(
-	source: string,
-	file: string,
-	opts: RunOptions,
-): number {
-	const color = stderr.isTTY === true;
-	try {
-		run(source, file, opts);
-		return 0;
-	} catch (e) {
-		if (e instanceof CmdRuntimeError) {
-			stderr.write(`Error: ${e.message}\n`);
-			return 1;
-		}
-		if (e instanceof CliUsageError) {
-			stderr.write(`error: ${e.message}\n`);
-			return 1;
-		}
-		if (e instanceof EspetoError) {
-			stderr.write(`${formatError(e, { color })}\n`);
-			return 1;
-		}
-		stderr.write(`error: ${e instanceof Error ? e.message : String(e)}\n`);
-		return 1;
-	}
-}
+import { runMain } from "./run";
 
 const DEBOUNCE_MS = 100;
 const STARTUP_GUARD_MS = 200;
@@ -158,7 +128,7 @@ export function startWatcher(
 		const code =
 			source === null
 				? 1
-				: runOnceCatching(source, entryAbs, {
+				: runMain(source, entryAbs, {
 						cmdArgv: opts.cmdArgv ?? null,
 						resolver: recordingResolver,
 					});

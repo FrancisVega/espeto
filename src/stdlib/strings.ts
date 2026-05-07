@@ -16,10 +16,50 @@ function strFn(name: string, fn: (s: string) => string): BuiltinFn {
 	};
 }
 
+/**
+ * Convert a string to uppercase.
+ *
+ * @param {str} s - the string to convert
+ * @returns {str} the uppercased string
+ *
+ * @example
+ * upcase("hi") // => "HI"
+ */
 export const upcase = strFn("upcase", (s) => s.toUpperCase());
+
+/**
+ * Convert a string to lowercase.
+ *
+ * @param {str} s - the string to convert
+ * @returns {str} the lowercased string
+ *
+ * @example
+ * downcase("HI") // => "hi"
+ */
 export const downcase = strFn("downcase", (s) => s.toLowerCase());
+
+/**
+ * Strip leading and trailing whitespace from a string.
+ *
+ * @param {str} s - the string to trim
+ * @returns {str} the trimmed string
+ *
+ * @example
+ * trim("  hi  ") // => "hi"
+ */
 export const trim = strFn("trim", (s) => s.trim());
 
+/**
+ * Split a string on a separator into a list of strings.
+ * Errors if the separator is empty.
+ *
+ * @param {str} s - the string to split
+ * @param {str} sep - the separator (must not be empty)
+ * @returns {list} list of substrings
+ *
+ * @example
+ * split("a,b,c", ",") // => ["a", "b", "c"]
+ */
 export const split: BuiltinFn = {
 	kind: "builtin",
 	name: "split",
@@ -34,6 +74,17 @@ export const split: BuiltinFn = {
 	},
 };
 
+/**
+ * Join a list of strings into one string with a separator.
+ * Errors if any item in the list is not a string.
+ *
+ * @param {list} list - list of strings
+ * @param {str} sep - the separator inserted between items
+ * @returns {str} the joined string
+ *
+ * @example
+ * join(["a", "b", "c"], "-") // => "a-b-c"
+ */
 export const join: BuiltinFn = {
 	kind: "builtin",
 	name: "join",
@@ -58,6 +109,18 @@ export const join: BuiltinFn = {
 	},
 };
 
+/**
+ * Replace every occurrence of a pattern in a string with a replacement.
+ * Pattern matching is plain text (not regex). Errors if the pattern is empty.
+ *
+ * @param {str} s - the source string
+ * @param {str} pattern - the substring to match (must not be empty)
+ * @param {str} replacement - the replacement string
+ * @returns {str} the resulting string
+ *
+ * @example
+ * replace("foo bar foo", "foo", "baz") // => "baz bar baz"
+ */
 export const replace: BuiltinFn = {
 	kind: "builtin",
 	name: "replace",
@@ -89,8 +152,40 @@ function strPredicate(
 	};
 }
 
+/**
+ * Test whether a string begins with a given prefix.
+ *
+ * @param {str} s - the string to test
+ * @param {str} needle - the prefix to look for
+ * @returns {bool} true if `s` starts with `needle`
+ *
+ * @example
+ * starts_with?("hello", "he") // => true
+ */
 export const starts_with = strPredicate("starts_with?", (s, n) =>
 	s.startsWith(n),
 );
+
+/**
+ * Test whether a string ends with a given suffix.
+ *
+ * @param {str} s - the string to test
+ * @param {str} needle - the suffix to look for
+ * @returns {bool} true if `s` ends with `needle`
+ *
+ * @example
+ * ends_with?("hello", "lo") // => true
+ */
 export const ends_with = strPredicate("ends_with?", (s, n) => s.endsWith(n));
+
+/**
+ * Test whether a string contains a given substring.
+ *
+ * @param {str} s - the string to test
+ * @param {str} needle - the substring to look for
+ * @returns {bool} true if `s` contains `needle`
+ *
+ * @example
+ * contains?("hello", "ell") // => true
+ */
 export const contains = strPredicate("contains?", (s, n) => s.includes(n));

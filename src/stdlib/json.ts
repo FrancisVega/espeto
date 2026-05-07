@@ -250,6 +250,17 @@ class JsonParser {
 	}
 }
 
+/**
+ * Parse a JSON string into Espeto values.
+ * Numbers without a decimal become int; with a decimal or exponent become float.
+ * Errors on invalid JSON. Use `try_parse_json` for a result-wrapped variant.
+ *
+ * @param {str} s - the JSON source
+ * @returns {any} the parsed value (str, int, float, bool, nil, list or map)
+ *
+ * @example
+ * parse_json("{\"a\": 1}") // => {a: 1}
+ */
 export const parse_json: BuiltinFn = {
 	kind: "builtin",
 	name: "parse_json",
@@ -263,6 +274,16 @@ export const parse_json: BuiltinFn = {
 	},
 };
 
+/**
+ * Result-wrapped variant of `parse_json`. Returns `{ok: true, value: any}`
+ * on success or `{ok: false, error: str}` on failure.
+ *
+ * @param {str} s - the JSON source
+ * @returns {map} `{ok, value}` or `{ok, error}`
+ *
+ * @example
+ * try_parse_json("not json") // => {ok: false, error: "parse_json: ..."}
+ */
 export const try_parse_json = wrapResult("try_parse_json", parse_json);
 
 const MAX_SAFE = 9007199254740991n; // 2^53 - 1
@@ -301,6 +322,16 @@ function valueToJson(v: Value): string {
 	throw new Error(`to_json: cannot serialize ${typeName(v)}`);
 }
 
+/**
+ * Serialize an Espeto value to a compact JSON string.
+ * Errors on functions or ints outside the IEEE-754 safe range (±2^53-1).
+ *
+ * @param {any} v - the value to serialize
+ * @returns {str} the JSON string
+ *
+ * @example
+ * to_json({a: [1, 2]}) // => "{\"a\":[1,2]}"
+ */
 export const to_json: BuiltinFn = {
 	kind: "builtin",
 	name: "to_json",

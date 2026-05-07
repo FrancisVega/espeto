@@ -16,6 +16,17 @@ function asInt(name: string, label: string, v: Value): bigint {
 	return v;
 }
 
+/**
+ * Integer division (truncated toward zero).
+ * Errors on division by zero.
+ *
+ * @param {int} a - dividend
+ * @param {int} b - divisor (must not be zero)
+ * @returns {int} the integer quotient
+ *
+ * @example
+ * div(7, 2) // => 3
+ */
 export const div: BuiltinFn = {
 	kind: "builtin",
 	name: "div",
@@ -30,6 +41,18 @@ export const div: BuiltinFn = {
 	},
 };
 
+/**
+ * Modulo (always non-negative for positive divisor).
+ * Errors on division by zero.
+ *
+ * @param {int} a - dividend
+ * @param {int} b - divisor (must not be zero)
+ * @returns {int} the remainder
+ *
+ * @example
+ * mod(7, 3)  // => 1
+ * mod(-1, 3) // => 2
+ */
 export const mod: BuiltinFn = {
 	kind: "builtin",
 	name: "mod",
@@ -44,6 +67,16 @@ export const mod: BuiltinFn = {
 	},
 };
 
+/**
+ * Absolute value of a number. Returns the same numeric type as the input.
+ *
+ * @param {int|float} v - the number
+ * @returns {int|float} non-negative magnitude of `v`
+ *
+ * @example
+ * abs(-3)    // => 3
+ * abs(-2.5)  // => 2.5
+ */
 export const abs: BuiltinFn = {
 	kind: "builtin",
 	name: "abs",
@@ -56,6 +89,17 @@ export const abs: BuiltinFn = {
 	},
 };
 
+/**
+ * Round a number to the nearest integer (half away from zero).
+ * Ints are returned as-is.
+ *
+ * @param {int|float} v - the number to round
+ * @returns {int} the rounded integer
+ *
+ * @example
+ * round(2.5) // => 3
+ * round(2.4) // => 2
+ */
 export const round: BuiltinFn = {
 	kind: "builtin",
 	name: "round",
@@ -68,6 +112,17 @@ export const round: BuiltinFn = {
 	},
 };
 
+/**
+ * Round down toward negative infinity.
+ * Ints are returned as-is.
+ *
+ * @param {int|float} v - the number to floor
+ * @returns {int} the floored integer
+ *
+ * @example
+ * floor(2.9)  // => 2
+ * floor(-2.1) // => -3
+ */
 export const floor: BuiltinFn = {
 	kind: "builtin",
 	name: "floor",
@@ -80,6 +135,17 @@ export const floor: BuiltinFn = {
 	},
 };
 
+/**
+ * Round up toward positive infinity.
+ * Ints are returned as-is.
+ *
+ * @param {int|float} v - the number to ceil
+ * @returns {int} the ceil integer
+ *
+ * @example
+ * ceil(2.1)  // => 3
+ * ceil(-2.9) // => -2
+ */
 export const ceil: BuiltinFn = {
 	kind: "builtin",
 	name: "ceil",
@@ -107,6 +173,16 @@ function pickExtreme(name: string, args: Value[], pickLess: boolean): Value {
 	throw new Error(`${name}: expected number, got ${typeName(a)}`);
 }
 
+/**
+ * Smaller of two numbers. Both args must be the same numeric type.
+ *
+ * @param {int|float} a - first number
+ * @param {int|float} b - second number
+ * @returns {int|float} the smaller value
+ *
+ * @example
+ * min(2, 5) // => 2
+ */
 export const min: BuiltinFn = {
 	kind: "builtin",
 	name: "min",
@@ -114,6 +190,16 @@ export const min: BuiltinFn = {
 	call: (args) => pickExtreme("min", args, true),
 };
 
+/**
+ * Larger of two numbers. Both args must be the same numeric type.
+ *
+ * @param {int|float} a - first number
+ * @param {int|float} b - second number
+ * @returns {int|float} the larger value
+ *
+ * @example
+ * max(2, 5) // => 5
+ */
 export const max: BuiltinFn = {
 	kind: "builtin",
 	name: "max",
@@ -121,6 +207,17 @@ export const max: BuiltinFn = {
 	call: (args) => pickExtreme("max", args, false),
 };
 
+/**
+ * Convert a number or numeric string to int (truncated).
+ * Errors on NaN/Infinity or unparsable strings.
+ *
+ * @param {int|float|str} v - the value to convert
+ * @returns {int} the integer value
+ *
+ * @example
+ * to_int("42")  // => 42
+ * to_int(3.7)   // => 3
+ */
 export const to_int: BuiltinFn = {
 	kind: "builtin",
 	name: "to_int",
@@ -144,6 +241,17 @@ export const to_int: BuiltinFn = {
 	},
 };
 
+/**
+ * Convert a number or numeric string to float.
+ * Errors on unparsable strings.
+ *
+ * @param {int|float|str} v - the value to convert
+ * @returns {float} the float value
+ *
+ * @example
+ * to_float("3.14") // => 3.14
+ * to_float(2)      // => 2.0
+ */
 export const to_float: BuiltinFn = {
 	kind: "builtin",
 	name: "to_float",
@@ -164,7 +272,7 @@ export const to_float: BuiltinFn = {
 	},
 };
 
-function valueToStr(v: Value): string {
+export function valueToStr(v: Value): string {
 	if (v === null) return "nil";
 	if (typeof v === "string") return v;
 	if (typeof v === "bigint") return v.toString();
@@ -181,6 +289,18 @@ function valueToStr(v: Value): string {
 	return "?";
 }
 
+/**
+ * Convert any value to its string representation.
+ * Lists and maps recurse; functions render as `#fn<name>`.
+ *
+ * @param {any} v - the value to stringify
+ * @returns {str} the textual representation
+ *
+ * @example
+ * to_str(42)         // => "42"
+ * to_str([1, 2])     // => "[1, 2]"
+ * to_str(nil)        // => "nil"
+ */
 export const to_str: BuiltinFn = {
 	kind: "builtin",
 	name: "to_str",

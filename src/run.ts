@@ -1,6 +1,9 @@
 import { resolve as resolvePath } from "node:path";
+import { stderr } from "node:process";
+import { CliUsageError } from "./cmd";
 import { Env } from "./env";
-import { evaluate } from "./evaluator";
+import { EspetoError, formatError } from "./errors";
+import { CmdRuntimeError, evaluate } from "./evaluator";
 import { defaultResolver, ModuleLoader, type Resolver } from "./imports";
 import { lex } from "./lexer";
 import { parse } from "./parser";
@@ -31,4 +34,31 @@ export function run(
 
 	const cmdArgv = opts.cmdArgv ?? null;
 	return evaluate(program, userEnv, source, cmdArgv);
+}
+
+export function runMain(
+	source: string,
+	file: string,
+	opts: RunOptions = {},
+): number {
+	const color = stderr.isTTY === true;
+	try {
+		run(source, file, opts);
+		return 0;
+	} catch (e) {
+		if (e instanceof CmdRuntimeError) {
+			stderr.write(`Error: ${e.message}\n`);
+			return 1;
+		}
+		if (e instanceof CliUsageError) {
+			stderr.write(`error: ${e.message}\n`);
+			return 1;
+		}
+		if (e instanceof EspetoError) {
+			stderr.write(`${formatError(e, { color })}\n`);
+			return 1;
+		}
+		stderr.write(`error: ${e instanceof Error ? e.message : String(e)}\n`);
+		return 1;
+	}
 }

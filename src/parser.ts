@@ -539,15 +539,37 @@ class Parser {
 
 		if (this.match("lparen")) {
 			this.advance();
-			const args: Expr[] = [lhs];
+			const explicitArgs: Expr[] = [];
 			if (!this.match("rparen")) {
-				args.push(this.parseExpr());
+				explicitArgs.push(this.parseExpr());
 				while (this.match("comma")) {
 					this.advance();
-					args.push(this.parseExpr());
+					explicitArgs.push(this.parseExpr());
 				}
 			}
 			this.expect("rparen", "')'");
+
+			const placeholders: number[] = [];
+			for (let i = 0; i < explicitArgs.length; i++) {
+				const a = explicitArgs[i]!;
+				if (a.kind === "ident" && a.name === "_") placeholders.push(i);
+			}
+
+			let args: Expr[];
+			if (placeholders.length === 0) {
+				args = [lhs, ...explicitArgs];
+			} else if (placeholders.length === 1) {
+				args = explicitArgs.slice();
+				args[placeholders[0]!] = lhs;
+			} else {
+				const second = explicitArgs[placeholders[1]!]!;
+				throw new EspetoError(
+					"pipe placeholder '_' may appear at most once per call",
+					second.span,
+					this.source,
+				);
+			}
+
 			return { kind: "call", callee, args, span: lhs.span };
 		}
 
