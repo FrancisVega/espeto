@@ -3,9 +3,27 @@ import {
 	isCallable,
 	isList,
 	isMap,
+	isStream,
 	type Value,
 	typeName,
 } from "../values";
+import {
+	streamDrop,
+	streamDropWhile,
+	streamEach,
+	streamFilter,
+	streamFind,
+	streamMap,
+	streamReduce,
+	streamTake,
+	streamTakeWhile,
+} from "./streams";
+
+function rejectStream(name: string, suggestion: string, v: Value): void {
+	if (isStream(v)) {
+		throw new Error(`${name}: stream not supported. ${suggestion}`);
+	}
+}
 
 /**
  * Number of elements in a list, characters in a string, or entries in a map.
@@ -23,6 +41,7 @@ export const length: BuiltinFn = {
 	arity: 1,
 	call: (args) => {
 		const v: Value = args[0] ?? null;
+		rejectStream("length", "use count(s) or collect(s) |> length", v);
 		if (typeof v === "string") return BigInt(v.length);
 		if (isList(v)) return BigInt(v.length);
 		if (isMap(v)) return BigInt(Object.keys(v.entries).length);
@@ -45,6 +64,7 @@ export const head: BuiltinFn = {
 	arity: 1,
 	call: (args) => {
 		const v: Value = args[0] ?? null;
+		rejectStream("head", "use collect(s) |> head", v);
 		if (!isList(v)) {
 			throw new Error(`head: expected list, got ${typeName(v)}`);
 		}
@@ -70,6 +90,7 @@ export const tail: BuiltinFn = {
 	arity: 1,
 	call: (args) => {
 		const v: Value = args[0] ?? null;
+		rejectStream("tail", "use collect(s) |> tail", v);
 		if (!isList(v)) {
 			throw new Error(`tail: expected list, got ${typeName(v)}`);
 		}
@@ -81,11 +102,12 @@ export const tail: BuiltinFn = {
 };
 
 /**
- * Apply a function to each element, producing a new list.
+ * Apply a function to each element, producing a new list (or a lazy stream
+ * when the input is a stream).
  *
- * @param {list} list - source list
+ * @param {list|stream} src - source list or stream
  * @param {fn} fn - function called with `(item)` per element
- * @returns {list} list of results
+ * @returns {list|stream} list of results, or a stream when `src` is a stream
  *
  * @example
  * map([1, 2, 3], fn(x) -> x * 2 end) // => [2, 4, 6]
@@ -95,25 +117,31 @@ export const map: BuiltinFn = {
 	name: "map",
 	arity: 2,
 	call: (args, invoke) => {
-		const list: Value = args[0] ?? null;
+		const v: Value = args[0] ?? null;
 		const fn: Value = args[1] ?? null;
-		if (!isList(list)) {
-			throw new Error(`map: expected list, got ${typeName(list)}`);
+		if (isStream(v)) {
+			if (!isCallable(fn)) {
+				throw new Error(`map: fn must be callable, got ${typeName(fn)}`);
+			}
+			return streamMap(v, fn, invoke);
+		}
+		if (!isList(v)) {
+			throw new Error(`map: expected list or stream, got ${typeName(v)}`);
 		}
 		if (!isCallable(fn)) {
 			throw new Error(`map: fn must be callable, got ${typeName(fn)}`);
 		}
-		return list.map((it) => invoke(fn, [it]));
+		return v.map((it) => invoke(fn, [it]));
 	},
 };
 
 /**
- * Keep only elements for which the predicate returns true.
- * Predicate must return a bool.
+ * Keep only elements for which the predicate returns true. Predicate must
+ * return a bool.
  *
- * @param {list} list - source list
+ * @param {list|stream} src - source list or stream
  * @param {fn} fn - predicate `(item) -> bool`
- * @returns {list} list of items where the predicate held
+ * @returns {list|stream} filtered items, lazy when `src` is a stream
  *
  * @example
  * filter([1, 2, 3, 4], fn(x) -> mod(x, 2) == 0 end) // => [2, 4]
@@ -123,16 +151,22 @@ export const filter: BuiltinFn = {
 	name: "filter",
 	arity: 2,
 	call: (args, invoke) => {
-		const list: Value = args[0] ?? null;
+		const v: Value = args[0] ?? null;
 		const fn: Value = args[1] ?? null;
-		if (!isList(list)) {
-			throw new Error(`filter: expected list, got ${typeName(list)}`);
+		if (isStream(v)) {
+			if (!isCallable(fn)) {
+				throw new Error(`filter: fn must be callable, got ${typeName(fn)}`);
+			}
+			return streamFilter(v, fn, invoke);
+		}
+		if (!isList(v)) {
+			throw new Error(`filter: expected list or stream, got ${typeName(v)}`);
 		}
 		if (!isCallable(fn)) {
 			throw new Error(`filter: fn must be callable, got ${typeName(fn)}`);
 		}
 		const out: Value[] = [];
-		for (const it of list) {
+		for (const it of v) {
 			const r = invoke(fn, [it]);
 			if (typeof r !== "boolean") {
 				throw new Error(
@@ -146,9 +180,9 @@ export const filter: BuiltinFn = {
 };
 
 /**
- * Fold a list into a single accumulated value.
+ * Fold a list or stream into a single accumulated value.
  *
- * @param {list} list - source list
+ * @param {list|stream} src - source list or stream
  * @param {any} init - initial accumulator
  * @param {fn} fn - reducer `(acc, item) -> acc`
  * @returns {any} the final accumulator
@@ -161,16 +195,23 @@ export const reduce: BuiltinFn = {
 	name: "reduce",
 	arity: 3,
 	call: (args, invoke) => {
-		const list: Value = args[0] ?? null;
-		let acc: Value = args[1] ?? null;
+		const v: Value = args[0] ?? null;
+		const init: Value = args[1] ?? null;
 		const fn: Value = args[2] ?? null;
-		if (!isList(list)) {
-			throw new Error(`reduce: expected list, got ${typeName(list)}`);
+		if (isStream(v)) {
+			if (!isCallable(fn)) {
+				throw new Error(`reduce: fn must be callable, got ${typeName(fn)}`);
+			}
+			return streamReduce(v, init, fn, invoke);
+		}
+		if (!isList(v)) {
+			throw new Error(`reduce: expected list or stream, got ${typeName(v)}`);
 		}
 		if (!isCallable(fn)) {
 			throw new Error(`reduce: fn must be callable, got ${typeName(fn)}`);
 		}
-		for (const it of list) {
+		let acc: Value = init;
+		for (const it of v) {
 			acc = invoke(fn, [acc, it]);
 		}
 		return acc;
@@ -178,9 +219,11 @@ export const reduce: BuiltinFn = {
 };
 
 /**
- * Call a function for each element for its side effects. Returns nil.
+ * Call a function for each element for its side effects. Returns nil. Works
+ * on lists and streams; on streams the iteration is lazy and cleanup runs
+ * automatically.
  *
- * @param {list} list - source list
+ * @param {list|stream} src - source list or stream
  * @param {fn} fn - function called with `(item)` per element
  * @returns {nil} always nil
  *
@@ -192,15 +235,21 @@ export const each: BuiltinFn = {
 	name: "each",
 	arity: 2,
 	call: (args, invoke) => {
-		const list: Value = args[0] ?? null;
+		const v: Value = args[0] ?? null;
 		const fn: Value = args[1] ?? null;
-		if (!isList(list)) {
-			throw new Error(`each: expected list, got ${typeName(list)}`);
+		if (isStream(v)) {
+			if (!isCallable(fn)) {
+				throw new Error(`each: fn must be callable, got ${typeName(fn)}`);
+			}
+			return streamEach(v, fn, invoke);
+		}
+		if (!isList(v)) {
+			throw new Error(`each: expected list or stream, got ${typeName(v)}`);
 		}
 		if (!isCallable(fn)) {
 			throw new Error(`each: fn must be callable, got ${typeName(fn)}`);
 		}
-		for (const it of list) {
+		for (const it of v) {
 			invoke(fn, [it]);
 		}
 		return null;
@@ -236,8 +285,12 @@ export const concat: BuiltinFn = {
 	name: "concat",
 	arity: 2,
 	call: (args) => {
-		const a = expectList("concat", "first", args[0] ?? null);
-		const b = expectList("concat", "second", args[1] ?? null);
+		const a0: Value = args[0] ?? null;
+		const b0: Value = args[1] ?? null;
+		rejectStream("concat", "use collect first", a0);
+		rejectStream("concat", "use collect first", b0);
+		const a = expectList("concat", "first", a0);
+		const b = expectList("concat", "second", b0);
 		return [...a, ...b];
 	},
 };
@@ -256,18 +309,21 @@ export const reverse: BuiltinFn = {
 	name: "reverse",
 	arity: 1,
 	call: (args) => {
-		const list = expectList("reverse", "arg", args[0] ?? null);
+		const v: Value = args[0] ?? null;
+		rejectStream("reverse", "use collect(s) |> reverse", v);
+		const list = expectList("reverse", "arg", v);
 		return [...list].reverse();
 	},
 };
 
 /**
- * Take the first `n` elements of a list.
- * Errors if `n` is negative; if `n` exceeds list length, returns the whole list.
+ * Take the first `n` elements of a list or stream. Errors if `n` is negative;
+ * if `n` exceeds list length, returns the whole list. On a stream, take is
+ * lazy: only the first `n` items are pulled and the source is then closed.
  *
- * @param {list} list - source list
+ * @param {list|stream} src - source list or stream
  * @param {int} n - number of elements to take (must be non-negative)
- * @returns {list} the prefix of length `n`
+ * @returns {list|stream} the prefix of length `n` (or a stream when `src` is a stream)
  *
  * @example
  * take([1, 2, 3, 4], 2) // => [1, 2]
@@ -277,8 +333,14 @@ export const take: BuiltinFn = {
 	name: "take",
 	arity: 2,
 	call: (args) => {
-		const list = expectList("take", "list", args[0] ?? null);
-		const n = expectInt("take", "n", args[1] ?? null);
+		const v: Value = args[0] ?? null;
+		const n0: Value = args[1] ?? null;
+		if (isStream(v)) {
+			const n = expectInt("take", "n", n0);
+			return streamTake(v, n);
+		}
+		const list = expectList("take", "list", v);
+		const n = expectInt("take", "n", n0);
 		if (n < 0n) {
 			throw new Error("take: n must be non-negative");
 		}
@@ -287,12 +349,13 @@ export const take: BuiltinFn = {
 };
 
 /**
- * Drop the first `n` elements of a list.
- * Errors if `n` is negative; if `n` exceeds list length, returns an empty list.
+ * Drop the first `n` elements of a list or stream. Errors if `n` is negative;
+ * if `n` exceeds list length, returns an empty list. On a stream, drop is
+ * lazy: the first `n` items are pulled and discarded.
  *
- * @param {list} list - source list
+ * @param {list|stream} src - source list or stream
  * @param {int} n - number of elements to drop (must be non-negative)
- * @returns {list} the list without its first `n` elements
+ * @returns {list|stream} the rest after the first `n` elements
  *
  * @example
  * drop([1, 2, 3, 4], 2) // => [3, 4]
@@ -302,8 +365,14 @@ export const drop: BuiltinFn = {
 	name: "drop",
 	arity: 2,
 	call: (args) => {
-		const list = expectList("drop", "list", args[0] ?? null);
-		const n = expectInt("drop", "n", args[1] ?? null);
+		const v: Value = args[0] ?? null;
+		const n0: Value = args[1] ?? null;
+		if (isStream(v)) {
+			const n = expectInt("drop", "n", n0);
+			return streamDrop(v, n);
+		}
+		const list = expectList("drop", "list", v);
+		const n = expectInt("drop", "n", n0);
 		if (n < 0n) {
 			throw new Error("drop: n must be non-negative");
 		}
@@ -312,10 +381,107 @@ export const drop: BuiltinFn = {
 };
 
 /**
- * Return the first element matching the predicate, or nil if none match.
+ * Take elements from the front while the predicate returns true. Stops at
+ * the first element where the predicate is false. Predicate must return a
+ * bool.
+ *
+ * @param {list|stream} src - source list or stream
+ * @param {fn} fn - predicate `(item) -> bool`
+ * @returns {list|stream} prefix of elements satisfying the predicate
+ *
+ * @example
+ * take_while([1, 2, 3, 1], fn(x) -> x < 3 end) // => [1, 2]
+ */
+export const take_while: BuiltinFn = {
+	kind: "builtin",
+	name: "take_while",
+	arity: 2,
+	call: (args, invoke) => {
+		const v: Value = args[0] ?? null;
+		const fn: Value = args[1] ?? null;
+		if (isStream(v)) {
+			if (!isCallable(fn)) {
+				throw new Error(
+					`take_while: fn must be callable, got ${typeName(fn)}`,
+				);
+			}
+			return streamTakeWhile(v, fn, invoke);
+		}
+		const list = expectList("take_while", "list", v);
+		if (!isCallable(fn)) {
+			throw new Error(`take_while: fn must be callable, got ${typeName(fn)}`);
+		}
+		const out: Value[] = [];
+		for (const it of list) {
+			const r = invoke(fn, [it]);
+			if (typeof r !== "boolean") {
+				throw new Error(
+					`take_while: predicate must return bool, got ${typeName(r)}`,
+				);
+			}
+			if (!r) break;
+			out.push(it);
+		}
+		return out;
+	},
+};
+
+/**
+ * Drop elements from the front while the predicate returns true. Returns
+ * the rest starting at the first element where the predicate is false.
  * Predicate must return a bool.
  *
- * @param {list} list - source list
+ * @param {list|stream} src - source list or stream
+ * @param {fn} fn - predicate `(item) -> bool`
+ * @returns {list|stream} suffix starting at first failing item
+ *
+ * @example
+ * drop_while([1, 2, 3, 1], fn(x) -> x < 3 end) // => [3, 1]
+ */
+export const drop_while: BuiltinFn = {
+	kind: "builtin",
+	name: "drop_while",
+	arity: 2,
+	call: (args, invoke) => {
+		const v: Value = args[0] ?? null;
+		const fn: Value = args[1] ?? null;
+		if (isStream(v)) {
+			if (!isCallable(fn)) {
+				throw new Error(
+					`drop_while: fn must be callable, got ${typeName(fn)}`,
+				);
+			}
+			return streamDropWhile(v, fn, invoke);
+		}
+		const list = expectList("drop_while", "list", v);
+		if (!isCallable(fn)) {
+			throw new Error(`drop_while: fn must be callable, got ${typeName(fn)}`);
+		}
+		let dropping = true;
+		const out: Value[] = [];
+		for (const it of list) {
+			if (dropping) {
+				const r = invoke(fn, [it]);
+				if (typeof r !== "boolean") {
+					throw new Error(
+						`drop_while: predicate must return bool, got ${typeName(r)}`,
+					);
+				}
+				if (r) continue;
+				dropping = false;
+			}
+			out.push(it);
+		}
+		return out;
+	},
+};
+
+/**
+ * Return the first element matching the predicate, or nil if none match.
+ * Predicate must return a bool. Works on lists and streams; on streams,
+ * iteration stops at the first match and the source is closed.
+ *
+ * @param {list|stream} src - source list or stream
  * @param {fn} fn - predicate `(item) -> bool`
  * @returns {any} the first matching item, or nil
  *
@@ -327,8 +493,15 @@ export const find: BuiltinFn = {
 	name: "find",
 	arity: 2,
 	call: (args, invoke) => {
-		const list = expectList("find", "list", args[0] ?? null);
+		const v: Value = args[0] ?? null;
 		const fn: Value = args[1] ?? null;
+		if (isStream(v)) {
+			if (!isCallable(fn)) {
+				throw new Error(`find: fn must be callable, got ${typeName(fn)}`);
+			}
+			return streamFind(v, fn, invoke);
+		}
+		const list = expectList("find", "list", v);
 		if (!isCallable(fn)) {
 			throw new Error(`find: fn must be callable, got ${typeName(fn)}`);
 		}
@@ -401,7 +574,9 @@ export const sort: BuiltinFn = {
 	name: "sort",
 	arity: 1,
 	call: (args) => {
-		const list = expectList("sort", "arg", args[0] ?? null);
+		const v: Value = args[0] ?? null;
+		rejectStream("sort", "use collect(s) |> sort", v);
+		const list = expectList("sort", "arg", v);
 		const copy = [...list];
 		copy.sort((a, b) => compareSortable("sort", a, b));
 		return copy;
@@ -424,7 +599,9 @@ export const sort_by: BuiltinFn = {
 	name: "sort_by",
 	arity: 2,
 	call: (args, invoke) => {
-		const list = expectList("sort_by", "list", args[0] ?? null);
+		const v: Value = args[0] ?? null;
+		rejectStream("sort_by", "use collect(s) |> sort_by", v);
+		const list = expectList("sort_by", "list", v);
 		const fn: Value = args[1] ?? null;
 		if (!isCallable(fn)) {
 			throw new Error(`sort_by: fn must be callable, got ${typeName(fn)}`);
@@ -450,7 +627,9 @@ export const unique: BuiltinFn = {
 	name: "unique",
 	arity: 1,
 	call: (args) => {
-		const list = expectList("unique", "arg", args[0] ?? null);
+		const v: Value = args[0] ?? null;
+		rejectStream("unique", "use collect(s) |> unique", v);
+		const list = expectList("unique", "arg", v);
 		const out: Value[] = [];
 		for (const it of list) {
 			if (isCallable(it)) {
@@ -519,8 +698,12 @@ export const zip: BuiltinFn = {
 	name: "zip",
 	arity: 2,
 	call: (args) => {
-		const a = expectList("zip", "first", args[0] ?? null);
-		const b = expectList("zip", "second", args[1] ?? null);
+		const a0: Value = args[0] ?? null;
+		const b0: Value = args[1] ?? null;
+		rejectStream("zip", "use collect first", a0);
+		rejectStream("zip", "use collect first", b0);
+		const a = expectList("zip", "first", a0);
+		const b = expectList("zip", "second", b0);
 		const len = Math.min(a.length, b.length);
 		const out: Value[] = [];
 		for (let i = 0; i < len; i++) {

@@ -1,0 +1,6 @@
+cmd long_lines do
+  read_lines("#{__dir__}/data.txt")
+    |> filter(fn line => length(line) > 5)
+    |> take(3)
+    |> each(print)
+end

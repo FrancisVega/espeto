@@ -4,6 +4,7 @@ import {
 	isList,
 	isMap,
 	isBuiltin,
+	isStream,
 	isUserFn,
 	type Value,
 	typeName,
@@ -284,6 +285,11 @@ export function valueToStr(v: Value): string {
 			(k) => `${k}: ${valueToStr(v.entries[k]!)}`,
 		);
 		return `{${parts.join(", ")}}`;
+	}
+	if (isStream(v)) {
+		throw new Error(
+			"to_str: streams cannot be stringified (consume with each/collect first)",
+		);
 	}
 	if (isBuiltin(v) || isUserFn(v)) return `#fn<${v.name}>`;
 	return "?";

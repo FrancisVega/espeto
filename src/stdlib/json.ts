@@ -4,6 +4,7 @@ import {
 	isBuiltin,
 	isList,
 	isMap,
+	isStream,
 	isUserFn,
 	type MapValue,
 	type Value,
@@ -315,6 +316,11 @@ function valueToJson(v: Value): string {
 			(k) => `${JSON.stringify(k)}:${valueToJson(v.entries[k]!)}`,
 		);
 		return `{${parts.join(",")}}`;
+	}
+	if (isStream(v)) {
+		throw new Error(
+			"to_json: streams cannot be serialized (use collect first)",
+		);
 	}
 	if (isBuiltin(v) || isUserFn(v)) {
 		throw new Error("to_json: cannot serialize fn");

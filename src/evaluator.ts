@@ -33,6 +33,7 @@ import {
 	isBuiltin,
 	isList,
 	isMap,
+	isStream,
 	isUserFn,
 	type BuiltinFn,
 	type Invoke,
@@ -381,6 +382,7 @@ function formatValueForAssert(v: Value): string {
 		);
 		return `{${parts.join(", ")}}`;
 	}
+	if (isStream(v)) return "#stream";
 	if (isBuiltin(v) || isUserFn(v)) return `#fn<${v.name}>`;
 	return "?";
 }
@@ -575,6 +577,13 @@ function equalValues(
 			source,
 		);
 	}
+	if (isStream(lhs) || isStream(rhs)) {
+		throw new EspetoError(
+			"streams are not comparable (consume with collect first)",
+			span,
+			source,
+		);
+	}
 	if (lhs === null || rhs === null) return lhs === rhs;
 	if (isList(lhs) || isList(rhs)) {
 		if (!isList(lhs) || !isList(rhs)) return false;
@@ -709,6 +718,11 @@ function valueToInterpString(v: Value): string {
 			(k) => `${k}: ${valueToInterpString(v.entries[k]!)}`,
 		);
 		return `{${parts.join(", ")}}`;
+	}
+	if (isStream(v)) {
+		throw new Error(
+			"interpolation: streams cannot be stringified (consume with each/collect first)",
+		);
 	}
 	if (isBuiltin(v) || isUserFn(v)) return `#fn<${v.name}>`;
 	return "?";

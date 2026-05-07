@@ -15,6 +15,7 @@ import { parse_json, to_json, try_parse_json } from "./json";
 import {
 	concat,
 	drop,
+	drop_while,
 	each,
 	filter,
 	find,
@@ -28,6 +29,7 @@ import {
 	sort_by,
 	tail,
 	take,
+	take_while,
 	unique,
 	zip,
 } from "./lists";
@@ -65,7 +67,15 @@ import {
 	is_map,
 	is_nil,
 	is_str,
+	is_stream,
 } from "./predicates";
+import {
+	collect,
+	count,
+	read_lines,
+	sh_lines,
+	stdin_lines,
+} from "./streams";
 import {
 	contains,
 	downcase,
@@ -124,6 +134,8 @@ export function loadPrelude(env: Env): void {
 	env.define("reverse", reverse);
 	env.define("take", take);
 	env.define("drop", drop);
+	env.define("take_while", take_while);
+	env.define("drop_while", drop_while);
 	env.define("find", find);
 	env.define("sort", sort);
 	env.define("sort_by", sort_by);
@@ -146,6 +158,12 @@ export function loadPrelude(env: Env): void {
 	env.define("is_list?", is_list);
 	env.define("is_map?", is_map);
 	env.define("is_fn?", is_fn);
+	env.define("is_stream?", is_stream);
+	env.define("read_lines", read_lines);
+	env.define("stdin_lines", stdin_lines);
+	env.define("sh_lines", sh_lines);
+	env.define("collect", collect);
+	env.define("count", count);
 	env.define("raise", raise);
 	env.define("try_to_int", try_to_int);
 	env.define("try_to_float", try_to_float);

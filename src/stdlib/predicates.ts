@@ -3,6 +3,7 @@ import {
 	isCallable,
 	isList,
 	isMap,
+	isStream,
 	type Value,
 } from "../values";
 
@@ -102,3 +103,14 @@ export const is_map = predicate("is_map?", (v) => isMap(v));
  * is_fn?(upcase) // => true
  */
 export const is_fn = predicate("is_fn?", (v) => isCallable(v));
+
+/**
+ * Test whether a value is a stream (lazy sequence).
+ *
+ * @param {any} v - the value to test
+ * @returns {bool} true if `v` is a stream
+ *
+ * @example
+ * is_stream?(read_lines("x.txt")) // => true
+ */
+export const is_stream = predicate("is_stream?", (v) => isStream(v));

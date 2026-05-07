@@ -11,11 +11,19 @@ export type Value =
 	| BuiltinFn
 	| UserFn
 	| MapValue
+	| StreamValue
 	| Value[];
 
 export type MapValue = {
 	kind: "map";
 	entries: Record<string, Value>;
+};
+
+export type StreamValue = {
+	kind: "stream";
+	iter: Iterator<Value>;
+	consumed: boolean;
+	cleanup: () => void;
 };
 
 export type Invoke = (callee: BuiltinFn | UserFn, args: Value[]) => Value;
@@ -79,6 +87,16 @@ export function isMap(v: Value): v is MapValue {
 	);
 }
 
+export function isStream(v: Value): v is StreamValue {
+	return (
+		typeof v === "object" &&
+		v !== null &&
+		!Array.isArray(v) &&
+		"kind" in v &&
+		v.kind === "stream"
+	);
+}
+
 export function typeName(v: Value): string {
 	if (v === null) return "nil";
 	if (typeof v === "string") return "str";
@@ -87,6 +105,7 @@ export function typeName(v: Value): string {
 	if (typeof v === "boolean") return "bool";
 	if (isList(v)) return "list";
 	if (isMap(v)) return "map";
+	if (isStream(v)) return "stream";
 	if (isBuiltin(v) || isUserFn(v)) return "fn";
 	return "unknown";
 }
