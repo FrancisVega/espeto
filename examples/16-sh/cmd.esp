@@ -1,0 +1,15 @@
+cmd info do
+  arg name: str
+
+  greeting = sh!("printf 'Hola, #{name}!'")
+  greeting |> print
+
+  total = sh!("printf 'a\nb\nc\n' | wc -l") |> trim
+  "lines=#{total}" |> print
+
+  status = sh("false")
+  "exit=#{status.exit_code} ok=#{status.ok}" |> print
+
+  recovered = try sh!("false") rescue _ => "rescued"
+  recovered |> print
+end

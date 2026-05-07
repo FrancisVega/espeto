@@ -77,6 +77,12 @@ describe("lexer", () => {
 		expect(tokens[0]!.value).toBe("exists?");
 	});
 
+	it("allows '!' at end of identifier", () => {
+		const tokens = lex(`sh!`, "x.esp");
+		expect(tokens[0]!.type).toBe("ident");
+		expect(tokens[0]!.value).toBe("sh!");
+	});
+
 	it("emits parens and commas as tokens", () => {
 		const tokens = lex(`f(a, b)`, "x.esp");
 		expect(tokens.map((t) => t.type)).toEqual([

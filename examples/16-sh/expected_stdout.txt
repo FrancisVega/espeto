@@ -1,0 +1,4 @@
+Hola, Mundo!
+lines=3
+exit=1 ok=false
+rescued

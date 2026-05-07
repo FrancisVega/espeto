@@ -473,8 +473,8 @@ class Lexer {
 			name += this.source[this.i];
 			this.advance();
 		}
-		if (this.source[this.i] === "?") {
-			name += "?";
+		if (this.source[this.i] === "?" || this.source[this.i] === "!") {
+			name += this.source[this.i];
 			this.advance();
 		}
 		const span = this.spanFrom(start);

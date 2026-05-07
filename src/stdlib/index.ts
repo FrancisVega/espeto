@@ -55,6 +55,7 @@ import {
 	to_str,
 } from "./numbers";
 import { id, unless, when } from "./pipe";
+import { sh, sh_bang } from "./sh";
 import {
 	is_bool,
 	is_fn,
@@ -149,4 +150,6 @@ export function loadPrelude(env: Env): void {
 	env.define("try_to_int", try_to_int);
 	env.define("try_to_float", try_to_float);
 	env.define("assert_raise", assert_raise);
+	env.define("sh", sh);
+	env.define("sh!", sh_bang);
 }
