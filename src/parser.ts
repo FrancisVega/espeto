@@ -29,7 +29,7 @@ import type {
 	TestBlock,
 	TryExpr,
 } from "./ast";
-import { EspetoError } from "./errors";
+import { EspetoError, type Span } from "./errors";
 import type { Token, TokenType } from "./lexer";
 
 const CLI_TYPES: Record<string, CliType> = {
@@ -530,6 +530,7 @@ class Parser {
 		return {
 			kind: isFlag ? "flag_decl" : "arg_decl",
 			name: nameTok.value,
+			nameSpan: nameTok.span,
 			type,
 			default: defaultExpr,
 			attrs,
@@ -560,11 +561,16 @@ class Parser {
 		const nameTok = this.expect("ident", "function name");
 		this.expect("lparen", "'('");
 		const params: string[] = [];
+		const paramSpans: Span[] = [];
 		if (!this.match("rparen")) {
-			params.push(this.expect("ident", "parameter name").value);
+			const p = this.expect("ident", "parameter name");
+			params.push(p.value);
+			paramSpans.push(p.span);
 			while (this.match("comma")) {
 				this.advance();
-				params.push(this.expect("ident", "parameter name").value);
+				const next = this.expect("ident", "parameter name");
+				params.push(next.value);
+				paramSpans.push(next.span);
 			}
 		}
 		this.expect("rparen", "')'");
@@ -602,7 +608,9 @@ class Parser {
 		return {
 			kind: "fn_def",
 			name: nameTok.value,
+			nameSpan: nameTok.span,
 			params,
+			paramSpans,
 			body,
 			exported,
 			span: kw.span,
@@ -936,22 +944,29 @@ class Parser {
 	private parseLambda(): LambdaExpr {
 		const kw = this.advance();
 		const params: string[] = [];
+		const paramSpans: Span[] = [];
 		if (this.match("lparen")) {
 			this.advance();
 			this.skipNewlines();
 			if (!this.match("rparen")) {
-				params.push(this.expect("ident", "lambda parameter").value);
+				const p = this.expect("ident", "lambda parameter");
+				params.push(p.value);
+				paramSpans.push(p.span);
 				this.skipNewlines();
 				while (this.match("comma")) {
 					this.advance();
 					this.skipNewlines();
-					params.push(this.expect("ident", "lambda parameter").value);
+					const next = this.expect("ident", "lambda parameter");
+					params.push(next.value);
+					paramSpans.push(next.span);
 					this.skipNewlines();
 				}
 			}
 			this.expect("rparen", "')' to close lambda parameters");
 		} else if (this.match("ident")) {
-			params.push(this.advance().value);
+			const t = this.advance();
+			params.push(t.value);
+			paramSpans.push(t.span);
 		} else {
 			const tok = this.peek();
 			throw new EspetoError(
@@ -963,7 +978,7 @@ class Parser {
 		this.expect("fat_arrow", "'=>' after lambda parameters");
 		this.skipNewlines();
 		const body = this.parseExpr();
-		return { kind: "lambda", params, body, span: kw.span };
+		return { kind: "lambda", params, paramSpans, body, span: kw.span };
 	}
 
 	private parseList(): ListExpr {

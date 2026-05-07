@@ -98,7 +98,7 @@
       "patterns": [
         {
           "name": "keyword.control.espeto",
-          "match": "\\b(if|else|do|end)\\b"
+          "match": "\\b(if|else|do|end|try|rescue|assert)\\b"
         },
         {
           "name": "keyword.declaration.function.espeto",
@@ -106,7 +106,7 @@
         },
         {
           "name": "keyword.declaration.command.espeto",
-          "match": "\\b(program|cmd|arg|flag|desc|version)\\b"
+          "match": "\\b(program|cmd|arg|flag|desc|version|test)\\b"
         },
         {
           "name": "keyword.control.import.espeto",

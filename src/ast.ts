@@ -64,6 +64,7 @@ export type IfExpr = {
 export type LambdaExpr = {
 	kind: "lambda";
 	params: string[];
+	paramSpans?: Span[];
 	body: Expr;
 	span: Span;
 };
@@ -168,7 +169,9 @@ export type Call = {
 export type FnDef = {
 	kind: "fn_def";
 	name: string;
+	nameSpan?: Span;
 	params: string[];
+	paramSpans?: Span[];
 	body: Stmt[];
 	exported: boolean;
 	span: Span;
@@ -193,6 +196,7 @@ export type DeclAttrs = {
 export type ArgDecl = {
 	kind: "arg_decl";
 	name: string;
+	nameSpan?: Span;
 	type: CliType;
 	default?: Expr;
 	attrs: DeclAttrs;
@@ -202,6 +206,7 @@ export type ArgDecl = {
 export type FlagDecl = {
 	kind: "flag_decl";
 	name: string;
+	nameSpan?: Span;
 	type: CliType;
 	default?: Expr;
 	attrs: DeclAttrs;

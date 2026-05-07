@@ -1,8 +1,8 @@
 {
   "name": "vscode-espeto",
   "displayName": "Espeto",
-  "description": "Language support for Espeto: syntax highlighting, hover docs, go-to-definition.",
-  "version": "0.1.0",
+  "description": "Language support for Espeto: syntax highlighting, hover docs, go-to-definition, completion, references, rename, outline, folding, signature help, and semantic tokens.",
+  "version": "0.2.0",
   "publisher": "hisco",
   "engines": {
     "vscode": "^1.75.0"
@@ -39,6 +39,18 @@
         "language": "espeto",
         "scopeName": "source.espeto",
         "path": "./syntaxes/espeto.tmLanguage.json"
+      }
+    ],
+    "semanticTokenScopes": [
+      {
+        "language": "espeto",
+        "scopes": {
+          "function": ["entity.name.function.espeto"],
+          "function.defaultLibrary": ["support.function.builtin.espeto"],
+          "parameter": ["variable.parameter.espeto"],
+          "variable": ["variable.other.espeto"],
+          "variable.defaultLibrary": ["variable.language.espeto"]
+        }
       }
     ]
   },
