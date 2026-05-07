@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { argv, exit, stderr, stdout } from "node:process";
 import { fileURLToPath } from "node:url";
 import { build, BuildError, type BuildTarget } from "./build";
+import { buildDocs } from "./docs";
 import { startRepl } from "./repl";
 import { runMain } from "./run";
 import { runTestsMain } from "./test";
@@ -24,6 +25,7 @@ usage:
   espeto run [-w|--watch] <file.esp> [cmd-args...]        run an Espeto program
   espeto build <file.esp> -o <out> [--target T]           bundle into a standalone binary
   espeto test [-w|--watch] [path]                         run *_test.esp under path (default cwd)
+  espeto docs                                             print language reference (markdown) to stdout
   espeto repl                                             start interactive REPL
   espeto lsp                                              run language server (stdio)
   espeto --help                                           show this help
@@ -57,6 +59,10 @@ async function main(): Promise<number> {
 
 	if (args[0] === "test") {
 		return await runTest(args.slice(1));
+	}
+
+	if (args[0] === "docs") {
+		return runDocs(args.slice(1));
 	}
 
 	if (args[0] === "repl") {
@@ -226,6 +232,16 @@ function runBuild(args: string[]): number {
 		stderr.write(`error: ${e instanceof Error ? e.message : String(e)}\n`);
 		return 1;
 	}
+}
+
+function runDocs(args: string[]): number {
+	if (args.length > 0) {
+		stderr.write(`error: unexpected argument: ${args[0]}\n`);
+		stderr.write("usage: espeto docs\n");
+		return 1;
+	}
+	stdout.write(buildDocs());
+	return 0;
 }
 
 async function runLsp(): Promise<number> {

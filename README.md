@@ -355,6 +355,8 @@ Subcomandos:
 ```
 espeto run [-w|--watch] <file.esp> [-- cmd-args...]   ejecuta un .esp
 espeto build <file.esp> -o <out> [--target T]          empaqueta en binario standalone
+espeto test [-w|--watch] [path]                        corre *_test.esp bajo path
+espeto docs                                            imprime referencia del lenguaje (markdown)
 espeto repl                                            REPL interactivo
 espeto lsp                                             servidor LSP (stdio)
 espeto --help / --version
