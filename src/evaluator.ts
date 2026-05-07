@@ -8,12 +8,22 @@ import type {
 	LambdaExpr,
 	ListExpr,
 	MapExpr,
-	Program,
+	Module,
+	ProgramDecl,
 	Stmt,
 	TryExpr,
 	UnaryOp,
 } from "./ast";
-import { CliUsageError, formatHelp, parseCmdArgv } from "./cmd";
+import {
+	CliUsageError,
+	formatHelp,
+	formatProgramHelp,
+	formatUsageLine,
+	parseCmdArgv,
+	parseProgramFlags,
+	pickMeta,
+	splitProgramArgv,
+} from "./cmd";
 import type { Env } from "./env";
 import { EspetoError } from "./errors";
 import { findSimilar } from "./hints";
@@ -39,12 +49,12 @@ export class CmdRuntimeError extends Error {
 }
 
 export function evaluate(
-	program: Program,
+	module: Module,
 	env: Env,
 	source: string,
 	cmdArgv: string[] | null = null,
 ): Value {
-	for (const item of program.items) {
+	for (const item of module.items) {
 		if (item.kind === "fn_def") {
 			env.define(item.name, {
 				kind: "userfn",
@@ -58,17 +68,23 @@ export function evaluate(
 	}
 
 	let cmd: Cmd | null = null;
-	for (const item of program.items) {
+	let prog: ProgramDecl | null = null;
+	for (const item of module.items) {
 		if (item.kind === "cmd") {
 			cmd = item;
+			break;
+		}
+		if (item.kind === "program") {
+			prog = item;
 			break;
 		}
 	}
 
 	let result: Value = null;
-	for (const item of program.items) {
+	for (const item of module.items) {
 		if (item.kind === "fn_def") continue;
 		if (item.kind === "cmd") continue;
+		if (item.kind === "program") continue;
 		if (item.kind === "import") continue;
 		if (item.kind === "assign") {
 			const v = evalExpr(item.value, env, source);
@@ -78,6 +94,9 @@ export function evaluate(
 		result = evalExpr(item, env, source);
 	}
 
+	if (prog && cmdArgv !== null) {
+		return runProgram(prog, env, source, cmdArgv);
+	}
 	if (cmd && cmdArgv !== null) {
 		return runCmd(cmd, env, source, cmdArgv);
 	}
@@ -85,15 +104,71 @@ export function evaluate(
 	return result;
 }
 
+function runProgram(
+	prog: ProgramDecl,
+	env: Env,
+	source: string,
+	argv: string[],
+): Value {
+	const split = splitProgramArgv(argv, prog.flags);
+	const progParse = parseProgramFlags(prog, split.progArgv);
+
+	if (progParse.kind === "help") {
+		process.stdout.write(formatProgramHelp(prog));
+		return null;
+	}
+	if (progParse.kind === "version") {
+		const v = pickMeta(prog.meta, "meta_version");
+		if (v !== null) process.stdout.write(`${v}\n`);
+		return null;
+	}
+
+	if (split.subcmd === null) {
+		process.stdout.write(formatProgramHelp(prog));
+		return null;
+	}
+
+	const cmd = prog.cmds.find((c) => c.name === split.subcmd);
+	if (!cmd) {
+		const names = prog.cmds.map((c) => c.name);
+		const hint = findSimilar(split.subcmd, names);
+		const lines: string[] = [`unknown subcommand '${split.subcmd}'`];
+		if (hint) {
+			lines.push("");
+			lines.push(`  did you mean '${hint}'?`);
+		}
+		lines.push("");
+		lines.push(`run '${prog.name} --help' for available commands.`);
+		throw new CliUsageError(lines.join("\n"));
+	}
+
+	const progEnv = env.extend();
+	for (const flag of prog.flags) {
+		const v = progParse.provided.get(flag.name);
+		if (v !== undefined) {
+			progEnv.define(flag.name, v);
+		} else if (flag.default) {
+			progEnv.define(flag.name, evalExpr(flag.default, env, source));
+		} else {
+			throw new CliUsageError(
+				`missing required flag: --${flag.name.replace(/_/g, "-")}`,
+			);
+		}
+	}
+
+	return runCmd(cmd, progEnv, source, split.cmdArgv, prog);
+}
+
 function runCmd(
 	cmd: Cmd,
 	env: Env,
 	source: string,
 	argv: string[],
+	parent?: ProgramDecl,
 ): Value {
-	const parseRes = parseCmdArgv(cmd, argv);
+	const parseRes = parseCmdArgv(cmd, argv, parent);
 	if (parseRes.kind === "help") {
-		process.stdout.write(formatHelp(cmd));
+		process.stdout.write(formatHelp(cmd, parent));
 		return null;
 	}
 
@@ -105,9 +180,12 @@ function runCmd(
 			cmdEnv.define(decl.name, evalExpr(decl.default, env, source));
 		} else {
 			const label =
-				decl.kind === "arg_decl" ? `<${decl.name}>` : `--${decl.name}`;
+				decl.kind === "arg_decl"
+					? `<${decl.name}>`
+					: `--${decl.name.replace(/_/g, "-")}`;
+			const kindLabel = decl.kind === "arg_decl" ? "argument" : "flag";
 			throw new CliUsageError(
-				`missing required ${decl.kind === "arg_decl" ? "arg" : "flag"}: ${label}`,
+				`missing required ${kindLabel} ${label}\n\n${formatUsageLine(cmd, parent)}`,
 			);
 		}
 	}

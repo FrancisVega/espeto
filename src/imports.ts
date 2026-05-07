@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { basename, dirname, resolve as resolvePath } from "node:path";
-import type { ImportItem, Program } from "./ast";
+import type { ImportItem, Module } from "./ast";
 import { Env } from "./env";
 import { EspetoError } from "./errors";
 import { evaluate } from "./evaluator";
@@ -23,7 +23,7 @@ export const defaultResolver: Resolver = (importerAbsPath, importPath) => {
 export type LoadedModule = {
 	absPath: string;
 	source: string;
-	program: Program;
+	module: Module;
 	env: Env;
 	exportedNames: Set<string>;
 	privateNames: Set<string>;
@@ -39,7 +39,7 @@ export class ModuleLoader {
 	) {}
 
 	loadInto(
-		program: Program,
+		module: Module,
 		env: Env,
 		importerAbsPath: string,
 		importerSource: string,
@@ -47,7 +47,7 @@ export class ModuleLoader {
 		const importedFromPath = new Map<string, string>();
 		const importedBindings = new Map<string, string>();
 
-		for (const item of program.items) {
+		for (const item of module.items) {
 			if (item.kind !== "import") continue;
 
 			let resolved: ResolvedModule;
@@ -71,9 +71,9 @@ export class ModuleLoader {
 			}
 			importedFromPath.set(resolved.absPath, item.path);
 
-			const module = this.load(resolved, item, importerSource);
+			const loaded = this.load(resolved, item, importerSource);
 
-			injectImport(env, module, item, importerSource, importedBindings);
+			injectImport(env, loaded, item, importerSource, importedBindings);
 		}
 	}
 
@@ -97,19 +97,19 @@ export class ModuleLoader {
 		}
 
 		const tokens = lex(resolved.source, resolved.absPath);
-		const program = parse(tokens, resolved.source);
+		const module = parse(tokens, resolved.source);
 
-		validateImportableModule(program, resolved.source);
+		validateImportableModule(module, resolved.source);
 
 		this.loading.push(resolved.absPath);
 		try {
 			const env = this.preludeEnv.extend();
-			this.loadInto(program, env, resolved.absPath, resolved.source);
-			evaluate(program, env, resolved.source, null);
+			this.loadInto(module, env, resolved.absPath, resolved.source);
+			evaluate(module, env, resolved.source, null);
 
 			const exportedNames = new Set<string>();
 			const privateNames = new Set<string>();
-			for (const it of program.items) {
+			for (const it of module.items) {
 				if (it.kind === "fn_def") {
 					(it.exported ? exportedNames : privateNames).add(it.name);
 				}
@@ -118,7 +118,7 @@ export class ModuleLoader {
 			const loaded: LoadedModule = {
 				absPath: resolved.absPath,
 				source: resolved.source,
-				program,
+				module,
 				env,
 				exportedNames,
 				privateNames,
@@ -131,8 +131,8 @@ export class ModuleLoader {
 	}
 }
 
-function validateImportableModule(program: Program, source: string): void {
-	for (const item of program.items) {
+function validateImportableModule(module: Module, source: string): void {
+	for (const item of module.items) {
 		if (item.kind === "import" || item.kind === "fn_def") continue;
 		const what =
 			item.kind === "cmd"

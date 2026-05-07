@@ -40,6 +40,7 @@ export type TokenType =
 	| "kw_true"
 	| "kw_false"
 	| "kw_nil"
+	| "kw_program"
 	| "kw_cmd"
 	| "kw_arg"
 	| "kw_flag"
@@ -524,6 +525,7 @@ const KEYWORDS: Record<string, TokenType> = {
 	true: "kw_true",
 	false: "kw_false",
 	nil: "kw_nil",
+	program: "kw_program",
 	cmd: "kw_cmd",
 	arg: "kw_arg",
 	flag: "kw_flag",

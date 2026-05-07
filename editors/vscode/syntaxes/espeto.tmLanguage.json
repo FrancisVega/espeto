@@ -106,7 +106,7 @@
         },
         {
           "name": "keyword.declaration.command.espeto",
-          "match": "\\b(cmd|arg|flag|desc|version)\\b"
+          "match": "\\b(program|cmd|arg|flag|desc|version)\\b"
         },
         {
           "name": "keyword.control.import.espeto",

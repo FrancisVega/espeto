@@ -208,6 +208,15 @@ export type Cmd = {
 	span: Span;
 };
 
+export type ProgramDecl = {
+	kind: "program";
+	name: string;
+	meta: MetaStmt[];
+	flags: FlagDecl[];
+	cmds: Cmd[];
+	span: Span;
+};
+
 export type ImportSelector = {
 	name: string;
 	nameSpan: Span;
@@ -223,10 +232,10 @@ export type ImportItem = {
 	span: Span;
 };
 
-export type Item = FnDef | AssignStmt | Cmd | Expr | ImportItem;
+export type Item = FnDef | AssignStmt | Cmd | ProgramDecl | Expr | ImportItem;
 
-export type Program = {
-	kind: "program";
+export type Module = {
+	kind: "module";
 	items: Item[];
 	span: Span;
 };

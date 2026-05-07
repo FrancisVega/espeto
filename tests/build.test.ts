@@ -60,4 +60,48 @@ describeIfBun("espeto build", () => {
 			"HI WORLD\n",
 		);
 	});
+
+	it("builds and dispatches a program with multiple subcmds", () => {
+		const src = join(tempDir, "todo.esp");
+		const out = join(tempDir, "todo");
+		writeFileSync(
+			src,
+			`program todo do
+  desc "todo manager"
+  version "0.1.0"
+  flag loud: bool = false
+
+  cmd add do
+    arg item: str
+    msg = "added: #{item}"
+    msg |> when(loud, upcase) |> print
+  end
+
+  cmd remove do
+    arg id: int
+    "removed: #{id}" |> print
+  end
+end
+`,
+		);
+		build({ entryFile: src, outFile: out });
+
+		expect(execFileSync(out, ["add", "milk"], { encoding: "utf-8" })).toBe(
+			"added: milk\n",
+		);
+		expect(execFileSync(out, ["remove", "3"], { encoding: "utf-8" })).toBe(
+			"removed: 3\n",
+		);
+		expect(
+			execFileSync(out, ["--loud", "add", "milk"], { encoding: "utf-8" }),
+		).toBe("ADDED: MILK\n");
+		expect(execFileSync(out, ["--version"], { encoding: "utf-8" })).toBe(
+			"0.1.0\n",
+		);
+
+		const helpOut = execFileSync(out, ["--help"], { encoding: "utf-8" });
+		expect(helpOut).toContain("Usage: todo <command>");
+		expect(helpOut).toContain("add");
+		expect(helpOut).toContain("remove");
+	});
 });

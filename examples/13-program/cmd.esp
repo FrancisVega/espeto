@@ -1,0 +1,18 @@
+program todo do
+  desc "tiny todo manager"
+  version "0.1.0"
+  flag loud: bool = false
+
+  cmd add do
+    desc "add an item"
+    arg item: str
+    msg = "added: #{item}"
+    msg |> when(loud, upcase) |> print
+  end
+
+  cmd remove do
+    desc "remove by id"
+    arg id: int
+    "removed: #{id}" |> print
+  end
+end

@@ -20,7 +20,7 @@ const VALID_TARGETS: ReadonlySet<BuildTarget> = new Set([
 const HELP = `espeto v${VERSION}
 
 usage:
-  espeto run [-w|--watch] <file.esp> [-- <cmd-args>...]   run an Espeto program
+  espeto run [-w|--watch] <file.esp> [cmd-args...]        run an Espeto program
   espeto build <file.esp> -o <out> [--target T]           bundle into a standalone binary
   espeto repl                                             start interactive REPL
   espeto lsp                                              run language server (stdio)
@@ -68,24 +68,33 @@ async function main(): Promise<number> {
 }
 
 async function runRun(args: string[]): Promise<number> {
-	const sepIdx = args.indexOf("--");
-	const runArgs = sepIdx >= 0 ? args.slice(0, sepIdx) : args;
-	const cmdArgv = sepIdx >= 0 ? args.slice(sepIdx + 1) : [];
-
 	let file: string | undefined;
 	let watch = false;
-	for (const a of runArgs) {
+	let i = 0;
+	while (i < args.length) {
+		const a = args[i]!;
 		if (a === "--watch" || a === "-w") {
 			watch = true;
-		} else if (a.startsWith("-") && a !== "-") {
+			i++;
+			continue;
+		}
+		if (a === "--") {
+			i++;
+			break;
+		}
+		if (a.startsWith("-") && a !== "-") {
 			stderr.write(`error: unknown flag: ${a}\n`);
 			return 1;
-		} else if (!file) {
-			file = a;
-		} else {
-			stderr.write(`error: unexpected argument: ${a}\n`);
-			return 1;
 		}
+		file = a;
+		i++;
+		break;
+	}
+
+	let cmdArgv = args.slice(i);
+	const sepIdx = cmdArgv.indexOf("--");
+	if (sepIdx >= 0) {
+		cmdArgv = [...cmdArgv.slice(0, sepIdx), ...cmdArgv.slice(sepIdx + 1)];
 	}
 
 	if (!file) {

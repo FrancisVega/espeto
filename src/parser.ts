@@ -21,7 +21,8 @@ import type {
 	MapEntry,
 	MapExpr,
 	MetaStmt,
-	Program,
+	Module,
+	ProgramDecl,
 	Stmt,
 	StringExpr,
 	TryExpr,
@@ -44,10 +45,11 @@ class Parser {
 		private readonly source: string,
 	) {}
 
-	parseProgram(): Program {
+	parseModule(): Module {
 		this.skipNewlines();
 		const items: Item[] = [];
 		let cmdSeen = false;
+		let programSeen = false;
 		let nonImportSeen = false;
 		while (!this.match("eof")) {
 			const item = this.parseTopLevelItem();
@@ -62,14 +64,38 @@ class Parser {
 			} else {
 				nonImportSeen = true;
 				if (item.kind === "cmd") {
+					if (programSeen) {
+						throw new EspetoError(
+							"top-level 'cmd' not allowed alongside 'program' (wrap cmds inside the program block)",
+							item.span,
+							this.source,
+						);
+					}
 					if (cmdSeen) {
 						throw new EspetoError(
-							"only one cmd block allowed per file",
+							"only one cmd block allowed per file (use 'program' to declare multiple commands)",
 							item.span,
 							this.source,
 						);
 					}
 					cmdSeen = true;
+				}
+				if (item.kind === "program") {
+					if (cmdSeen) {
+						throw new EspetoError(
+							"'program' not allowed alongside top-level 'cmd' (move the cmd inside the program block)",
+							item.span,
+							this.source,
+						);
+					}
+					if (programSeen) {
+						throw new EspetoError(
+							"only one 'program' block allowed per file",
+							item.span,
+							this.source,
+						);
+					}
+					programSeen = true;
 				}
 			}
 			items.push(item);
@@ -77,7 +103,7 @@ class Parser {
 			this.skipNewlines();
 		}
 		const span = items[0]?.span ?? this.peek().span;
-		return { kind: "program", items, span };
+		return { kind: "module", items, span };
 	}
 
 	private parseTopLevelItem(): Item {
@@ -86,6 +112,9 @@ class Parser {
 		}
 		if (this.match("kw_def") || this.match("kw_defp")) {
 			return this.parseFnDef();
+		}
+		if (this.match("kw_program")) {
+			return this.parseProgramDecl();
 		}
 		if (this.match("kw_cmd")) {
 			return this.parseCmd();
@@ -240,6 +269,117 @@ class Parser {
 			meta,
 			decls,
 			body,
+			span: kw.span,
+		};
+	}
+
+	private parseProgramDecl(): ProgramDecl {
+		const kw = this.advance();
+		const nameTok = this.expect("ident", "program name");
+		this.expect("kw_do", "'do' to open program block");
+		this.skipNewlines();
+
+		const meta: MetaStmt[] = [];
+		while (this.match("kw_desc") || this.match("kw_version")) {
+			const metaTok = this.advance();
+			const value = this.parseExpr();
+			meta.push({
+				kind: metaTok.type === "kw_desc" ? "meta_desc" : "meta_version",
+				value,
+				span: metaTok.span,
+			});
+			this.expectStmtEnd("kw_end");
+			this.skipNewlines();
+		}
+
+		const flags: FlagDecl[] = [];
+		while (this.match("kw_flag")) {
+			const decl = this.parseDecl();
+			flags.push(decl as FlagDecl);
+			this.expectStmtEnd("kw_end");
+			this.skipNewlines();
+		}
+
+		if (this.match("kw_arg")) {
+			throw new EspetoError(
+				"'arg' not allowed at program level (declare 'arg' inside individual cmds)",
+				this.peek().span,
+				this.source,
+			);
+		}
+
+		const cmds: Cmd[] = [];
+		const cmdNames = new Set<string>();
+		while (this.match("kw_cmd")) {
+			const cmd = this.parseCmd();
+			if (cmdNames.has(cmd.name)) {
+				throw new EspetoError(
+					`duplicate command '${cmd.name}' in program '${nameTok.value}'`,
+					cmd.span,
+					this.source,
+				);
+			}
+			cmdNames.add(cmd.name);
+			for (const cmdDecl of cmd.decls) {
+				if (cmdDecl.kind !== "flag_decl") continue;
+				const conflict = flags.find((f) => f.name === cmdDecl.name);
+				if (conflict !== undefined) {
+					throw new EspetoError(
+						`flag '${cmdDecl.name}' in cmd '${cmd.name}' shadows program-level flag of the same name`,
+						cmdDecl.span,
+						this.source,
+					);
+				}
+			}
+			cmds.push(cmd);
+			this.expectStmtEnd("kw_end");
+			this.skipNewlines();
+		}
+
+		if (!this.match("kw_end")) {
+			if (this.match("eof")) {
+				throw new EspetoError(
+					"expected 'end' to close program",
+					kw.span,
+					this.source,
+				);
+			}
+			if (this.match("kw_desc") || this.match("kw_version")) {
+				throw new EspetoError(
+					"meta (desc/version) must come before flags and cmds",
+					this.peek().span,
+					this.source,
+				);
+			}
+			if (this.match("kw_flag")) {
+				throw new EspetoError(
+					"flag declarations must come before cmd declarations",
+					this.peek().span,
+					this.source,
+				);
+			}
+			throw new EspetoError(
+				"unexpected statement in program body; only 'desc', 'version', 'flag', and 'cmd' are allowed at program level",
+				this.peek().span,
+				this.source,
+			);
+		}
+		this.expect("kw_end", "'end' to close program");
+
+		if (cmds.length === 0) {
+			throw new EspetoError(
+				`program '${nameTok.value}' has no commands; declare at least one 'cmd' inside`,
+				kw.span,
+				this.source,
+			);
+		}
+
+		return {
+			kind: "program",
+			name: nameTok.value,
+			meta,
+			flags,
+			cmds,
 			span: kw.span,
 		};
 	}
@@ -979,6 +1119,6 @@ function peekCmpOp(type: TokenType): BinaryOpKind | null {
 	}
 }
 
-export function parse(tokens: Token[], source: string): Program {
-	return new Parser(tokens, source).parseProgram();
+export function parse(tokens: Token[], source: string): Module {
+	return new Parser(tokens, source).parseModule();
 }

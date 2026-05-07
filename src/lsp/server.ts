@@ -214,8 +214,8 @@ const parseCache = new Map<string, { version: number; result: Parsed }>();
 function safeParse(source: string, filePath: string) {
 	try {
 		const tokens = lex(source, filePath);
-		const program = parse(tokens, source);
-		return { ok: true as const, program };
+		const module = parse(tokens, source);
+		return { ok: true as const, module };
 	} catch (e) {
 		if (e instanceof EspetoError) return { ok: false as const, error: e };
 		return {
@@ -256,9 +256,9 @@ connection.onHover((params: HoverParams): Hover | null => {
 	if (!parsed.ok) return null;
 	const line = params.position.line + 1;
 	const col = params.position.character + 1;
-	const ident = findIdentAt(parsed.program, line, col);
+	const ident = findIdentAt(parsed.module, line, col);
 	if (!ident) return null;
-	const resolution = resolveIdent(parsed.program, ident, BUILTIN_NAMES);
+	const resolution = resolveIdent(parsed.module, ident, BUILTIN_NAMES);
 	if (!resolution) return null;
 	return {
 		contents: { kind: "markdown", value: renderResolutionHover(resolution) },
@@ -274,9 +274,9 @@ connection.onDefinition(
 		if (!parsed.ok) return null;
 		const line = params.position.line + 1;
 		const col = params.position.character + 1;
-		const ident = findIdentAt(parsed.program, line, col);
+		const ident = findIdentAt(parsed.module, line, col);
 		if (!ident) return null;
-		const resolution = resolveIdent(parsed.program, ident, BUILTIN_NAMES);
+		const resolution = resolveIdent(parsed.module, ident, BUILTIN_NAMES);
 		if (!resolution) return null;
 		return resolutionLocation(resolution);
 	},

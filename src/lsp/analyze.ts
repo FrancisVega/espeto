@@ -20,7 +20,7 @@ import type {
 	LambdaExpr,
 	ListExpr,
 	MapExpr,
-	Program,
+	Module,
 	Stmt,
 	StringExpr,
 	TryExpr,
@@ -46,7 +46,7 @@ function spanContains(span: Span, line: number, col: number): boolean {
 }
 
 export function findIdentAt(
-	program: Program,
+	module: Module,
 	line: number,
 	col: number,
 ): Identifier | null {
@@ -119,16 +119,26 @@ export function findIdentAt(
 		visitExpr(stmt);
 	};
 
-	for (const item of program.items) {
+	const visitCmd = (cmd: import("../ast").Cmd): void => {
+		for (const decl of cmd.decls) {
+			if (decl.default) visitExpr(decl.default);
+		}
+		for (const s of cmd.body) visitStmt(s);
+	};
+
+	for (const item of module.items) {
 		switch (item.kind) {
 			case "fn_def":
 				for (const s of item.body) visitStmt(s);
 				break;
 			case "cmd":
-				for (const decl of item.decls) {
-					if (decl.default) visitExpr(decl.default);
+				visitCmd(item);
+				break;
+			case "program":
+				for (const f of item.flags) {
+					if (f.default) visitExpr(f.default);
 				}
-				for (const s of item.body) visitStmt(s);
+				for (const cmd of item.cmds) visitCmd(cmd);
 				break;
 			case "assign":
 				visitExpr(item.value);
@@ -145,13 +155,13 @@ export function findIdentAt(
 }
 
 export function resolveIdent(
-	program: Program,
+	module: Module,
 	target: Identifier,
 	builtinNames: Set<string>,
 ): Resolution | null {
 	const globalFns: Binding[] = [];
 	const globalLets: Binding[] = [];
-	for (const item of program.items) {
+	for (const item of module.items) {
 		if (item.kind === "fn_def") {
 			globalFns.push({
 				name: item.name,
@@ -308,8 +318,33 @@ export function resolveIdent(
 		visitExpr(stmt);
 	};
 
+	const visitCmdScope = (cmd: import("../ast").Cmd): void => {
+		const cmdFrame: Binding[] = [];
+		for (const decl of cmd.decls) {
+			cmdFrame.push({
+				name: decl.name,
+				resolution:
+					decl.kind === "arg_decl"
+						? { kind: "arg", node: decl }
+						: { kind: "flag", node: decl },
+			});
+		}
+		stack.push(cmdFrame);
+		const localFrame: Binding[] = [];
+		stack.push(localFrame);
+		for (const decl of cmd.decls) {
+			if (decl.default && !stop) visitExpr(decl.default);
+		}
+		for (const s of cmd.body) {
+			if (stop) return;
+			visitStmt(s, localFrame);
+		}
+		stack.pop();
+		stack.pop();
+	};
+
 	const visitItems = (): void => {
-		for (const item of program.items) {
+		for (const item of module.items) {
 			if (stop) return;
 			switch (item.kind) {
 				case "fn_def": {
@@ -329,27 +364,25 @@ export function resolveIdent(
 					break;
 				}
 				case "cmd": {
-					const cmdFrame: Binding[] = [];
-					for (const decl of item.decls) {
-						cmdFrame.push({
-							name: decl.name,
-							resolution:
-								decl.kind === "arg_decl"
-									? { kind: "arg", node: decl }
-									: { kind: "flag", node: decl },
+					visitCmdScope(item);
+					break;
+				}
+				case "program": {
+					const progFrame: Binding[] = [];
+					for (const f of item.flags) {
+						progFrame.push({
+							name: f.name,
+							resolution: { kind: "flag", node: f },
 						});
 					}
-					stack.push(cmdFrame);
-					const localFrame: Binding[] = [];
-					stack.push(localFrame);
-					for (const decl of item.decls) {
-						if (decl.default && !stop) visitExpr(decl.default);
+					stack.push(progFrame);
+					for (const f of item.flags) {
+						if (f.default && !stop) visitExpr(f.default);
 					}
-					for (const s of item.body) {
+					for (const cmd of item.cmds) {
 						if (stop) return;
-						visitStmt(s, localFrame);
+						visitCmdScope(cmd);
 					}
-					stack.pop();
 					stack.pop();
 					break;
 				}

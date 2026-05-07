@@ -21,10 +21,10 @@ export function replEval(
 	source: string,
 	file = "<repl>",
 ): ReplResult {
-	let program;
+	let module;
 	try {
 		const tokens = lex(source, file);
-		program = parse(tokens, source);
+		module = parse(tokens, source);
 	} catch (e) {
 		if (e instanceof EspetoError && isIncompleteError(e)) {
 			return { kind: "incomplete" };
@@ -32,11 +32,11 @@ export function replEval(
 		return { kind: "error", error: e };
 	}
 
-	if (program.items.length === 0) {
+	if (module.items.length === 0) {
 		return { kind: "empty" };
 	}
 
-	for (const item of program.items) {
+	for (const item of module.items) {
 		if (item.kind === "import") {
 			return {
 				kind: "error",
@@ -50,18 +50,18 @@ export function replEval(
 	}
 
 	const fnNames: string[] = [];
-	for (const item of program.items) {
+	for (const item of module.items) {
 		if (item.kind === "fn_def") fnNames.push(item.name);
 	}
 
 	let result: Value;
 	try {
-		result = evaluate(program, env, source, null);
+		result = evaluate(module, env, source, null);
 	} catch (e) {
 		return { kind: "error", error: e };
 	}
 
-	const last = program.items[program.items.length - 1]!;
+	const last = module.items[module.items.length - 1]!;
 	if (last.kind === "fn_def") return { kind: "fn_def", names: fnNames };
 	if (last.kind === "assign") return { kind: "binding", name: last.name };
 	if (last.kind === "cmd") return { kind: "empty" };

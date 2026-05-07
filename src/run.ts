@@ -22,7 +22,7 @@ export function run(
 	opts: RunOptions = {},
 ): Value {
 	const tokens = lex(source, file);
-	const program = parse(tokens, source);
+	const module = parse(tokens, source);
 	const preludeEnv = new Env();
 	loadPrelude(preludeEnv);
 	const userEnv = preludeEnv.extend();
@@ -30,10 +30,10 @@ export function run(
 	const resolver = opts.resolver ?? defaultResolver;
 	const entryAbsPath = opts.entryAbsPath ?? resolvePath(file);
 	const loader = new ModuleLoader(preludeEnv, resolver);
-	loader.loadInto(program, userEnv, entryAbsPath, source);
+	loader.loadInto(module, userEnv, entryAbsPath, source);
 
 	const cmdArgv = opts.cmdArgv ?? null;
-	return evaluate(program, userEnv, source, cmdArgv);
+	return evaluate(module, userEnv, source, cmdArgv);
 }
 
 export function runMain(

@@ -76,8 +76,8 @@ function collectSources(entryAbs: string): Map<string, string> {
 		sources.set(path, src);
 
 		const tokens = lex(src, path);
-		const program = parse(tokens, src);
-		for (const item of program.items) {
+		const module = parse(tokens, src);
+		for (const item of module.items) {
 			if (item.kind !== "import") continue;
 			const importedAbs = resolvePath(dirname(path), `${item.path}.esp`);
 			stack.push(importedAbs);
