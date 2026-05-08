@@ -658,7 +658,7 @@ describe("evaluator: hito 8b — try / rescue / raise", () => {
 			`try do
   x = to_int("42")
   x + 1
-rescue err =>
+rescue err do
   -1
 end`,
 			"x.esp",
@@ -671,7 +671,7 @@ end`,
 			`try do
   x = to_int("oops")
   x + 1
-rescue err =>
+rescue err do
   err |> upcase
 end`,
 			"x.esp",

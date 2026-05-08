@@ -145,17 +145,17 @@ describe("replEval: incomplete detection", () => {
 
 	it("flags missing 'end' in try block as incomplete", () => {
 		expect(
-			replEval(freshEnv(), "try do\n  1\nrescue err =>\n  2").kind,
+			replEval(freshEnv(), "try do\n  1\nrescue err do\n  2").kind,
 		).toBe("incomplete");
 	});
 
 	it("completes a multi-line try block across two inputs", () => {
 		const env = freshEnv();
 		expect(
-			replEval(env, "try do\n  raise(\"x\")\nrescue err =>\n  err").kind,
+			replEval(env, "try do\n  raise(\"x\")\nrescue err do\n  err").kind,
 		).toBe("incomplete");
 		expect(
-			replEval(env, "try do\n  raise(\"x\")\nrescue err =>\n  err\nend"),
+			replEval(env, "try do\n  raise(\"x\")\nrescue err do\n  err\nend"),
 		).toEqual({ kind: "value", value: "x" });
 	});
 

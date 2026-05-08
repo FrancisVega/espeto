@@ -79,6 +79,7 @@ function isIncompleteError(err: EspetoError): boolean {
 		m === "expected 'end' to close if" ||
 		m === "expected 'end' to close try" ||
 		m === "expected 'rescue' to close try" ||
+		m === "'do' after rescue binding" ||
 		m === "unexpected token: eof" ||
 		m.endsWith(", got eof")
 	);

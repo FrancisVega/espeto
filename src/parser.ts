@@ -1116,7 +1116,11 @@ class Parser {
 			"error binding name after 'rescue'",
 		);
 		this.skipNewlines();
-		this.expect("fat_arrow", "'=>' after rescue binding");
+		if (isBlock) {
+			this.expect("kw_do", "'do' after rescue binding");
+		} else {
+			this.expect("fat_arrow", "'=>' after rescue binding");
+		}
 		this.skipNewlines();
 
 		let rescueBody: Stmt[];

@@ -1030,7 +1030,7 @@ describe("parser: hito 7c — maps + .field", () => {
 
 	it("parses try block with rescue block", () => {
 		const p = ast(
-			`try do\n  x = to_int("42")\n  x + 1\nrescue err =>\n  -1\nend`,
+			`try do\n  x = to_int("42")\n  x + 1\nrescue err do\n  -1\nend`,
 		);
 		const node = p.items[0] as {
 			kind: string;
@@ -1088,7 +1088,7 @@ describe("parser: hito 7c — maps + .field", () => {
 	});
 
 	it("rejects try block reaching eof without end", () => {
-		expect(() => ast(`try do\n  1\nrescue err =>\n  2\n`)).toThrow(
+		expect(() => ast(`try do\n  1\nrescue err do\n  2\n`)).toThrow(
 			/expected 'end' to close try/,
 		);
 	});
@@ -1099,5 +1099,11 @@ describe("parser: hito 7c — maps + .field", () => {
 
 	it("rejects rescue without =>", () => {
 		expect(() => ast(`try 1 rescue err 2`)).toThrow(/'=>' after rescue/);
+	});
+
+	it("rejects block rescue without 'do'", () => {
+		expect(() =>
+			ast(`try do\n  1\nrescue err =>\n  2\nend`),
+		).toThrow(/'do' after rescue/);
 	});
 });
