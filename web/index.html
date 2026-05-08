@@ -6,7 +6,7 @@
   <title>Espeto · Lenguaje funcional para construir CLIs</title>
   <meta
     name="description"
-    content="Lenguaje funcional pequeño para construir CLIs. Pipe-céntrico, optimizado para que los LLMs lo escriban perfecto."
+    content="Lenguaje funcional pequeño para construir CLIs. Pipe-céntrico, diseñado para que los LLMs lo escriban con precisión."
   />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -190,14 +190,20 @@
       </div>
 
       <div class="code-window relative z-10 w-full max-w-lg mx-auto lg:ml-auto sticky top-8">
-        <div class="flex gap-2 mb-6 border-b border-white/10 pb-4">
-          <span class="text-xs text-white/50 uppercase tracking-widest">hello.esp</span>
+        <div class="flex items-center justify-between mb-6 border-b border-white/10 pb-4">
+          <span class="text-xs text-white/50 uppercase tracking-widest">greet.esp</span>
+          <span class="text-[10px] text-white/40 uppercase tracking-widest">un cli en 6 líneas</span>
         </div>
-<pre class="text-sm md:text-base leading-relaxed overflow-x-auto"><span class="text-gray-500"># hello.esp</span>
-<span class="text-green-400">"sardina"</span> <span class="text-[var(--color-brand-orange)] font-bold">|></span> upcase <span class="text-[var(--color-brand-orange)] font-bold">|></span> print
+<pre class="text-sm md:text-base leading-relaxed overflow-x-auto"><span class="text-gray-500"># greet.esp</span>
+<span class="text-[var(--color-brand-pink)]">cmd</span> greet <span class="text-[var(--color-brand-pink)]">do</span>
+  <span class="text-[var(--color-brand-pink)]">arg</span> name: str
+  <span class="text-[var(--color-brand-pink)]">flag</span> loud: bool = <span class="text-[var(--color-brand-pink)]">false</span>
 
-<span class="text-gray-500">$ espeto run hello.esp</span>
-<span class="text-white font-bold text-lg">SARDINA</span>
+  <span class="text-green-400">"Hola, #{name}!"</span> <span class="text-[var(--color-brand-orange)] font-bold">|></span> when(loud, upcase) <span class="text-[var(--color-brand-orange)] font-bold">|></span> print
+<span class="text-[var(--color-brand-pink)]">end</span>
+
+<span class="text-gray-500">$ espeto run greet.esp -- Mundo --loud</span>
+<span class="text-white font-bold text-lg">HOLA, MUNDO!</span>
 
 <span class="text-[var(--color-brand-pink)] font-bold">~/espeto ❯</span> <span class="w-2.5 h-5 bg-gray-400 animate-pulse"></span></code></pre>
       </div>
@@ -211,25 +217,93 @@
       <div class="text-center mb-16">
         <h2 class="text-4xl md:text-5xl mb-6">Menos ambigüedad, más precisión.</h2>
         <p class="text-text-primary text-lg md:text-xl max-w-3xl mx-auto font-medium leading-relaxed border-l-4 border-text-primary pl-6 text-left inline-block">
-          Un lenguaje de programación pequeño, <strong class="text-[var(--color-brand-orange)]">pipe-céntrico</strong> y estructurado para que los modelos de IA lo escriban de forma perfecta, sin alucinaciones.
+          Un lenguaje de programación pequeño, <strong class="text-[var(--color-brand-orange)]">pipe-céntrico</strong> y estructurado para que los modelos de IA lo escriban con precisión.
         </p>
       </div>
 
       <div class="flex flex-wrap justify-center gap-2 md:gap-4 mb-16">
-        <button class="tab-btn active" onclick="openTab(event, 'tab-pipe')">Pipe-céntrico</button>
-        <button class="tab-btn" onclick="openTab(event, 'tab-cli')">CLI Nativo</button>
+        <button class="tab-btn active" onclick="openTab(event, 'tab-cli')">CLI Nativo</button>
         <button class="tab-btn" onclick="openTab(event, 'tab-llm')">LLM-Friendly</button>
+        <button class="tab-btn" onclick="openTab(event, 'tab-pipe')">Pipe-céntrico</button>
         <button class="tab-btn" onclick="openTab(event, 'tab-stdlib')">Stdlib Integrada</button>
+        <button class="tab-btn" onclick="openTab(event, 'tab-build')">Build Standalone</button>
       </div>
 
-      <div id="tab-pipe" class="tab-content active lg:grid-cols-[1fr_1.2fr] gap-12 items-center">
+      <div id="tab-cli" class="tab-content active lg:grid-cols-[1fr_1.2fr] gap-12 items-start">
+        <div>
+          <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-6">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <h3 class="text-3xl mb-4">Herramientas de consola en minutos.</h3>
+          <p class="text-text-secondary leading-relaxed mb-6">
+            En Espeto, <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">program</code>, <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">cmd</code>, <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">arg</code> y <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">flag</code> son palabras clave del lenguaje. La validación, la página <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">--help</code>, <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">--version</code> y el despacho de subcomandos se generan solos.
+          </p>
+          <ul class="space-y-3 text-sm text-text-secondary font-bold">
+            <li class="flex items-center gap-2">
+              <div class="w-1.5 h-1.5 rounded-full bg-text-primary"></div> Un CLI completo en menos de 15 líneas.
+            </li>
+          </ul>
+        </div>
+        <div class="code-window">
+          <div class="flex items-center justify-between mb-6 border-b border-white/10 pb-4">
+            <span class="text-xs text-white/50 uppercase tracking-widest">Todo.esp</span>
+            <span class="text-[10px] text-[var(--color-brand-purple)] uppercase tracking-widest font-bold">varios subcomandos</span>
+          </div>
+<pre class="text-sm md:text-base leading-relaxed overflow-x-auto"><span class="text-[#ff2a7a]">program</span> todo <span class="text-[#ff2a7a]">do</span>
+  <span class="text-[#ff2a7a]">desc</span> <span class="text-green-400">"todo manager"</span>
+  <span class="text-[#ff2a7a]">version</span> <span class="text-green-400">"0.1.0"</span>
+
+  <span class="text-[#ff2a7a]">cmd</span> add <span class="text-[#ff2a7a]">do</span>
+    <span class="text-[#ff2a7a]">arg</span> item: str
+    <span class="text-green-400">"added: #{item}"</span> |> print
+  <span class="text-[#ff2a7a]">end</span>
+
+  <span class="text-[#ff2a7a]">cmd</span> remove <span class="text-[#ff2a7a]">do</span>
+    <span class="text-[#ff2a7a]">arg</span> id: int
+    <span class="text-green-400">"removed: #{id}"</span> |> print
+  <span class="text-[#ff2a7a]">end</span>
+<span class="text-[#ff2a7a]">end</span>
+
+<span class="text-white/40">$ espeto run todo.esp -- --help</span>
+<span class="text-white/40">Usage: todo &lt;command&gt; [options]</span>
+<span class="text-white/40">Commands: add, remove</span></code></pre>
+        </div>
+      </div>
+
+      <div id="tab-llm" class="tab-content lg:grid-cols-[1fr_1.2fr] gap-12 items-center">
+        <div>
+          <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-6">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand-purple)" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+          </div>
+          <h3 class="text-3xl mb-4">Diseñado para IAs (y humanos).</h3>
+          <p class="text-text-secondary leading-relaxed mb-6">
+            Espeto no tiene magia oscura ni azúcar sintáctico innecesario. Existe <strong>una sola forma canónica</strong> de escribir las cosas. Esto reduce drásticamente las alucinaciones cuando le pides a ChatGPT o Claude que escriban scripts por ti.
+          </p>
+        </div>
+        <div class="code-window">
+          <div class="flex gap-2 mb-6 border-b border-white/10 pb-4">
+            <span class="text-xs text-[#ff5e00] uppercase tracking-widest">Sin coerciones implícitas</span>
+          </div>
+<pre class="text-sm md:text-base leading-relaxed overflow-x-auto"><span class="text-white/40"># Fallo duro: no se mezclan tipos</span>
+1 + 1.0  <span class="text-white/40"># ERROR</span>
+
+<span class="text-white/40"># Igualdad estructural estricta</span>
+1 == 1.0 <span class="text-white/40"># false</span>
+
+<span class="text-white/40"># Truthiness explícito</span>
+<span class="text-[#ff2a7a]">if</span> "texto" <span class="text-[#ff2a7a]">do</span> <span class="text-white/40"># ERROR (requiere bool)</span>
+<span class="text-[#ff2a7a]">if</span> length(x) > 0 <span class="text-[#ff2a7a]">do</span> ... <span class="text-white/40"># CORRECTO</span></code></pre>
+        </div>
+      </div>
+
+      <div id="tab-pipe" class="tab-content lg:grid-cols-[1fr_1.2fr] gap-12 items-center">
         <div>
           <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mb-6">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand-orange)" stroke-width="2.5"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
           </div>
           <h3 class="text-3xl mb-4">Todo fluye hacia adelante.</h3>
           <p class="text-text-secondary leading-relaxed mb-6">
-            El operador <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">|></code> no es azúcar sintáctico, es la base del lenguaje. Cualquier dato pasa como primer argumento a la función de su derecha. No necesitas anidar llamadas ni declarar variables temporales. 
+            El operador <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">|></code> no es azúcar sintáctico, es la base del lenguaje. Cualquier dato pasa como primer argumento a la función de su derecha. No necesitas anidar llamadas ni declarar variables temporales.
           </p>
           <ul class="space-y-3 text-sm text-text-secondary font-bold">
             <li class="flex items-center gap-2">
@@ -260,95 +334,6 @@ users
         </div>
       </div>
 
-      <div id="tab-cli" class="tab-content lg:grid-cols-[1fr_1.2fr] gap-12 items-start">
-        <div>
-          <div class="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center mb-6">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#2563eb" stroke-width="2.5"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-          </div>
-          <h3 class="text-3xl mb-4">Herramientas de consola en minutos.</h3>
-          <p class="text-text-secondary leading-relaxed mb-6">
-            El 90% de los lenguajes te obligan a importar librerías pesadas para parsear argumentos, formatear ayuda o despachar subcomandos. En Espeto, <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">cmd</code>, <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">arg</code>, <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">flag</code> y <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">program</code> son palabras clave del lenguaje. La validación, la página <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">--help</code>, <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">--version</code> y el despacho de subcomandos — se generan solos.
-          </p>
-          <ul class="space-y-3 text-sm text-text-secondary font-bold">
-            <li class="flex items-center gap-2">
-              <div class="w-1.5 h-1.5 rounded-full bg-text-primary"></div> Un comando, seis líneas.
-            </li>
-            <li class="flex items-center gap-2">
-              <div class="w-1.5 h-1.5 rounded-full bg-text-primary"></div> Varios subcomandos con flags compartidas.
-            </li>
-          </ul>
-        </div>
-        <div class="space-y-6">
-          <div class="code-window">
-            <div class="flex items-center justify-between mb-6 border-b border-white/10 pb-4">
-              <span class="text-xs text-white/50 uppercase tracking-widest">Hola.esp</span>
-              <span class="text-[10px] text-white/40 uppercase tracking-widest">un comando</span>
-            </div>
-<pre class="text-sm md:text-base leading-relaxed overflow-x-auto"><span class="text-[#ff2a7a]">cmd</span> hola <span class="text-[#ff2a7a]">do</span>
-  <span class="text-[#ff2a7a]">arg</span> name: str
-  <span class="text-[#ff2a7a]">flag</span> loud: bool = <span class="text-[#ff2a7a]">false</span>
-
-  greeting = <span class="text-green-400">"Hola, #{name}!"</span>
-  greeting |> when(loud, upcase) |> print
-<span class="text-[#ff2a7a]">end</span>
-
-<span class="text-white/40">$ espeto run hola.esp -- --help</span>
-<span class="text-white/40">Usage: hola &lt;name&gt; [--loud]</span></code></pre>
-          </div>
-
-          <div class="code-window">
-            <div class="flex items-center justify-between mb-6 border-b border-white/10 pb-4">
-              <span class="text-xs text-white/50 uppercase tracking-widest">Todo.esp</span>
-              <span class="text-[10px] text-[var(--color-brand-purple)] uppercase tracking-widest font-bold">varios subcomandos</span>
-            </div>
-<pre class="text-sm md:text-base leading-relaxed overflow-x-auto"><span class="text-[#ff2a7a]">program</span> todo <span class="text-[#ff2a7a]">do</span>
-  <span class="text-[#ff2a7a]">desc</span> <span class="text-green-400">"todo manager"</span>
-  <span class="text-[#ff2a7a]">version</span> <span class="text-green-400">"0.1.0"</span>
-
-  <span class="text-[#ff2a7a]">cmd</span> add <span class="text-[#ff2a7a]">do</span>
-    <span class="text-[#ff2a7a]">arg</span> item: str
-    <span class="text-green-400">"added: #{item}"</span> |> print
-  <span class="text-[#ff2a7a]">end</span>
-
-  <span class="text-[#ff2a7a]">cmd</span> remove <span class="text-[#ff2a7a]">do</span>
-    <span class="text-[#ff2a7a]">arg</span> id: int
-    <span class="text-green-400">"removed: #{id}"</span> |> print
-  <span class="text-[#ff2a7a]">end</span>
-<span class="text-[#ff2a7a]">end</span>
-
-<span class="text-white/40">$ espeto run todo.esp -- --help</span>
-<span class="text-white/40">Usage: todo &lt;command&gt; [options]</span>
-<span class="text-white/40">Commands: add, remove</span></code></pre>
-          </div>
-        </div>
-      </div>
-
-      <div id="tab-llm" class="tab-content lg:grid-cols-[1fr_1.2fr] gap-12 items-center">
-        <div>
-          <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center mb-6">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand-purple)" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
-          </div>
-          <h3 class="text-3xl mb-4">Diseñado para IAs (y humanos).</h3>
-          <p class="text-text-secondary leading-relaxed mb-6">
-            Espeto no tiene magia oscura ni azúcar sintáctico innecesario. Existe <strong>una sola forma canónica</strong> de escribir las cosas. Esto reduce drásticamente las alucinaciones cuando le pides a ChatGPT o Claude que escriban scripts por ti.
-          </p>
-        </div>
-        <div class="code-window">
-          <div class="flex gap-2 mb-6 border-b border-white/10 pb-4">
-            <span class="text-xs text-[#ff5e00] uppercase tracking-widest">Sin coerciones implícitas</span>
-          </div>
-<pre class="text-sm md:text-base leading-relaxed overflow-x-auto"><span class="text-white/40"># Fallo duro: no se mezclan tipos</span>
-1 + 1.0  <span class="text-white/40"># ERROR</span>
-
-<span class="text-white/40"># Igualdad estructural estricta</span>
-1 == 1.0 <span class="text-white/40"># false</span>
-
-<span class="text-white/40"># Truthiness explícito</span>
-<span class="text-[#ff2a7a]">if</span> "texto" <span class="text-[#ff2a7a]">do</span> <span class="text-white/40"># ERROR (requiere bool)</span>
-<span class="text-[#ff2a7a]">if</span> length(x) > 0 <span class="text-[#ff2a7a]">do</span> ... <span class="text-white/40"># CORRECTO</span></code></pre>
-        </div>
-      </div>
-
       <div id="tab-stdlib" class="tab-content lg:grid-cols-[1fr_1.2fr] gap-12 items-center">
         <div>
           <div class="w-12 h-12 bg-pink-100 rounded-xl flex items-center justify-center mb-6">
@@ -372,6 +357,43 @@ data = <span class="text-[#ff2a7a]">try</span> "users.json"
   raise(<span class="text-green-400">"Error crítico: #{err}"</span>)
 
 data |> map(.email) |> print</code></pre>
+        </div>
+      </div>
+
+      <div id="tab-build" class="tab-content lg:grid-cols-[1fr_1.2fr] gap-12 items-center">
+        <div>
+          <div class="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center mb-6">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg>
+          </div>
+          <h3 class="text-3xl mb-4">Un binario, cero dependencias.</h3>
+          <p class="text-text-secondary leading-relaxed mb-6">
+            <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">espeto build</code> empaqueta tu programa <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">.esp</code> + el intérprete en un único ejecutable autocontenido. La máquina destino no necesita Node, ni Bun, ni Espeto — copias el binario y se ejecuta. Por debajo usa <strong>Bun</strong> con su flag <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">--compile</code>, así que el cross-compile a las plataformas principales es un único flag.
+          </p>
+          <ul class="space-y-3 text-sm text-text-secondary font-bold">
+            <li class="flex items-center gap-2">
+              <div class="w-1.5 h-1.5 rounded-full bg-text-primary"></div> Un solo archivo: imports relativos resueltos al empaquetar.
+            </li>
+            <li class="flex items-center gap-2">
+              <div class="w-1.5 h-1.5 rounded-full bg-text-primary"></div> Cross-compile a darwin/linux/windows · arm64/x64.
+            </li>
+          </ul>
+        </div>
+        <div class="code-window">
+          <div class="flex items-center justify-between mb-6 border-b border-white/10 pb-4">
+            <span class="text-xs text-white/50 uppercase tracking-widest">terminal</span>
+            <span class="text-[10px] text-[#22c55e] uppercase tracking-widest font-bold">ship it</span>
+          </div>
+<pre class="text-sm md:text-base leading-relaxed overflow-x-auto"><span class="text-white/40"># empaqueta tu cli en un binario standalone</span>
+<span class="text-[var(--color-brand-pink)] font-bold">$</span> espeto build hola.esp -o hola
+<span class="text-[var(--color-brand-pink)] font-bold">$</span> ./hola Mundo --loud
+<span class="text-white/40">HOLA, MUNDO!</span>
+
+<span class="text-white/40"># cross-compile y deploy</span>
+<span class="text-[var(--color-brand-pink)] font-bold">$</span> espeto build hola.esp -o hola <span class="text-[#22c55e]">--target</span> linux-arm64
+<span class="text-[var(--color-brand-pink)] font-bold">$</span> scp hola server:/usr/local/bin/
+
+<span class="text-white/40"># targets: darwin-arm64 · darwin-x64</span>
+<span class="text-white/40">#          linux-arm64 · linux-x64 · windows-x64</span></code></pre>
         </div>
       </div>
 
@@ -1048,12 +1070,12 @@ data |> map(.email) |> print</code></pre>
       for (var i = 0; i < tabContents.length; i++) {
         tabContents[i].classList.remove("active");
       }
-      
+
       var tabBtns = document.getElementsByClassName("tab-btn");
       for (var i = 0; i < tabBtns.length; i++) {
         tabBtns[i].classList.remove("active");
       }
-      
+
       document.getElementById(tabId).classList.add("active");
       evt.currentTarget.classList.add("active");
     }
