@@ -105,7 +105,7 @@ function renderBuiltinHover(fn: FnDoc): string {
 	return lines.join("\n");
 }
 
-function renderResolutionHover(res: Resolution): string {
+export function renderResolutionHover(res: Resolution): string {
 	switch (res.kind) {
 		case "builtin": {
 			const fn = MANIFEST.functions[res.name];
@@ -130,13 +130,16 @@ function renderResolutionHover(res: Resolution): string {
 		case "fn": {
 			const params = res.node.params.join(", ");
 			const exported = res.node.exported ? "export " : "";
-			return [
+			const lines = [
 				"```espeto",
 				`${exported}fn ${res.node.name}(${params})`,
 				"```",
-				"",
-				"*local function*",
-			].join("\n");
+			];
+			if (res.node.doc) {
+				lines.push("", res.node.doc);
+			}
+			lines.push("", res.node.exported ? "*local function*" : "*private function*");
+			return lines.join("\n");
 		}
 		case "arg":
 			return [

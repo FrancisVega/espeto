@@ -1107,3 +1107,97 @@ describe("parser: hito 7c — maps + .field", () => {
 		).toThrow(/'do' after rescue/);
 	});
 });
+
+describe("parser: doc-comments on def/defp", () => {
+	it("attaches a single ## line to def", () => {
+		const p = ast(`## Saluda.\ndef saludar(name) = "Hola"`);
+		expect(p.items[0]).toMatchObject({
+			kind: "fn_def",
+			name: "saludar",
+			doc: "Saluda.",
+		});
+	});
+
+	it("attaches a single ## line to defp", () => {
+		const p = ast(`## Helper privado.\ndefp helper(x) = x`);
+		expect(p.items[0]).toMatchObject({
+			kind: "fn_def",
+			name: "helper",
+			exported: false,
+			doc: "Helper privado.",
+		});
+	});
+
+	it("joins a run of consecutive ## lines with \\n", () => {
+		const p = ast(
+			`## first\n## second\n## third\ndef f(x) = x`,
+		);
+		expect(p.items[0]).toMatchObject({
+			kind: "fn_def",
+			doc: "first\nsecond\nthird",
+		});
+	});
+
+	it("preserves blank doc lines as paragraph break", () => {
+		const p = ast(`## para 1\n##\n## para 2\ndef f(x) = x`);
+		expect(p.items[0]).toMatchObject({
+			kind: "fn_def",
+			doc: "para 1\n\npara 2",
+		});
+	});
+
+	it("breaks the run on a blank line — only the closer block attaches", () => {
+		const p = ast(`## orphan\n\n## attached\ndef f(x) = x`);
+		expect(p.items[0]).toMatchObject({
+			kind: "fn_def",
+			doc: "attached",
+		});
+	});
+
+	it("does not attach docs separated from def by a blank line", () => {
+		const p = ast(`## orphan\n\ndef f(x) = x`);
+		expect(p.items[0]).toMatchObject({ kind: "fn_def", name: "f" });
+		expect((p.items[0] as { doc?: string }).doc).toBeUndefined();
+	});
+
+	it("breaks the run when a regular # comment is interleaved", () => {
+		const p = ast(`## docs\n# nota\ndef f(x) = x`);
+		expect(p.items[0]).toMatchObject({ kind: "fn_def", name: "f" });
+		expect((p.items[0] as { doc?: string }).doc).toBeUndefined();
+	});
+
+	it("silently ignores orphan docs (no def follows)", () => {
+		const p = ast(`## orphan doc\n1 + 1`);
+		expect(p.items).toHaveLength(1);
+		expect(p.items[0]).toMatchObject({ kind: "binop" });
+	});
+
+	it("works with do/end def body", () => {
+		const p = ast(`## Block form.\ndef f(x) do\n  x\nend`);
+		expect(p.items[0]).toMatchObject({
+			kind: "fn_def",
+			doc: "Block form.",
+		});
+	});
+
+	it("attaches docs to second def when first has no docs", () => {
+		const p = ast(
+			`def first(x) = x\n\n## docs for second\ndef second(x) = x`,
+		);
+		expect(p.items[0]).toMatchObject({ kind: "fn_def", name: "first" });
+		expect((p.items[0] as { doc?: string }).doc).toBeUndefined();
+		expect(p.items[1]).toMatchObject({
+			kind: "fn_def",
+			name: "second",
+			doc: "docs for second",
+		});
+	});
+
+	it("preserves markdown headers via `## ###` pattern", () => {
+		const p = ast(`## ### Section\n## body\ndef f(x) = x`);
+		expect(p.items[0]).toMatchObject({
+			kind: "fn_def",
+			doc: "### Section\nbody",
+		});
+	});
+});

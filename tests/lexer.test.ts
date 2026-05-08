@@ -376,4 +376,86 @@ describe("lexer", () => {
 			"eof",
 		]);
 	});
+
+	describe("doc-comments", () => {
+		it("emits doc_line for `## text`", () => {
+			const tokens = lex(`## hello`, "x.esp");
+			expect(tokens.map((t) => t.type)).toEqual(["doc_line", "eof"]);
+			expect(tokens[0]!.value).toBe("hello");
+		});
+
+		it("emits doc_line with empty content for `##` alone", () => {
+			const tokens = lex(`##\n`, "x.esp");
+			expect(tokens.map((t) => t.type)).toEqual([
+				"doc_line",
+				"newline",
+				"eof",
+			]);
+			expect(tokens[0]!.value).toBe("");
+		});
+
+		it("emits doc_line with empty content for `## ` (space + EOL)", () => {
+			const tokens = lex(`## \n`, "x.esp");
+			expect(tokens.map((t) => t.type)).toEqual([
+				"doc_line",
+				"newline",
+				"eof",
+			]);
+			expect(tokens[0]!.value).toBe("");
+		});
+
+		it("preserves markdown headers in doc content (## ### Title)", () => {
+			const tokens = lex(`## ### Title`, "x.esp");
+			expect(tokens.map((t) => t.type)).toEqual(["doc_line", "eof"]);
+			expect(tokens[0]!.value).toBe("### Title");
+		});
+
+		it("preserves extra leading space (markdown indent)", () => {
+			const tokens = lex(`##  indented`, "x.esp");
+			expect(tokens.map((t) => t.type)).toEqual(["doc_line", "eof"]);
+			expect(tokens[0]!.value).toBe(" indented");
+		});
+
+		it("treats `### foo` as a regular comment (strict marker)", () => {
+			const tokens = lex(`### foo`, "x.esp");
+			expect(tokens.map((t) => t.type)).toEqual(["eof"]);
+		});
+
+		it("treats `##hello` as a regular comment (no space after ##)", () => {
+			const tokens = lex(`##hello`, "x.esp");
+			expect(tokens.map((t) => t.type)).toEqual(["eof"]);
+		});
+
+		it("treats `##!important` as a regular comment", () => {
+			const tokens = lex(`##!important`, "x.esp");
+			expect(tokens.map((t) => t.type)).toEqual(["eof"]);
+		});
+
+		it("does not interfere with `##{var}` inside strings", () => {
+			const tokens = lex(`"##{x}"`, "x.esp");
+			expect(tokens.map((t) => t.type)).toEqual([
+				"string_template_start",
+				"string_part",
+				"interp_start",
+				"ident",
+				"interp_end",
+				"string_part",
+				"string_template_end",
+				"eof",
+			]);
+			expect(tokens[1]!.value).toBe("#");
+		});
+
+		it("emits a run of doc_lines separated by newlines", () => {
+			const tokens = lex(`## first\n## second`, "x.esp");
+			expect(tokens.map((t) => t.type)).toEqual([
+				"doc_line",
+				"newline",
+				"doc_line",
+				"eof",
+			]);
+			expect(tokens[0]!.value).toBe("first");
+			expect(tokens[2]!.value).toBe("second");
+		});
+	});
 });

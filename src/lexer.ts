@@ -32,6 +32,7 @@ export type TokenType =
 	| "gt"
 	| "gte"
 	| "newline"
+	| "doc_line"
 	| "eof"
 	| "kw_def"
 	| "kw_defp"
@@ -100,6 +101,28 @@ class Lexer {
 		}
 
 		if (ch === "#") {
+			const isDocMarker =
+				this.source[this.i + 1] === "#" &&
+				(this.source[this.i + 2] === " " ||
+					this.source[this.i + 2] === "\n" ||
+					this.i + 2 >= this.source.length);
+			if (isDocMarker) {
+				const start = this.mark();
+				this.advance();
+				this.advance();
+				if (this.source[this.i] === " ") this.advance();
+				const contentStart = this.i;
+				while (this.i < this.source.length && this.source[this.i] !== "\n") {
+					this.advance();
+				}
+				const value = this.source.slice(contentStart, this.i);
+				this.out.push({
+					type: "doc_line",
+					value,
+					span: this.spanFrom(start),
+				});
+				return;
+			}
 			while (this.i < this.source.length && this.source[this.i] !== "\n") {
 				this.advance();
 			}

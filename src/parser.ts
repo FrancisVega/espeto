@@ -48,15 +48,15 @@ class Parser {
 	) {}
 
 	parseModule(): Module {
-		this.skipNewlines();
 		const items: Item[] = [];
 		let cmdSeen = false;
 		let programSeen = false;
 		let testSeen = false;
 		const testNames = new Set<string>();
 		let nonImportSeen = false;
+		let pendingDocs = this.collectPendingDocs();
 		while (!this.match("eof")) {
-			const item = this.parseTopLevelItem();
+			const item = this.parseTopLevelItem(pendingDocs);
 			if (item.kind === "import") {
 				if (nonImportSeen) {
 					throw new EspetoError(
@@ -137,17 +137,18 @@ class Parser {
 			items.push(item);
 			this.expectStmtEnd("eof");
 			this.skipNewlines();
+			pendingDocs = this.collectPendingDocs();
 		}
 		const span = items[0]?.span ?? this.peek().span;
 		return { kind: "module", items, span };
 	}
 
-	private parseTopLevelItem(): Item {
+	private parseTopLevelItem(pendingDocs?: { doc: string; docSpan: Span }): Item {
 		if (this.match("kw_import")) {
 			return this.parseImport();
 		}
 		if (this.match("kw_def") || this.match("kw_defp")) {
-			return this.parseFnDef();
+			return this.parseFnDef(pendingDocs);
 		}
 		if (this.match("kw_program")) {
 			return this.parseProgramDecl();
@@ -555,7 +556,7 @@ class Parser {
 		);
 	}
 
-	private parseFnDef(): FnDef {
+	private parseFnDef(pendingDocs?: { doc: string; docSpan: Span }): FnDef {
 		const kw = this.advance();
 		const exported = kw.type === "kw_def";
 		const nameTok = this.expect("ident", "function name");
@@ -613,6 +614,8 @@ class Parser {
 			paramSpans,
 			body,
 			exported,
+			doc: pendingDocs?.doc,
+			docSpan: pendingDocs?.docSpan,
 			span: kw.span,
 		};
 	}
@@ -1209,6 +1212,41 @@ class Parser {
 
 	private skipNewlines(): void {
 		while (this.match("newline")) this.advance();
+	}
+
+	private collectPendingDocs():
+		| { doc: string; docSpan: Span }
+		| undefined {
+		this.skipNewlines();
+		while (true) {
+			if (!this.match("doc_line")) return undefined;
+			const lines: string[] = [];
+			const firstTok = this.peek();
+			let brokenByBlankLine = false;
+			while (this.match("doc_line")) {
+				const tok = this.advance();
+				lines.push(tok.value);
+				if (this.match("newline")) {
+					this.advance();
+					if (this.match("newline")) {
+						brokenByBlankLine = true;
+						break;
+					}
+				} else {
+					break;
+				}
+			}
+			while (this.match("newline")) this.advance();
+			if (
+				!brokenByBlankLine &&
+				(this.match("kw_def") || this.match("kw_defp"))
+			) {
+				return {
+					doc: lines.join("\n"),
+					docSpan: firstTok.span,
+				};
+			}
+		}
 	}
 }
 

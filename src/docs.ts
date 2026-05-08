@@ -6,6 +6,15 @@ const SYNTAX_MD = `## Syntax
 ### Comments
 \`# line comment\` — to end of line.
 
+\`## doc text\` (two hashes followed by a space or end-of-line) on the
+line(s) immediately above a \`def\` or \`defp\` is a **doc-comment**: the
+content (markdown) is captured and shown in LSP hover. A run of
+consecutive \`##\` lines attaches to the \`def\` below; a blank line or
+any \`#\` comment between the run and the \`def\` breaks the attachment
+(orphan docs are silently ignored). For multi-paragraph docs, use \`##\`
+alone (empty content) as a separator. Anything else starting with \`##\`
+(like \`###\` or \`##X\` without a space) is a regular comment.
+
 ### Literals
 - int: \`42\`, \`-1\`, \`1_000_000\` (underscores allowed)
 - float: \`3.14\`, \`-0.5\` (digit on both sides of \`.\`)
@@ -36,6 +45,9 @@ end
 
 ### Functions
 \`\`\`
+## Greet someone by name.
+##
+## Returns "Hola, NAME!".
 def name(a, b) do
   ...
 end
@@ -43,7 +55,9 @@ defp helper(x) do  # private to this module
   ...
 end
 \`\`\`
-The last expression in the body is the return value.
+The last expression in the body is the return value. \`##\` lines
+immediately above a \`def\`/\`defp\` are captured as a doc-comment and
+shown in LSP hover (see Comments).
 
 ### Lambdas
 \`fn x => x + 1\`. Multi-arg: \`fn (x, y) => x + y\`. Lambdas are values: pass to \`map\`, \`filter\`, \`reduce\`, etc.

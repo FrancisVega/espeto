@@ -174,6 +174,8 @@ export type FnDef = {
 	paramSpans?: Span[];
 	body: Stmt[];
 	exported: boolean;
+	doc?: string;
+	docSpan?: Span;
 	span: Span;
 };
 

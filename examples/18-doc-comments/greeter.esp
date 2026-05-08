@@ -1,0 +1,11 @@
+## Saluda a alguien por su nombre.
+##
+## Returns "Hola, NAME!".
+def saludar(name) = "Hola, #{name}!"
+
+## Saluda gritando: aplica `upcase` al saludo base.
+##
+## ### Ejemplo
+##
+##     gritar("mundo")  // => "HOLA, MUNDO!"
+def gritar(name) = saludar(name) |> upcase

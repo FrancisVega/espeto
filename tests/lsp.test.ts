@@ -23,6 +23,7 @@ import {
 	buildFoldingRanges,
 } from "../src/lsp/symbols";
 import { parse } from "../src/parser";
+import { renderResolutionHover } from "../src/lsp/server";
 
 const BUILTINS = new Set(["upcase", "map", "filter", "to_str", "print"]);
 
@@ -916,5 +917,61 @@ end
 				(cur.line === prev.line && cur.char >= prev.char);
 			expect(ok).toBe(true);
 		}
+	});
+});
+
+describe("hover for def/defp with doc-comments", () => {
+	function fnHoverFor(src: string, fnName: string) {
+		const program = setup(src);
+		const node = program.items.find(
+			(i) => i.kind === "fn_def" && i.name === fnName,
+		);
+		if (!node || node.kind !== "fn_def")
+			throw new Error(`fn ${fnName} not found`);
+		return renderResolutionHover({ kind: "fn", node });
+	}
+
+	it("renders hover without doc when fn has none", () => {
+		const hover = fnHoverFor(`def saludar(name) = "Hola"`, "saludar");
+		expect(hover).toBe(
+			"```espeto\nexport fn saludar(name)\n```\n\n*local function*",
+		);
+	});
+
+	it("inserts doc between signature and footer", () => {
+		const hover = fnHoverFor(
+			`## Saluda a alguien.\ndef saludar(name) = "Hola"`,
+			"saludar",
+		);
+		expect(hover).toBe(
+			"```espeto\nexport fn saludar(name)\n```\n\nSaluda a alguien.\n\n*local function*",
+		);
+	});
+
+	it("preserves multi-line doc with paragraph breaks", () => {
+		const hover = fnHoverFor(
+			`## First paragraph.\n##\n## Second paragraph.\ndef f(x) = x`,
+			"f",
+		);
+		expect(hover).toContain(
+			"```espeto\nexport fn f(x)\n```\n\nFirst paragraph.\n\nSecond paragraph.\n\n*local function*",
+		);
+	});
+
+	it("uses *private function* footer for defp", () => {
+		const hover = fnHoverFor(
+			`## Helper privado.\ndefp helper(x) = x`,
+			"helper",
+		);
+		expect(hover).toBe(
+			"```espeto\nfn helper(x)\n```\n\nHelper privado.\n\n*private function*",
+		);
+	});
+
+	it("renders defp without doc with private footer", () => {
+		const hover = fnHoverFor(`defp helper(x) = x`, "helper");
+		expect(hover).toBe(
+			"```espeto\nfn helper(x)\n```\n\n*private function*",
+		);
 	});
 });

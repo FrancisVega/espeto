@@ -547,7 +547,7 @@ data |> map(.email) |> print</code></pre>
         <div class="grid md:grid-cols-[11rem_1fr] gap-x-6 gap-y-2 px-6 py-5 border-b border-border/50 hover:bg-white transition-colors">
           <div class="text-xs font-bold uppercase tracking-widest text-text-muted pt-1">Strings</div>
           <div class="text-text-primary leading-relaxed">
-            <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">"…"</code> con <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">#{x}</code>. Comentarios <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">#</code>. <span class="text-text-muted">(Multilínea <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">"""…"""</code> planeado para v1.)</span>
+            <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">"…"</code> con <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">#{x}</code>. Comentarios <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">#</code>; doc-comments <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">##</code> sobre <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">def</code>/<code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">defp</code>. <span class="text-text-muted">(Multilínea <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">"""…"""</code> planeado para v1.)</span>
           </div>
         </div>
 
@@ -953,6 +953,10 @@ data |> map(.email) |> print</code></pre>
         <div class="p-5 bg-surface rounded-2xl border border-border/50">
           <h4 class="text-base mb-1"><code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-sm">espeto docs</code></h4>
           <p class="text-text-secondary text-sm leading-relaxed">Imprime la referencia completa del lenguaje en markdown a stdout — pensada para pegársela a un LLM como spec.</p>
+        </div>
+        <div class="p-5 bg-surface rounded-2xl border border-border/50">
+          <h4 class="text-base mb-1">Doc-comments <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-sm">##</code></h4>
+          <p class="text-text-secondary text-sm leading-relaxed">Líneas <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">## …</code> sobre un <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">def</code>/<code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">defp</code> se atachan como markdown y se renderizan en el hover del LSP.</p>
         </div>
       </div>
     </div>
