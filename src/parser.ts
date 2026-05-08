@@ -1080,36 +1080,21 @@ class Parser {
 	private parseTry(): TryExpr {
 		const kw = this.advance();
 		this.skipNewlines();
-		const isBlock = this.match("kw_do");
+		this.expect("kw_do", "'do' after 'try'");
+		this.skipNewlines();
 
-		let tryBody: Stmt[];
-		if (isBlock) {
-			this.advance();
-			this.skipNewlines();
-			tryBody = [];
-			while (!this.match("kw_rescue")) {
-				if (this.match("eof")) {
-					throw new EspetoError(
-						"expected 'rescue' to close try",
-						kw.span,
-						this.source,
-					);
-				}
-				tryBody.push(this.parseStmt());
-				this.expectStmtEnd("kw_rescue");
-				this.skipNewlines();
-			}
-		} else {
-			tryBody = [this.parseExpr()];
-			this.skipNewlines();
-			if (!this.match("kw_rescue")) {
-				const tok = this.peek();
+		const tryBody: Stmt[] = [];
+		while (!this.match("kw_rescue")) {
+			if (this.match("eof")) {
 				throw new EspetoError(
-					`expected 'rescue' after try expression, got ${tok.type}`,
-					tok.span,
+					"expected 'rescue' to close try",
+					kw.span,
 					this.source,
 				);
 			}
+			tryBody.push(this.parseStmt());
+			this.expectStmtEnd("kw_rescue");
+			this.skipNewlines();
 		}
 
 		this.advance();
@@ -1119,32 +1104,23 @@ class Parser {
 			"error binding name after 'rescue'",
 		);
 		this.skipNewlines();
-		if (isBlock) {
-			this.expect("kw_do", "'do' after rescue binding");
-		} else {
-			this.expect("fat_arrow", "'=>' after rescue binding");
-		}
+		this.expect("fat_arrow", "'=>' after rescue binding");
 		this.skipNewlines();
 
-		let rescueBody: Stmt[];
-		if (isBlock) {
-			rescueBody = [];
-			while (!this.match("kw_end")) {
-				if (this.match("eof")) {
-					throw new EspetoError(
-						"expected 'end' to close try",
-						kw.span,
-						this.source,
-					);
-				}
-				rescueBody.push(this.parseStmt());
-				this.expectStmtEnd("kw_end");
-				this.skipNewlines();
+		const rescueBody: Stmt[] = [];
+		while (!this.match("kw_end")) {
+			if (this.match("eof")) {
+				throw new EspetoError(
+					"expected 'end' to close try",
+					kw.span,
+					this.source,
+				);
 			}
-			this.advance();
-		} else {
-			rescueBody = [this.parseExpr()];
+			rescueBody.push(this.parseStmt());
+			this.expectStmtEnd("kw_end");
+			this.skipNewlines();
 		}
+		this.advance();
 
 		return {
 			kind: "try",

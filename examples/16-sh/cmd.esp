@@ -10,6 +10,10 @@ cmd info do
   status = sh("false")
   "exit=#{status.exit_code} ok=#{status.ok}" |> print
 
-  recovered = try sh!("false") rescue _ => "rescued"
+  recovered = try do
+    sh!("false")
+  rescue _ =>
+    "rescued"
+  end
   recovered |> print
 end

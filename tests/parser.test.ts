@@ -1018,8 +1018,8 @@ describe("parser: hito 7c — maps + .field", () => {
 		expect(interp!.kind).toBe("map");
 	});
 
-	it("parses try one-liner with rescue", () => {
-		const p = ast(`try to_int("42") rescue err => 0`);
+	it("parses try block with single-stmt body and rescue", () => {
+		const p = ast(`try do\n  to_int("42")\nrescue err =>\n  0\nend`);
 		expect(p.items[0]).toMatchObject({
 			kind: "try",
 			tryBody: [{ kind: "call" }],
@@ -1028,9 +1028,9 @@ describe("parser: hito 7c — maps + .field", () => {
 		});
 	});
 
-	it("parses try block with rescue block", () => {
+	it("parses try block with multi-stmt body and rescue", () => {
 		const p = ast(
-			`try do\n  x = to_int("42")\n  x + 1\nrescue err do\n  -1\nend`,
+			`try do\n  x = to_int("42")\n  x + 1\nrescue err =>\n  -1\nend`,
 		);
 		const node = p.items[0] as {
 			kind: string;
@@ -1045,7 +1045,7 @@ describe("parser: hito 7c — maps + .field", () => {
 	});
 
 	it("parses try with pipe chain in body", () => {
-		const p = ast(`try "42" |> to_int rescue err => 0`);
+		const p = ast(`try do\n  "42" |> to_int\nrescue err =>\n  0\nend`);
 		const node = p.items[0] as {
 			kind: string;
 			tryBody: { kind: string }[];
@@ -1055,7 +1055,9 @@ describe("parser: hito 7c — maps + .field", () => {
 	});
 
 	it("parses try inside an assignment (cmd-like context)", () => {
-		const p = ast(`x = try to_int("42") rescue err => 0`);
+		const p = ast(
+			`x = try do\n  to_int("42")\nrescue err =>\n  0\nend`,
+		);
 		expect(p.items[0]).toMatchObject({
 			kind: "assign",
 			name: "x",
@@ -1065,20 +1067,20 @@ describe("parser: hito 7c — maps + .field", () => {
 
 	it("parses nested try (inner rescue does not eat outer)", () => {
 		const p = ast(
-			`try try raise("a") rescue e => raise(e) rescue e => e`,
+			`try do\n  try do\n    raise("a")\n  rescue e =>\n    raise(e)\n  end\nrescue e =>\n  e\nend`,
 		);
 		const outer = p.items[0] as {
 			kind: string;
-			tryBody: unknown[];
+			tryBody: { kind: string }[];
 			rescueBody: { kind: string }[];
 		};
 		expect(outer.kind).toBe("try");
-		expect((outer.tryBody[0] as { kind: string }).kind).toBe("try");
+		expect(outer.tryBody[0]!.kind).toBe("try");
 		expect(outer.rescueBody[0]!.kind).toBe("ident");
 	});
 
-	it("rejects try without rescue", () => {
-		expect(() => ast(`try to_int("42")\n`)).toThrow(/expected 'rescue'/);
+	it("rejects try without 'do'", () => {
+		expect(() => ast(`try to_int("42")\n`)).toThrow(/'do' after 'try'/);
 	});
 
 	it("rejects try block reaching eof without rescue", () => {
@@ -1088,23 +1090,21 @@ describe("parser: hito 7c — maps + .field", () => {
 	});
 
 	it("rejects try block reaching eof without end", () => {
-		expect(() => ast(`try do\n  1\nrescue err do\n  2\n`)).toThrow(
+		expect(() => ast(`try do\n  1\nrescue err =>\n  2\n`)).toThrow(
 			/expected 'end' to close try/,
 		);
 	});
 
 	it("rejects rescue without ident", () => {
-		expect(() => ast(`try 1 rescue => 2`)).toThrow(/error binding name/);
+		expect(() => ast(`try do\n  1\nrescue =>\n  2\nend`)).toThrow(
+			/error binding name/,
+		);
 	});
 
 	it("rejects rescue without =>", () => {
-		expect(() => ast(`try 1 rescue err 2`)).toThrow(/'=>' after rescue/);
-	});
-
-	it("rejects block rescue without 'do'", () => {
-		expect(() =>
-			ast(`try do\n  1\nrescue err =>\n  2\nend`),
-		).toThrow(/'do' after rescue/);
+		expect(() => ast(`try do\n  1\nrescue err do\n  2\nend`)).toThrow(
+			/'=>' after rescue/,
+		);
 	});
 });
 

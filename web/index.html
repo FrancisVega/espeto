@@ -348,13 +348,15 @@ users
           <div class="flex gap-2 mb-6 border-b border-white/10 pb-4">
             <span class="text-xs text-white/50 uppercase tracking-widest">users.json -> cli</span>
           </div>
-<pre class="text-sm md:text-base leading-relaxed overflow-x-auto"><span class="text-white/40"># try captura errores devolviendo </span>
-<span class="text-white/40"># o ejecutando el bloque rescue</span>
-data = <span class="text-[#ff2a7a]">try</span> "users.json" 
-  |> read 
-  |> parse_json
-<span class="text-[#ff2a7a]">rescue</span> err -> 
+<pre class="text-sm md:text-base leading-relaxed overflow-x-auto"><span class="text-white/40"># try ejecuta el bloque; si raisea,</span>
+<span class="text-white/40"># corre rescue con el error en err</span>
+data = <span class="text-[#ff2a7a]">try do</span>
+  "users.json"
+    |> read
+    |> parse_json
+<span class="text-[#ff2a7a]">rescue</span> err =>
   raise(<span class="text-green-400">"Error crítico: #{err}"</span>)
+<span class="text-[#ff2a7a]">end</span>
 
 data |> map(.email) |> print</code></pre>
         </div>
@@ -520,7 +522,7 @@ data |> map(.email) |> print</code></pre>
         <div class="grid md:grid-cols-[11rem_1fr] gap-x-6 gap-y-2 px-6 py-5 border-b border-border/50 hover:bg-white transition-colors">
           <div class="text-xs font-bold uppercase tracking-widest text-text-muted pt-1">Errores</div>
           <div class="text-text-primary leading-relaxed">
-            Excepciones con <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">raise</code>. Auto-rescue en <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">cmd</code>. <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">try expr rescue err -&gt; …</code> para local.
+            Excepciones con <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">raise</code>. Auto-rescue en <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">cmd</code>. <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">try do … rescue err =&gt; … end</code> para local.
           </div>
         </div>
 

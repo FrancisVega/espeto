@@ -52,7 +52,6 @@
   --tk-comment:      #968465;
   --tk-pipe:         #c8421a;
   --tk-arrow:        #c8421a;
-  --tk-rocket:       #c8421a;
   --tk-op:           #5a4530;
   --tk-punct:        #7a6850;
   --tk-dot:          #5a4530;
@@ -353,7 +352,6 @@ h4 code {
 .tk-comment     { color: var(--tk-comment); font-style: italic; }
 .tk-pipe        { color: var(--tk-pipe); font-weight: 700; }
 .tk-arrow       { color: var(--tk-arrow); font-weight: 700; }
-.tk-rocket      { color: var(--tk-rocket); font-weight: 700; }
 .tk-op          { color: var(--tk-op); }
 .tk-punct       { color: var(--tk-punct); }
 .tk-dot         { color: var(--tk-dot); }

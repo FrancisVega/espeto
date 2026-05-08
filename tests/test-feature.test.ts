@@ -133,7 +133,7 @@ describe("evaluator: AssertionError not catchable by try/rescue", () => {
 	it("propagates past try/rescue", () => {
 		expect(() =>
 			run(
-				`try assert(false) rescue err => "caught"`,
+				`try do\n  assert(false)\nrescue err =>\n  "caught"\nend`,
 				"x.esp",
 			),
 		).toThrow(AssertionError);
@@ -292,7 +292,12 @@ describe("test runner: discovery and execution", () => {
 				`end`,
 				`test "second" do`,
 				// x must NOT be in scope here
-				`  assert is_nil?(try x rescue _ => nil)`,
+				`  result = try do`,
+				`    x`,
+				`  rescue _ =>`,
+				`    nil`,
+				`  end`,
+				`  assert is_nil?(result)`,
 				`end`,
 			].join("\n"),
 		);

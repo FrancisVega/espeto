@@ -8,8 +8,11 @@ cmd users do
   flag min_age: int = 0, short: "a", desc: "edad mínima"
   flag loud: bool = false, short: "l", desc: "saluda gritando"
 
-  data = try file |> read |> parse_json
-         rescue err => raise("No pude leer #{file}: #{err}")
+  data = try do
+    file |> read |> parse_json
+  rescue err =>
+    raise("No pude leer #{file}: #{err}")
+  end
 
   data
     |> filter(fn u => u.active and u.age >= min_age)

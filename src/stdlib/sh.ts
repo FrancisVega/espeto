@@ -100,8 +100,11 @@ export const sh: BuiltinFn = {
  * // => "abc..."
  *
  * @example
- * try sh!("git diff --quiet")
- * rescue _ => "dirty"
+ * try do
+ *   sh!("git diff --quiet")
+ * rescue _ =>
+ *   "dirty"
+ * end
  */
 export const sh_bang: BuiltinFn = {
 	kind: "builtin",

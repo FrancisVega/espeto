@@ -627,23 +627,35 @@ describe("evaluator: hito 7c — maps + .field", () => {
 });
 
 describe("evaluator: hito 8b — try / rescue / raise", () => {
-	it("evaluates one-liner try with successful body", () => {
-		const v = run(`try to_int("42") rescue err => 0`, "x.esp");
+	it("evaluates try with successful body", () => {
+		const v = run(
+			`try do\n  to_int("42")\nrescue err =>\n  0\nend`,
+			"x.esp",
+		);
 		expect(v).toBe(42n);
 	});
 
-	it("evaluates one-liner try and falls through to rescue", () => {
-		const v = run(`try to_int("nope") rescue err => 0`, "x.esp");
+	it("evaluates try and falls through to rescue", () => {
+		const v = run(
+			`try do\n  to_int("nope")\nrescue err =>\n  0\nend`,
+			"x.esp",
+		);
 		expect(v).toBe(0n);
 	});
 
 	it("binds the raised message to err as a string", () => {
-		const v = run(`try to_int("nope") rescue err => err`, "x.esp");
+		const v = run(
+			`try do\n  to_int("nope")\nrescue err =>\n  err\nend`,
+			"x.esp",
+		);
 		expect(v).toBe("to_int: cannot parse 'nope' as int");
 	});
 
 	it("raise(str) with rescue captures the message", () => {
-		const v = run(`try raise("boom") rescue err => err`, "x.esp");
+		const v = run(
+			`try do\n  raise("boom")\nrescue err =>\n  err\nend`,
+			"x.esp",
+		);
 		expect(v).toBe("boom");
 	});
 
@@ -658,7 +670,7 @@ describe("evaluator: hito 8b — try / rescue / raise", () => {
 			`try do
   x = to_int("42")
   x + 1
-rescue err do
+rescue err =>
   -1
 end`,
 			"x.esp",
@@ -671,7 +683,7 @@ end`,
 			`try do
   x = to_int("oops")
   x + 1
-rescue err do
+rescue err =>
   err |> upcase
 end`,
 			"x.esp",
@@ -682,7 +694,7 @@ end`,
 	it("rescue body assigns scoped to rescueEnv (not leaked)", () => {
 		expect(() =>
 			run(
-				`try raise("a") rescue err => err\nerr |> print`,
+				`try do\n  raise("a")\nrescue err =>\n  err\nend\nerr |> print`,
 				"x.esp",
 			),
 		).toThrow(/undefined: err/);
@@ -690,7 +702,7 @@ end`,
 
 	it("nested try: inner rescue catches, outer ignored", () => {
 		const v = run(
-			`try (try raise("inner") rescue e => e) rescue e => "outer"`,
+			`try do\n  try do\n    raise("inner")\n  rescue e =>\n    e\n  end\nrescue e =>\n  "outer"\nend`,
 			"x.esp",
 		);
 		expect(v).toBe("inner");
@@ -698,7 +710,7 @@ end`,
 
 	it("nested try: inner re-raises, outer catches", () => {
 		const v = run(
-			`try (try raise("a") rescue e => raise("b")) rescue e => e`,
+			`try do\n  try do\n    raise("a")\n  rescue e =>\n    raise("b")\n  end\nrescue e =>\n  e\nend`,
 			"x.esp",
 		);
 		expect(v).toBe("b");
@@ -709,7 +721,11 @@ end`,
 			run(
 				`cmd c do
   arg val: str
-  n = try to_int(val) rescue err => 0
+  n = try do
+    to_int(val)
+  rescue err =>
+    0
+  end
   "n=#{n}" |> print
 end`,
 				"x.esp",
@@ -733,7 +749,7 @@ end`,
 
 	it("rescue body sees outer bindings", () => {
 		const v = run(
-			`fallback = 99\ntry raise("x") rescue err => fallback`,
+			`fallback = 99\ntry do\n  raise("x")\nrescue err =>\n  fallback\nend`,
 			"x.esp",
 		);
 		expect(v).toBe(99n);

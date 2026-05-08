@@ -133,8 +133,11 @@ cmd users do
   flag min_age: int = 0, short: "a", desc: "edad mínima"
   flag loud: bool = false, short: "l", desc: "saluda gritando"
 
-  data = try file |> read |> parse_json
-         rescue err => raise("No pude leer #{file}: #{err}")
+  data = try do
+    file |> read |> parse_json
+  rescue err =>
+    raise("No pude leer #{file}: #{err}")
+  end
 
   data
     |> filter(fn u => u.active and u.age >= min_age)
@@ -213,7 +216,7 @@ espeto docs > spec.md
 | **Pipe `\|>`** | First-arg piping. RHS: llamada / nombre pelado / lambda / `.field`. Placeholder `_` para reposicionar LHS. |
 | **Funciones** | `def f(x) = expr` (one-liner) o `def f(x) do ... end` (bloque). `defp` para privadas. |
 | **Lambdas** | `fn x => expr`, `fn(x,y) => expr`, `fn() => expr`. Solo expresión. |
-| **Errores** | Excepciones con `raise`. Auto-rescue en `cmd`. `try expr rescue err => ...` para local. Variantes `try_*` para Result-style. |
+| **Errores** | Excepciones con `raise`. Auto-rescue en `cmd`. `try do ... rescue err => ... end` para local. Variantes `try_*` para Result-style. |
 | **Módulos** | Fichero = módulo. Imports pelados: `import "./x" only [a, b as c]`. |
 | **Source bindings** | `__file__` / `__dir__` auto-inyectados por módulo (definition-site, closure-captured). |
 | **Tipos** | `int`, `float`, `str`, `bool`, `nil`, `list`, `map`, `fn`. Sin coerción. |

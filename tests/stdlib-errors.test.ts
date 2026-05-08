@@ -3,7 +3,10 @@ import { run } from "../src/run";
 
 describe("stdlib/errors: raise", () => {
 	it("raises a string and is catchable by try/rescue", () => {
-		const v = run(`try raise("boom") rescue err => err`, "x.esp");
+		const v = run(
+			`try do\n  raise("boom")\nrescue err =>\n  err\nend`,
+			"x.esp",
+		);
 		expect(v).toBe("boom");
 	});
 

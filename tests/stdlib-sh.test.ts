@@ -92,7 +92,7 @@ describe("stdlib/sh: sh!", () => {
 
 	it("includes stderr in raise message", () => {
 		const v = run(
-			`try sh!("cat /no-such-file-9821xyz") rescue err => err`,
+			`try do\n  sh!("cat /no-such-file-9821xyz")\nrescue err =>\n  err\nend`,
 			"x.esp",
 		) as string;
 		expect(v).toMatch(/cat /);
@@ -100,7 +100,10 @@ describe("stdlib/sh: sh!", () => {
 	});
 
 	it("raises with empty stderr cleanly (no trailing whitespace)", () => {
-		const v = run(`try sh!("false") rescue err => err`, "x.esp") as string;
+		const v = run(
+			`try do\n  sh!("false")\nrescue err =>\n  err\nend`,
+			"x.esp",
+		) as string;
 		expect(v).toBe("sh!: command failed (exit 1):\n  false");
 	});
 
@@ -112,7 +115,7 @@ describe("stdlib/sh: sh!", () => {
 
 	it("is recoverable via try/rescue", () => {
 		const v = run(
-			`try sh!("false") rescue _ => "fallback"`,
+			`try do\n  sh!("false")\nrescue _ =>\n  "fallback"\nend`,
 			"x.esp",
 		);
 		expect(v).toBe("fallback");

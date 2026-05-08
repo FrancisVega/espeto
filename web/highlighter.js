@@ -13,8 +13,7 @@
 //   number
 //   comment
 //   pipe        — |>
-//   arrow       — =>
-//   rocket      — -> (rescue handler)
+//   arrow       — => (lambda body, rescue handler)
 //   op          — = == != <= >= < > + - * /
 //   punct       — ( ) { } [ ] , ;
 //   dot         — . (field access)
@@ -163,16 +162,9 @@
         continue;
       }
 
-      // arrow => (lambda body) — distinct color from rocket
+      // arrow => (lambda body, rescue handler)
       if (ch === "=" && src[i + 1] === ">") {
         tokens.push({ type: "arrow", value: "=>" });
-        i += 2;
-        continue;
-      }
-
-      // rocket -> (rescue handler)
-      if (ch === "-" && src[i + 1] === ">") {
-        tokens.push({ type: "rocket", value: "->" });
         i += 2;
         continue;
       }

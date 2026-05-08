@@ -63,19 +63,14 @@ shown in LSP hover (see Comments).
 \`fn x => x + 1\`. Multi-arg: \`fn (x, y) => x + y\`. Lambdas are values: pass to \`map\`, \`filter\`, \`reduce\`, etc.
 
 ### Try / rescue
-Inline:
 \`\`\`
-result = try to_int(s) rescue err => 0
-\`\`\`
-Block:
-\`\`\`
-try do
-  risky()
-rescue err do
-  recover(err)
+result = try do
+  to_int(s)
+rescue err =>
+  0
 end
 \`\`\`
-Use \`raise("msg")\` to raise. Bang variants (\`sh!\`, \`to_int\`) raise on failure; non-bang variants return error-shaped maps or wrapped values instead.
+The body runs as a block; if anything raises, control jumps to the \`rescue\` arm with the message bound to \`err\`. Use \`raise("msg")\` to raise. Bang variants (\`sh!\`, \`to_int\`) raise on failure; non-bang variants return error-shaped maps or wrapped values instead.
 
 ### Predicate (\`?\`) and bang (\`!\`) suffixes
 Identifiers may end with \`?\` (predicate, returns bool) or \`!\` (raises on failure). Convention from Ruby/Elixir. Examples: \`is_int?\`, \`exists?\`, \`sh!\`, \`assert_raise\`.

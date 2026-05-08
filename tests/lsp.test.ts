@@ -177,11 +177,15 @@ end
 describe("resolveIdent — try/rescue", () => {
 	it("resolves the rescue err binding", () => {
 		const src = `cmd run do
-  result = try raise("boom") rescue err => err
+  result = try do
+    raise("boom")
+  rescue err =>
+    err
+  end
   result
 end
 `;
-		const found = findAt(src, 2, 44);
+		const found = findAt(src, 5, 5);
 		expect(found?.ident.name).toBe("err");
 		expect(found?.resolution?.kind).toBe("rescue_err");
 		if (found?.resolution?.kind === "rescue_err") {
@@ -442,10 +446,14 @@ end
 
 	it("collects rescue err binding refs", () => {
 		const src = `cmd run do
-  try raise("x") rescue err => print(err)
+  try do
+    raise("x")
+  rescue err =>
+    print(err)
+  end
 end
 `;
-		const spans = refsAt(src, 2, 38);
+		const spans = refsAt(src, 5, 11);
 		expect(spans).toHaveLength(2);
 	});
 
@@ -562,10 +570,14 @@ end
 
 	it("matches a rescue err at its declaration site", () => {
 		const src = `cmd run do
-  try raise("x") rescue err => print(err)
+  try do
+    raise("x")
+  rescue err =>
+    print(err)
+  end
 end
 `;
-		const found = findResolvableAt(setup(src), 2, 25, BUILTINS);
+		const found = findResolvableAt(setup(src), 4, 10, BUILTINS);
 		expect(found).not.toBeNull();
 		expect(found!.name).toBe("err");
 		expect(found!.resolution.kind).toBe("rescue_err");
