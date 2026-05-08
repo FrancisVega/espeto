@@ -141,6 +141,7 @@
       </a>
       <div class="hidden md:flex items-center gap-8 text-xs font-bold uppercase tracking-widest text-text-secondary">
         <a href="#features" class="hover:text-text-primary transition-colors">Features</a>
+        <a href="#docs" class="hover:text-text-primary transition-colors">Docs</a>
         <a href="#spec" class="hover:text-text-primary transition-colors">Spec</a>
         <a href="#roadmap" class="hover:text-text-primary transition-colors">Roadmap</a>
         <button id="theme-toggle" class="p-2 rounded-full hover:bg-gray-200 transition-colors" aria-label="Toggle theme">
@@ -355,7 +356,7 @@ users
           </div>
           <h3 class="text-3xl mb-4">Todo lo necesario, ya incluido.</h3>
           <p class="text-text-secondary leading-relaxed mb-6">
-            Aproximadamente 60 funciones listas para usar sin necesidad de imports. Manejo de JSON, lectura de archivos, transformaciones de texto y matemáticas, accesibles globalmente y optimizadas para usarse con el pipe.
+            Más de 80 funciones listas para usar sin necesidad de imports. JSON, shell (<code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">sh</code>/<code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">sh!</code>), streams lazy de líneas, archivos, strings y matemáticas — todo accesible globalmente y optimizado para usarse con el pipe.
           </p>
         </div>
         <div class="code-window">
@@ -374,6 +375,58 @@ data |> map(.email) |> print</code></pre>
         </div>
       </div>
 
+    </div>
+  </section>
+
+  <!-- ===========================================================
+       ESPETO DOCS — spec generator para LLMs
+       =========================================================== -->
+  <section id="docs" class="py-24 bg-white border-t border-border">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="grid lg:grid-cols-[1fr_1.1fr] gap-12 lg:gap-16 items-center">
+
+        <div>
+          <div class="inline-block px-3 py-1 mb-6 bg-purple-100 text-purple-800 text-xs font-bold uppercase tracking-widest rounded-full border border-purple-200">
+            Spec · un comando
+          </div>
+          <h2 class="text-4xl md:text-5xl mb-6">La spec, en stdout.</h2>
+          <p class="text-text-secondary text-lg leading-relaxed mb-4">
+            <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">espeto docs</code> imprime la referencia completa del lenguaje a stdout: sintaxis, operadores, control flow y todos los builtins con signature + ejemplo.
+          </p>
+          <p class="text-text-secondary text-lg leading-relaxed mb-6">
+            Pensado para que un LLM aprenda Espeto sin leer el repo. Pégalo en el chat o snapshotealo en tu proyecto y refresca al subir de versión.
+          </p>
+          <ul class="space-y-3 text-sm text-text-secondary font-bold">
+            <li class="flex items-center gap-2">
+              <div class="w-1.5 h-1.5 rounded-full bg-text-primary"></div> Generado desde JSDoc de la stdlib — siempre al día.
+            </li>
+            <li class="flex items-center gap-2">
+              <div class="w-1.5 h-1.5 rounded-full bg-text-primary"></div> Una página, sin saltos a websites externos.
+            </li>
+            <li class="flex items-center gap-2">
+              <div class="w-1.5 h-1.5 rounded-full bg-text-primary"></div> Cero ambigüedad: lo que aquí no aparece, no existe.
+            </li>
+          </ul>
+        </div>
+
+        <div class="code-window">
+          <div class="flex items-center justify-between mb-6 border-b border-white/10 pb-4">
+            <span class="text-xs text-white/50 uppercase tracking-widest">terminal</span>
+            <span class="text-[10px] text-[var(--color-brand-purple)] uppercase tracking-widest font-bold">spec → LLM</span>
+          </div>
+<pre class="text-sm md:text-base leading-relaxed overflow-x-auto"><span class="text-white/40"># pegar la spec a un chat</span>
+<span class="text-[var(--color-brand-pink)] font-bold">$</span> espeto docs <span class="text-[var(--color-brand-orange)] font-bold">|</span> pbcopy
+
+<span class="text-white/40"># snapshot versionado en tu proyecto</span>
+<span class="text-[var(--color-brand-pink)] font-bold">$</span> espeto docs <span class="text-[var(--color-brand-orange)] font-bold">&gt;</span> spec.md
+
+<span class="text-white/40"># añade en CLAUDE.md / AGENTS.md:</span>
+<span class="text-white/40">#   ./bin/espeto docs    # spec del lenguaje</span>
+
+<span class="text-[var(--color-brand-pink)] font-bold">~/proyecto ❯</span> <span class="w-2.5 h-5 bg-gray-400 animate-pulse"></span></pre>
+        </div>
+
+      </div>
     </div>
   </section>
 
@@ -494,7 +547,7 @@ data |> map(.email) |> print</code></pre>
         <div class="grid md:grid-cols-[11rem_1fr] gap-x-6 gap-y-2 px-6 py-5 border-b border-border/50 hover:bg-white transition-colors">
           <div class="text-xs font-bold uppercase tracking-widest text-text-muted pt-1">Strings</div>
           <div class="text-text-primary leading-relaxed">
-            <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">"…"</code> con <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">#{x}</code>. Multilínea <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">"""…"""</code>. Comentarios <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">#</code>.
+            <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">"…"</code> con <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">#{x}</code>. Comentarios <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">#</code>. <span class="text-text-muted">(Multilínea <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">"""…"""</code> planeado para v1.)</span>
           </div>
         </div>
 
@@ -508,7 +561,7 @@ data |> map(.email) |> print</code></pre>
         <div class="grid md:grid-cols-[11rem_1fr] gap-x-6 gap-y-2 px-6 py-5 hover:bg-white transition-colors">
           <div class="text-xs font-bold uppercase tracking-widest text-text-muted pt-1">Stdlib</div>
           <div class="text-text-primary leading-relaxed">
-            ~60 funciones auto-cargadas. <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">snake_case</code>. <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">?</code> en predicados. Sin loops. Síncrono.
+            ~80 funciones auto-cargadas. <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">snake_case</code>. <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">?</code> en predicados. Sin loops. Síncrono.
           </div>
         </div>
       </div>
@@ -524,7 +577,7 @@ data |> map(.email) |> print</code></pre>
         <div class="inline-block px-3 py-1 mb-6 bg-pink-100 text-pink-800 text-xs font-bold uppercase tracking-widest rounded-full border border-pink-200">
           Stdlib · v0
         </div>
-        <h2 class="text-4xl md:text-5xl mb-6">~60 funciones, sin imports.</h2>
+        <h2 class="text-4xl md:text-5xl mb-6">~80 funciones, sin imports.</h2>
         <p class="text-text-secondary text-lg max-w-2xl mx-auto leading-relaxed">
           Auto-cargadas en el prelude. <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">snake_case</code>, <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">?</code> al final de los predicados, y un puñado de helpers para el pipe.
         </p>
@@ -590,7 +643,7 @@ data |> map(.email) |> print</code></pre>
         <div class="bg-white p-6 rounded-2xl border border-border/50">
           <div class="flex items-baseline justify-between mb-4">
             <h3 class="text-xl">Listas</h3>
-            <span class="text-xs font-bold uppercase tracking-widest text-text-muted">17</span>
+            <span class="text-xs font-bold uppercase tracking-widest text-text-muted">19</span>
           </div>
           <div class="flex flex-wrap gap-1.5 text-sm font-medium">
             <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">length</span>
@@ -606,7 +659,9 @@ data |> map(.email) |> print</code></pre>
             <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">sort_by</span>
             <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">reverse</span>
             <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">take</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">take_while</span>
             <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">drop</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">drop_while</span>
             <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">unique</span>
             <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">range</span>
             <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">zip</span>
@@ -643,6 +698,37 @@ data |> map(.email) |> print</code></pre>
 
         <div class="bg-white p-6 rounded-2xl border border-border/50">
           <div class="flex items-baseline justify-between mb-4">
+            <h3 class="text-xl">Shell</h3>
+            <span class="text-xs font-bold uppercase tracking-widest text-text-muted">2</span>
+          </div>
+          <div class="flex flex-wrap gap-1.5 text-sm font-medium">
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">sh</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50 text-[var(--color-brand-pink)]">sh!</span>
+          </div>
+          <p class="text-xs text-text-muted leading-relaxed mt-3">
+            <code class="bg-gray-200 text-text-primary px-1 py-0.5 rounded text-[11px]">sh</code> devuelve <code class="bg-gray-200 text-text-primary px-1 py-0.5 rounded text-[11px]">{stdout, stderr, exit_code, ok}</code>; <code class="bg-gray-200 text-text-primary px-1 py-0.5 rounded text-[11px]">sh!</code> devuelve stdout o lanza.
+          </p>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-border/50">
+          <div class="flex items-baseline justify-between mb-4">
+            <h3 class="text-xl">Streams</h3>
+            <span class="text-xs font-bold uppercase tracking-widest text-text-muted">5</span>
+          </div>
+          <div class="flex flex-wrap gap-1.5 text-sm font-medium">
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">read_lines</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">sh_lines</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">stdin_lines</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">collect</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50">count</span>
+          </div>
+          <p class="text-xs text-text-muted leading-relaxed mt-3">
+            Pipes lazy para I/O por líneas. <code class="bg-gray-200 text-text-primary px-1 py-0.5 rounded text-[11px]">map</code>/<code class="bg-gray-200 text-text-primary px-1 py-0.5 rounded text-[11px]">filter</code>/<code class="bg-gray-200 text-text-primary px-1 py-0.5 rounded text-[11px]">take</code>/<code class="bg-gray-200 text-text-primary px-1 py-0.5 rounded text-[11px]">drop</code> aceptan streams.
+          </p>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl border border-border/50">
+          <div class="flex items-baseline justify-between mb-4">
             <h3 class="text-xl">Pipe helpers</h3>
             <span class="text-xs font-bold uppercase tracking-widest text-text-muted">3</span>
           </div>
@@ -656,7 +742,7 @@ data |> map(.email) |> print</code></pre>
         <div class="bg-white p-6 rounded-2xl border border-border/50">
           <div class="flex items-baseline justify-between mb-4">
             <h3 class="text-xl">Predicados de tipo</h3>
-            <span class="text-xs font-bold uppercase tracking-widest text-text-muted">8</span>
+            <span class="text-xs font-bold uppercase tracking-widest text-text-muted">9</span>
           </div>
           <div class="flex flex-wrap gap-1.5 text-sm font-medium">
             <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50 text-purple-700">is_int?</span>
@@ -667,6 +753,7 @@ data |> map(.email) |> print</code></pre>
             <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50 text-purple-700">is_list?</span>
             <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50 text-purple-700">is_map?</span>
             <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50 text-purple-700">is_fn?</span>
+            <span class="px-2.5 py-1 bg-surface rounded-md border border-border/50 text-purple-700">is_stream?</span>
           </div>
         </div>
 
@@ -850,6 +937,22 @@ data |> map(.email) |> print</code></pre>
         <div class="p-5 bg-surface rounded-2xl border border-border/50">
           <h4 class="text-base mb-1"><code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-sm">__file__</code> / <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-sm">__dir__</code></h4>
           <p class="text-text-secondary text-sm leading-relaxed">Paths source-relative por módulo (definition-site, closure-captured).</p>
+        </div>
+        <div class="p-5 bg-surface rounded-2xl border border-border/50">
+          <h4 class="text-base mb-1"><code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-sm">sh</code> / <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-sm">sh!</code></h4>
+          <p class="text-text-secondary text-sm leading-relaxed">Comando shell vía <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">/bin/sh -c</code>. Result-shape o bang que devuelve stdout y lanza al fallar.</p>
+        </div>
+        <div class="p-5 bg-surface rounded-2xl border border-border/50">
+          <h4 class="text-base mb-1">Streaming pipes</h4>
+          <p class="text-text-secondary text-sm leading-relaxed"><code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">read_lines</code>, <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">sh_lines</code>, <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">stdin_lines</code> — I/O lazy por líneas; <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">map</code>/<code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">filter</code>/<code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">take</code> aceptan streams.</p>
+        </div>
+        <div class="p-5 bg-surface rounded-2xl border border-border/50">
+          <h4 class="text-base mb-1"><code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-sm">espeto test</code></h4>
+          <p class="text-text-secondary text-sm leading-relaxed">Runner para ficheros <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">*_test.esp</code>. Bloques <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">test "…" do … end</code> con <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">assert</code> introspectivo.</p>
+        </div>
+        <div class="p-5 bg-surface rounded-2xl border border-border/50">
+          <h4 class="text-base mb-1"><code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-sm">espeto docs</code></h4>
+          <p class="text-text-secondary text-sm leading-relaxed">Imprime la referencia completa del lenguaje en markdown a stdout — pensada para pegársela a un LLM como spec.</p>
         </div>
       </div>
     </div>
