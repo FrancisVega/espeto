@@ -220,9 +220,16 @@ class Parser {
 		}
 		this.advance();
 		const path = pathTok.value;
-		if (!path.startsWith("./") && !path.startsWith("../")) {
+		if (path === "") {
 			throw new EspetoError(
-				`import path must start with './' or '../' (got ${JSON.stringify(path)})`,
+				"import path cannot be empty",
+				pathTok.span,
+				this.source,
+			);
+		}
+		if (path.startsWith("/")) {
+			throw new EspetoError(
+				`import path cannot be absolute (got ${JSON.stringify(path)})`,
 				pathTok.span,
 				this.source,
 			);

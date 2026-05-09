@@ -487,16 +487,19 @@ describe("parser: import", () => {
 		expect(p.items[2]!.kind).toBe("fn_def");
 	});
 
-	it("rejects a bare import path (no './' or '../')", () => {
-		expect(() => ast(`import "format"`)).toThrow(
-			/must start with '\.\/' or '\.\.\/'/,
-		);
+	it("accepts a bare package name as import path", () => {
+		const p = ast(`import "ansi"`);
+		expect(p.items[0]!.kind).toBe("import");
 	});
 
 	it("rejects an absolute import path", () => {
 		expect(() => ast(`import "/abs/x"`)).toThrow(
-			/must start with '\.\/' or '\.\.\/'/,
+			/import path cannot be absolute/,
 		);
+	});
+
+	it("rejects an empty import path", () => {
+		expect(() => ast(`import ""`)).toThrow(/import path cannot be empty/);
 	});
 
 	it("rejects a string template as import path", () => {

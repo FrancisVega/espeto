@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { basename, dirname, resolve as resolvePath } from "node:path";
 import type { ImportItem, Module } from "./ast";
 import { Env } from "./env";
@@ -15,9 +15,37 @@ export type Resolver = (
 ) => ResolvedModule;
 
 export const defaultResolver: Resolver = (importerAbsPath, importPath) => {
-	const absPath = resolvePath(dirname(importerAbsPath), `${importPath}.esp`);
-	const source = readFileSync(absPath, "utf-8");
-	return { absPath, source };
+	if (importPath.startsWith("./") || importPath.startsWith("../")) {
+		const absPath = resolvePath(
+			dirname(importerAbsPath),
+			`${importPath}.esp`,
+		);
+		const source = readFileSync(absPath, "utf-8");
+		return { absPath, source };
+	}
+
+	if (importPath.includes("/")) {
+		throw new Error(
+			`invalid package name '${importPath}': sub-paths not supported`,
+		);
+	}
+
+	const name = importPath;
+	let dir = dirname(importerAbsPath);
+	while (true) {
+		const candidate = resolvePath(dir, "packages", name, `${name}.esp`);
+		if (existsSync(candidate)) {
+			const source = readFileSync(candidate, "utf-8");
+			return { absPath: candidate, source };
+		}
+		const parent = dirname(dir);
+		if (parent === dir) {
+			throw new Error(
+				`package '${name}' not found in any ancestor packages/ directory`,
+			);
+		}
+		dir = parent;
+	}
 };
 
 export function defineSourceBindings(env: Env, absPath: string): void {

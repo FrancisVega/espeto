@@ -1,6 +1,9 @@
-import { describe, expect, it, vi } from "vitest";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { EspetoError } from "../src/errors";
-import type { Resolver, ResolvedModule } from "../src/imports";
+import { defaultResolver, type Resolver, type ResolvedModule } from "../src/imports";
 import { run } from "../src/run";
 
 function memResolver(files: Record<string, string>): Resolver {
@@ -607,5 +610,83 @@ describe("imports: __file__ / __dir__ are definition-site (closure)", () => {
 			"main.esp",
 		);
 		expect(out).toBe("/\n/sub\n");
+	});
+});
+
+describe("imports: defaultResolver — bare package names", () => {
+	let tmp: string;
+
+	beforeEach(() => {
+		tmp = mkdtempSync(join(tmpdir(), "espeto-pkg-"));
+	});
+
+	afterEach(() => {
+		rmSync(tmp, { recursive: true, force: true });
+	});
+
+	it("resolves bare name to packages/<name>/<name>.esp next to importer", () => {
+		const pkgDir = join(tmp, "packages", "ansi");
+		mkdirSync(pkgDir, { recursive: true });
+		writeFileSync(join(pkgDir, "ansi.esp"), "def red(s) = s\n");
+		const importer = join(tmp, "cmd.esp");
+		writeFileSync(importer, "");
+
+		const result = defaultResolver(importer, "ansi");
+		expect(result.absPath).toBe(join(pkgDir, "ansi.esp"));
+		expect(result.source).toBe("def red(s) = s\n");
+	});
+
+	it("walks upward to find packages/<name>", () => {
+		const pkgDir = join(tmp, "packages", "ansi");
+		mkdirSync(pkgDir, { recursive: true });
+		writeFileSync(join(pkgDir, "ansi.esp"), "def red(s) = s\n");
+		const sub = join(tmp, "examples", "demo");
+		mkdirSync(sub, { recursive: true });
+		const importer = join(sub, "cmd.esp");
+		writeFileSync(importer, "");
+
+		const result = defaultResolver(importer, "ansi");
+		expect(result.absPath).toBe(join(pkgDir, "ansi.esp"));
+	});
+
+	it("nearer packages/ shadows farther one", () => {
+		const outerPkg = join(tmp, "packages", "foo");
+		mkdirSync(outerPkg, { recursive: true });
+		writeFileSync(join(outerPkg, "foo.esp"), "outer");
+		const innerPkg = join(tmp, "sub", "packages", "foo");
+		mkdirSync(innerPkg, { recursive: true });
+		writeFileSync(join(innerPkg, "foo.esp"), "inner");
+		const importer = join(tmp, "sub", "cmd.esp");
+		writeFileSync(importer, "");
+
+		const result = defaultResolver(importer, "foo");
+		expect(result.source).toBe("inner");
+	});
+
+	it("throws when package is not found", () => {
+		const importer = join(tmp, "cmd.esp");
+		writeFileSync(importer, "");
+		expect(() => defaultResolver(importer, "missing_pkg_xyz")).toThrow(
+			/package 'missing_pkg_xyz' not found in any ancestor packages\/ directory/,
+		);
+	});
+
+	it("rejects sub-paths in package name", () => {
+		const importer = join(tmp, "cmd.esp");
+		writeFileSync(importer, "");
+		expect(() => defaultResolver(importer, "ansi/internal")).toThrow(
+			/invalid package name 'ansi\/internal': sub-paths not supported/,
+		);
+	});
+
+	it("relative paths (./, ../) still resolve next to importer", () => {
+		const sib = join(tmp, "sib.esp");
+		writeFileSync(sib, "def hi(s) = s\n");
+		const importer = join(tmp, "cmd.esp");
+		writeFileSync(importer, "");
+
+		const result = defaultResolver(importer, "./sib");
+		expect(result.absPath).toBe(sib);
+		expect(result.source).toBe("def hi(s) = s\n");
 	});
 });
