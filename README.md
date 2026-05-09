@@ -2,7 +2,7 @@
 
 > Lenguaje funcional pequeño para construir CLIs. Pipe-céntrico, Elixir-flavored, optimizado para que los LLMs lo escriban perfecto.
 
-**Estado actual:** **v0.1.0 publicado** (mayo 2026). Build, watch, REPL, LSP + extensión VS Code, multi-subcomando, identificadores mágicos `__file__`/`__dir__`. Próximo: `pnpm publish` v0.2.0.
+**Estado actual:** **v0.1.0 publicado** (mayo 2026). Build, watch, REPL, LSP + extensión VS Code, multi-subcomando, identificadores mágicos `__file__`/`__dir__`. Sistema de paquetes con resolver walking-upward: `import "name"` busca `packages/<name>/<name>.esp` (primer paquete: `ansi`). Próximo: `pnpm publish` v0.2.0.
 
 ---
 
