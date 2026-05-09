@@ -32,16 +32,30 @@ export const defaultResolver: Resolver = (importerAbsPath, importPath) => {
 
 	const name = importPath;
 	let dir = dirname(importerAbsPath);
+	let sawEspetos = false;
 	while (true) {
-		const candidate = resolvePath(dir, "packages", name, `${name}.esp`);
-		if (existsSync(candidate)) {
-			const source = readFileSync(candidate, "utf-8");
-			return { absPath: candidate, source };
+		const espetosDir = resolvePath(dir, ".espetos");
+		if (existsSync(espetosDir)) sawEspetos = true;
+
+		const espetosCandidate = resolvePath(espetosDir, name, `${name}.esp`);
+		if (existsSync(espetosCandidate)) {
+			const source = readFileSync(espetosCandidate, "utf-8");
+			return { absPath: espetosCandidate, source };
 		}
+
+		const packagesCandidate = resolvePath(dir, "packages", name, `${name}.esp`);
+		if (existsSync(packagesCandidate)) {
+			const source = readFileSync(packagesCandidate, "utf-8");
+			return { absPath: packagesCandidate, source };
+		}
+
 		const parent = dirname(dir);
 		if (parent === dir) {
+			const hint = sawEspetos
+				? `; .espetos/ exists but '${name}' isn't installed — try 'espeto install'`
+				: "";
 			throw new Error(
-				`package '${name}' not found in any ancestor packages/ directory`,
+				`package '${name}' not found in any ancestor .espetos/ or packages/ directory${hint}`,
 			);
 		}
 		dir = parent;

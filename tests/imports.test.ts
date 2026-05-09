@@ -667,7 +667,7 @@ describe("imports: defaultResolver — bare package names", () => {
 		const importer = join(tmp, "cmd.esp");
 		writeFileSync(importer, "");
 		expect(() => defaultResolver(importer, "missing_pkg_xyz")).toThrow(
-			/package 'missing_pkg_xyz' not found in any ancestor packages\/ directory/,
+			/package 'missing_pkg_xyz' not found in any ancestor \.espetos\/ or packages\/ directory/,
 		);
 	});
 
@@ -688,5 +688,109 @@ describe("imports: defaultResolver — bare package names", () => {
 		const result = defaultResolver(importer, "./sib");
 		expect(result.absPath).toBe(sib);
 		expect(result.source).toBe("def hi(s) = s\n");
+	});
+});
+
+describe("imports: defaultResolver — .espetos/", () => {
+	let tmp: string;
+
+	beforeEach(() => {
+		tmp = mkdtempSync(join(tmpdir(), "espeto-espetos-"));
+	});
+
+	afterEach(() => {
+		rmSync(tmp, { recursive: true, force: true });
+	});
+
+	it("resolves bare name to .espetos/<name>/<name>.esp next to importer", () => {
+		const pkgDir = join(tmp, ".espetos", "ansi");
+		mkdirSync(pkgDir, { recursive: true });
+		writeFileSync(join(pkgDir, "ansi.esp"), "def red(s) = s\n");
+		const importer = join(tmp, "cmd.esp");
+		writeFileSync(importer, "");
+
+		const result = defaultResolver(importer, "ansi");
+		expect(result.absPath).toBe(join(pkgDir, "ansi.esp"));
+		expect(result.source).toBe("def red(s) = s\n");
+	});
+
+	it("walks upward to find .espetos/<name>", () => {
+		const pkgDir = join(tmp, ".espetos", "ansi");
+		mkdirSync(pkgDir, { recursive: true });
+		writeFileSync(join(pkgDir, "ansi.esp"), "def red(s) = s\n");
+		const sub = join(tmp, "examples", "demo");
+		mkdirSync(sub, { recursive: true });
+		const importer = join(sub, "cmd.esp");
+		writeFileSync(importer, "");
+
+		const result = defaultResolver(importer, "ansi");
+		expect(result.absPath).toBe(join(pkgDir, "ansi.esp"));
+	});
+
+	it("nearer .espetos/ shadows farther one", () => {
+		const outerPkg = join(tmp, ".espetos", "foo");
+		mkdirSync(outerPkg, { recursive: true });
+		writeFileSync(join(outerPkg, "foo.esp"), "outer");
+		const innerPkg = join(tmp, "sub", ".espetos", "foo");
+		mkdirSync(innerPkg, { recursive: true });
+		writeFileSync(join(innerPkg, "foo.esp"), "inner");
+		const importer = join(tmp, "sub", "cmd.esp");
+		writeFileSync(importer, "");
+
+		const result = defaultResolver(importer, "foo");
+		expect(result.source).toBe("inner");
+	});
+
+	it(".espetos/<name> takes precedence over packages/<name> at the same level", () => {
+		const espetosPkg = join(tmp, ".espetos", "foo");
+		mkdirSync(espetosPkg, { recursive: true });
+		writeFileSync(join(espetosPkg, "foo.esp"), "from-espetos");
+		const packagesPkg = join(tmp, "packages", "foo");
+		mkdirSync(packagesPkg, { recursive: true });
+		writeFileSync(join(packagesPkg, "foo.esp"), "from-packages");
+		const importer = join(tmp, "cmd.esp");
+		writeFileSync(importer, "");
+
+		const result = defaultResolver(importer, "foo");
+		expect(result.absPath).toBe(join(espetosPkg, "foo.esp"));
+		expect(result.source).toBe("from-espetos");
+	});
+
+	it("falls back to packages/<name> when .espetos/<name> isn't there", () => {
+		mkdirSync(join(tmp, ".espetos"), { recursive: true });
+		const packagesPkg = join(tmp, "packages", "foo");
+		mkdirSync(packagesPkg, { recursive: true });
+		writeFileSync(join(packagesPkg, "foo.esp"), "from-packages");
+		const importer = join(tmp, "cmd.esp");
+		writeFileSync(importer, "");
+
+		const result = defaultResolver(importer, "foo");
+		expect(result.absPath).toBe(join(packagesPkg, "foo.esp"));
+	});
+
+	it("error suggests 'espeto install' when an ancestor .espetos/ exists but the package isn't installed", () => {
+		mkdirSync(join(tmp, ".espetos"), { recursive: true });
+		const importer = join(tmp, "cmd.esp");
+		writeFileSync(importer, "");
+
+		expect(() => defaultResolver(importer, "missing_pkg_xyz")).toThrow(
+			/\.espetos\/ exists but 'missing_pkg_xyz' isn't installed — try 'espeto install'/,
+		);
+	});
+
+	it("error doesn't suggest install when no ancestor .espetos/ exists", () => {
+		const importer = join(tmp, "cmd.esp");
+		writeFileSync(importer, "");
+
+		try {
+			defaultResolver(importer, "missing_pkg_xyz");
+			expect.fail("expected throw");
+		} catch (e) {
+			const msg = (e as Error).message;
+			expect(msg).toMatch(
+				/package 'missing_pkg_xyz' not found in any ancestor \.espetos\/ or packages\/ directory/,
+			);
+			expect(msg).not.toMatch(/espeto install/);
+		}
 	});
 });
