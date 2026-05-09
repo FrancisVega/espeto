@@ -1,7 +1,7 @@
-import type { Expr, MapEntry, MapExpr, Module, StringExpr } from "./ast";
-import { EspetoError, type Span } from "./errors";
-import { lex } from "./lexer";
-import { parse } from "./parser";
+import type { Expr, MapEntry, MapExpr, Module, StringExpr } from "../ast";
+import { EspetoError, type Span } from "../errors";
+import { lex } from "../lexer";
+import { parse } from "../parser";
 
 export type ManifestError = { message: string; span: Span };
 
