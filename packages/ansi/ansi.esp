@@ -1,0 +1,118 @@
+## ANSI escape codes for terminal colors and modifiers.
+##
+## Pure functions: each function returns the input string wrapped in the
+## relevant escape codes. Use `should_color?` to decide whether to apply
+## styling based on `FORCE_COLOR` / `NO_COLOR` / TTY detection.
+##
+## Smart nesting: when the input already contains a reset (`\e[0m`), the
+## wrap is reopened after the reset so outer styling is preserved.
+##
+## ## Example
+##
+##     "build failed" |> red |> bold |> print
+##     "[error] #{bold(name)}: not found" |> red |> print
+##
+##     # Respect NO_COLOR / TTY
+##     msg = "build failed"
+##     if should_color?(), do: msg |> red |> print, else: msg |> print
+
+defp wrap(s, code) do
+  open = "\e[#{code}m"
+  inner = replace(s, "\e[0m", "\e[0m#{open}")
+  "#{open}#{inner}\e[0m"
+end
+
+## Whether to apply ANSI styling. `FORCE_COLOR` set (non-empty) → true,
+## `NO_COLOR` set (non-empty) → false, otherwise checks `tty?()`.
+def should_color?() do
+  if not (env_or("FORCE_COLOR", "") == "") do
+    true
+  else if not (env_or("NO_COLOR", "") == "") do
+    false
+  else
+    tty?()
+  end
+end
+
+## Foreground: black.
+def black(s) = wrap(s, "30")
+## Foreground: red.
+def red(s) = wrap(s, "31")
+## Foreground: green.
+def green(s) = wrap(s, "32")
+## Foreground: yellow.
+def yellow(s) = wrap(s, "33")
+## Foreground: blue.
+def blue(s) = wrap(s, "34")
+## Foreground: magenta.
+def magenta(s) = wrap(s, "35")
+## Foreground: cyan.
+def cyan(s) = wrap(s, "36")
+## Foreground: white.
+def white(s) = wrap(s, "37")
+
+## Bright foreground: black (gray).
+def bright_black(s) = wrap(s, "90")
+## Bright foreground: red.
+def bright_red(s) = wrap(s, "91")
+## Bright foreground: green.
+def bright_green(s) = wrap(s, "92")
+## Bright foreground: yellow.
+def bright_yellow(s) = wrap(s, "93")
+## Bright foreground: blue.
+def bright_blue(s) = wrap(s, "94")
+## Bright foreground: magenta.
+def bright_magenta(s) = wrap(s, "95")
+## Bright foreground: cyan.
+def bright_cyan(s) = wrap(s, "96")
+## Bright foreground: white.
+def bright_white(s) = wrap(s, "97")
+
+## Background: black.
+def bg_black(s) = wrap(s, "40")
+## Background: red.
+def bg_red(s) = wrap(s, "41")
+## Background: green.
+def bg_green(s) = wrap(s, "42")
+## Background: yellow.
+def bg_yellow(s) = wrap(s, "43")
+## Background: blue.
+def bg_blue(s) = wrap(s, "44")
+## Background: magenta.
+def bg_magenta(s) = wrap(s, "45")
+## Background: cyan.
+def bg_cyan(s) = wrap(s, "46")
+## Background: white.
+def bg_white(s) = wrap(s, "47")
+
+## Bright background: black.
+def bg_bright_black(s) = wrap(s, "100")
+## Bright background: red.
+def bg_bright_red(s) = wrap(s, "101")
+## Bright background: green.
+def bg_bright_green(s) = wrap(s, "102")
+## Bright background: yellow.
+def bg_bright_yellow(s) = wrap(s, "103")
+## Bright background: blue.
+def bg_bright_blue(s) = wrap(s, "104")
+## Bright background: magenta.
+def bg_bright_magenta(s) = wrap(s, "105")
+## Bright background: cyan.
+def bg_bright_cyan(s) = wrap(s, "106")
+## Bright background: white.
+def bg_bright_white(s) = wrap(s, "107")
+
+## Bold (increased intensity).
+def bold(s) = wrap(s, "1")
+## Dim (decreased intensity).
+def dim(s) = wrap(s, "2")
+## Italic. Not all terminals support this.
+def italic(s) = wrap(s, "3")
+## Underline.
+def underline(s) = wrap(s, "4")
+## Inverse: swap foreground and background.
+def inverse(s) = wrap(s, "7")
+## Hidden: text is invisible (still copyable in some terminals).
+def hidden(s) = wrap(s, "8")
+## Strikethrough.
+def strikethrough(s) = wrap(s, "9")
