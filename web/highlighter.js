@@ -38,7 +38,7 @@
 
   const BUILTINS = new Set([
     // I/O
-    "print", "read", "write", "exists?", "env",
+    "print", "read", "write", "exists?", "env", "tty?",
     // Strings
     "upcase", "downcase", "trim", "split", "join", "replace", "length",
     "starts_with?", "ends_with?", "contains?",
