@@ -120,14 +120,27 @@ describe("parseManifest — structural errors", () => {
 });
 
 describe("parseManifest — required fields", () => {
-	it("reports each missing required field", () => {
+	it("consolidates missing required fields into one error", () => {
 		const errors = fail("{}");
-		const messages = errors.map((e) => e.message).join("\n");
-		expect(messages).toMatch(/"name"/);
-		expect(messages).toMatch(/"version"/);
-		expect(messages).toMatch(/"espeto"/);
-		expect(messages).toMatch(/"deps"/);
-		expect(messages).toMatch(/"dev_deps"/);
+		expect(errors).toHaveLength(1);
+		const msg = errors[0].message;
+		expect(msg).toMatch(/missing required fields/);
+		expect(msg).toMatch(/"name"/);
+		expect(msg).toMatch(/"version"/);
+		expect(msg).toMatch(/"espeto"/);
+		expect(msg).toMatch(/"deps"/);
+		expect(msg).toMatch(/"dev_deps"/);
+	});
+
+	it("uses singular 'field' when only one is missing", () => {
+		const src = `{
+  "name": "x",
+  "version": "0.1.0",
+  "espeto": ">= 0.1.0",
+  "deps": {}
+}`;
+		const errors = fail(src);
+		expect(errors[0].message).toMatch(/missing required field: "dev_deps"/);
 	});
 
 	it("rejects unknown top-level fields", () => {
@@ -212,6 +225,24 @@ describe("parseManifest — deps validation", () => {
 		);
 		const errors = fail(src);
 		expect(errors.some((e) => /"not-a-url".*<host>/.test(e.message))).toBe(true);
+	});
+
+	it("rejects URL with only host and one segment", () => {
+		const src = MIN.replace(
+			'"deps": {}',
+			'"deps": { "github.com/foo": "1.0.0" }',
+		);
+		const errors = fail(src);
+		expect(errors.some((e) => /"github\.com\/foo".*<host>/.test(e.message))).toBe(true);
+	});
+
+	it("accepts GitLab nested group URLs", () => {
+		const src = MIN.replace(
+			'"deps": {}',
+			'"deps": { "gitlab.com/group/subgroup/repo": "1.0.0" }',
+		);
+		const m = ok(src);
+		expect(m.deps.get("gitlab.com/group/subgroup/repo")?.version).toBe("1.0.0");
 	});
 
 	it("rejects non-exact dep version", () => {

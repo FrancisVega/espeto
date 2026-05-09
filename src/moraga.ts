@@ -34,7 +34,7 @@ const NAME_PATTERN = /^[a-z][a-z0-9_]*$/;
 const SEMVER_PATTERN =
 	/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/;
 const URL_PATTERN =
-	/^[a-z][a-z0-9-]*(?:\.[a-z0-9-]+)+\/[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/;
+	/^[a-z][a-z0-9-]*(?:\.[a-z0-9-]+)+(?:\/[a-zA-Z0-9_.-]+){2,}$/;
 const ESPETO_PART_PATTERN = /^(>=|<)\s*(\S+)$/;
 
 const REQUIRED_TOP_LEVEL = ["name", "version", "espeto", "deps", "dev_deps"];
@@ -99,13 +99,14 @@ export function parseManifest(source: string, file: string): ManifestResult {
 	const lookup = new Map<string, MapEntry>();
 	for (const e of map.entries) lookup.set(e.key, e);
 
-	for (const f of REQUIRED_TOP_LEVEL) {
-		if (!lookup.has(f)) {
-			errors.push({
-				message: `missing required field "${f}"`,
-				span: map.span,
-			});
-		}
+	const missing = REQUIRED_TOP_LEVEL.filter((f) => !lookup.has(f));
+	if (missing.length > 0) {
+		const label = missing.length === 1 ? "field" : "fields";
+		const list = missing.map((f) => `"${f}"`).join(", ");
+		errors.push({
+			message: `missing required ${label}: ${list}`,
+			span: map.span,
+		});
 	}
 
 	for (const e of map.entries) {
