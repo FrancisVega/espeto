@@ -9,6 +9,7 @@ import {
 	read,
 	try_read,
 	try_write,
+	tty,
 	write,
 } from "./io";
 import { parse_json, to_json, try_parse_json } from "./json";
@@ -97,6 +98,7 @@ export function loadPrelude(env: Env): void {
 	env.define("exists?", exists);
 	env.define("env", env_var);
 	env.define("env_or", env_or);
+	env.define("tty?", tty);
 	env.define("parse_json", parse_json);
 	env.define("try_parse_json", try_parse_json);
 	env.define("to_json", to_json);

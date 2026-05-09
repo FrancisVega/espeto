@@ -198,3 +198,20 @@ export const env_or: BuiltinFn = {
 		return v === undefined ? fallback : v;
 	},
 };
+
+/**
+ * Test whether stdout is connected to a terminal (TTY). Returns false when
+ * stdout is a pipe or redirected to a file. Useful for deciding whether to
+ * emit ANSI escape codes, progress spinners or other terminal-only output.
+ *
+ * @returns {bool} true if stdout is a TTY
+ *
+ * @example
+ * if tty?(), do: msg |> red |> print, else: msg |> print
+ */
+export const tty: BuiltinFn = {
+	kind: "builtin",
+	name: "tty?",
+	arity: 0,
+	call: () => process.stdout.isTTY === true,
+};

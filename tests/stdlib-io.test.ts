@@ -219,3 +219,46 @@ describe("stdlib/io: env_or", () => {
 		);
 	});
 });
+
+describe("stdlib/io: tty?", () => {
+	let original: boolean | undefined;
+
+	beforeEach(() => {
+		original = process.stdout.isTTY;
+	});
+
+	afterEach(() => {
+		Object.defineProperty(process.stdout, "isTTY", {
+			value: original,
+			configurable: true,
+			writable: true,
+		});
+	});
+
+	it("returns true when stdout is a TTY", () => {
+		Object.defineProperty(process.stdout, "isTTY", {
+			value: true,
+			configurable: true,
+			writable: true,
+		});
+		expect(run(`tty?()`, "x.esp")).toBe(true);
+	});
+
+	it("returns false when isTTY is undefined (pipe/redirect)", () => {
+		Object.defineProperty(process.stdout, "isTTY", {
+			value: undefined,
+			configurable: true,
+			writable: true,
+		});
+		expect(run(`tty?()`, "x.esp")).toBe(false);
+	});
+
+	it("returns false when isTTY is explicitly false", () => {
+		Object.defineProperty(process.stdout, "isTTY", {
+			value: false,
+			configurable: true,
+			writable: true,
+		});
+		expect(run(`tty?()`, "x.esp")).toBe(false);
+	});
+});
