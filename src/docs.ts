@@ -18,7 +18,7 @@ alone (empty content) as a separator. Anything else starting with \`##\`
 ### Literals
 - int: \`42\`, \`-1\`, \`1_000_000\` (underscores allowed)
 - float: \`3.14\`, \`-0.5\` (digit on both sides of \`.\`)
-- str: \`"hi"\`, \`"hola, #{name}!"\` (double quotes; \`#{...}\` interpolates an expression; escapes: \`\\n \\t \\r \\\\ \\" \\#\`)
+- str: \`"hi"\`, \`"hola, #{name}!"\` (double quotes; \`#{...}\` interpolates an expression; escapes: \`\\n \\t \\r \\e \\\\ \\" \\#\`)
 - bool: \`true\`, \`false\`
 - nil: \`nil\`
 - list: \`[1, 2, 3]\`
@@ -28,7 +28,7 @@ alone (empty content) as a separator. Anything else starting with \`##\`
 - arithmetic: \`+ - * /\` (use builtin \`mod\` for modulo, \`div\` for integer division)
 - comparison: \`== < <= > >=\` (no \`!=\`; use \`not (a == b)\`; comparisons cannot be chained, use \`and\`)
 - logical: \`and\`, \`or\`, \`not\` (words, not symbols)
-- pipe: \`x |> f\` is sugar for \`f(x)\`; \`x |> f(a)\` is \`f(x, a)\` (always passes \`x\` as the first argument)
+- pipe: \`x |> f\` is sugar for \`f(x)\`; \`x |> f(a)\` is \`f(x, a)\`. By default the LHS is passed as the **first** argument; use the \`_\` placeholder to put it elsewhere: \`6 |> div(30, _)\` is \`div(30, 6)\`. The placeholder may appear at most once per call.
 
 ### Bindings
 \`x = 1\` — local binding inside a block. No \`let\`/\`var\` keyword.
@@ -78,12 +78,17 @@ Identifiers may end with \`?\` (predicate, returns bool) or \`!\` (raises on fai
 ### Imports
 \`\`\`
 import "./util" only [trim, upcase]
-import "./long/module/name" as M
+import "./util" only [trim as t, upcase]
+import "ansi" only [red, bold]
 \`\`\`
-Paths are relative to the importing file. \`only\` whitelists names. \`as\` aliases the module so you can call \`M.upcase(x)\`.
+Two forms:
+- **Relative paths** (\`./\` or \`../\`) resolve next to the importing file. The \`.esp\` extension is appended automatically.
+- **Bare names** (no leading \`./\` or \`../\`) resolve as packages: the resolver walks upward from the importing file looking for \`packages/<name>/<name>.esp\`. A nearer \`packages/\` shadows a farther one. Sub-paths like \`"ansi/internal"\` are not yet supported.
+
+\`only [...]\` whitelists imported names; without it, every \`def\` is imported. Inside the list, \`name as alias\` renames a single binding.
 
 ### Special variables
-- \`_\` — discard binding (e.g. \`rescue _ => "fallback"\`).
+- \`_\` — discard binding (e.g. \`rescue _ => "fallback"\`) and pipe placeholder (see Operators → pipe).
 - \`__file__\` — absolute path of the source file as string.
 - \`__dir__\` — absolute path of the directory containing the source file.
 
