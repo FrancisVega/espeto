@@ -33,6 +33,11 @@ describe("lexer", () => {
 		expect(tokens[0]!.value).toBe("hola\nmundo");
 	});
 
+	it("handles \\e escape as ESC byte", () => {
+		const tokens = lex(`"\\e[31mhi\\e[0m"`, "x.esp");
+		expect(tokens[0]!.value).toBe("\x1b[31mhi\x1b[0m");
+	});
+
 	it("emits newlines as tokens", () => {
 		const tokens = lex(`a\nb`, "x.esp");
 		expect(tokens.map((t) => t.type)).toEqual([

@@ -538,6 +538,7 @@ const ESCAPES: Record<string, string> = {
 	n: "\n",
 	t: "\t",
 	r: "\r",
+	e: "\x1b",
 	"\\": "\\",
 	'"': '"',
 };
