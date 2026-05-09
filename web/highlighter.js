@@ -38,7 +38,7 @@
 
   const BUILTINS = new Set([
     // I/O
-    "print", "read", "write", "exists?", "env", "tty?",
+    "print", "read", "write", "exists?", "env", "env_or", "tty?",
     // Strings
     "upcase", "downcase", "trim", "split", "join", "replace", "length",
     "starts_with?", "ends_with?", "contains?",
@@ -47,16 +47,23 @@
     "min", "max", "div", "mod",
     // Lists
     "head", "tail", "concat", "map", "filter", "reduce", "each", "find",
-    "sort", "sort_by", "reverse", "take", "drop", "unique", "range", "zip",
+    "sort", "sort_by", "reverse", "take", "drop", "take_while", "drop_while",
+    "unique", "range", "zip",
     // Maps
     "keys", "values", "get", "get_or", "put", "delete", "has_key?", "merge",
     // JSON
     "parse_json", "to_json",
     // Type predicates
     "is_int?", "is_float?", "is_str?", "is_bool?", "is_nil?",
-    "is_list?", "is_map?", "is_fn?",
+    "is_list?", "is_map?", "is_fn?", "is_stream?",
+    // Streams
+    "read_lines", "stdin_lines", "sh_lines", "collect", "count",
+    // Shell
+    "sh", "sh!",
     // Try variants
-    "try_read", "try_parse_json",
+    "try_read", "try_write", "try_parse_json", "try_to_int", "try_to_float",
+    // Asserts
+    "assert_raise",
   ]);
 
   function escapeHtml(s) {
@@ -209,7 +216,7 @@
       if (isIdentStart(ch)) {
         let j = i;
         while (j < n && isIdentPart(src[j])) j++;
-        if (src[j] === "?") j++;
+        if (src[j] === "?" || src[j] === "!") j++;
         const word = src.slice(i, j);
 
         let type = "ident";
