@@ -1,0 +1,16 @@
+[31mred[0m
+[32mgreen[0m
+[33myellow[0m
+[34mblue[0m
+[35mmagenta[0m
+[36mcyan[0m
+[91mbright red[0m
+[93mbright yellow[0m
+[41mbg red[0m
+[44mbg blue[0m
+[1mbold[0m
+[3mitalic[0m
+[4munderline[0m
+[2mdim[0m
+[9mstrikethrough[0m
+[31merror: [1mimportant[0m[31m happened[0m
