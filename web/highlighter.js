@@ -41,7 +41,7 @@
     "print", "read", "write", "exists?", "env", "env_or", "tty?",
     // Strings
     "upcase", "downcase", "trim", "split", "join", "replace", "length",
-    "starts_with?", "ends_with?", "contains?",
+    "starts_with?", "ends_with?", "contains?", "slice", "chars",
     // Numbers
     "to_int", "to_float", "to_str", "abs", "round", "floor", "ceil",
     "min", "max", "div", "mod",

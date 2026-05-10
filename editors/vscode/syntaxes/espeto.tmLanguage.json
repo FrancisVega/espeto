@@ -126,7 +126,7 @@
       "patterns": [
         {
           "name": "support.function.builtin.espeto",
-          "match": "(?<![A-Za-z0-9_])(print|read_lines|read|write|exists\\?|env_or|env|tty\\?|upcase|downcase|trim|split|join|replace|length|starts_with\\?|ends_with\\?|contains\\?|to_int|to_float|to_str|abs|round|floor|ceil|min|max|div|mod|head|tail|concat|map|filter|reduce|each|find|sort_by|sort|reverse|take_while|take|drop_while|drop|unique|range|zip|keys|values|get_or|get|put|delete|has_key\\?|merge|parse_json|to_json|is_int\\?|is_float\\?|is_str\\?|is_bool\\?|is_nil\\?|is_list\\?|is_map\\?|is_fn\\?|is_stream\\?|stdin_lines|sh_lines|collect|count|sh!|sh|try_read|try_write|try_parse_json|try_to_int|try_to_float|assert_raise|when|unless|id|raise)(?![A-Za-z0-9_?!])"
+          "match": "(?<![A-Za-z0-9_])(print|read_lines|read|write|exists\\?|env_or|env|tty\\?|upcase|downcase|trim|split|join|replace|length|starts_with\\?|ends_with\\?|contains\\?|slice|chars|to_int|to_float|to_str|abs|round|floor|ceil|min|max|div|mod|head|tail|concat|map|filter|reduce|each|find|sort_by|sort|reverse|take_while|take|drop_while|drop|unique|range|zip|keys|values|get_or|get|put|delete|has_key\\?|merge|parse_json|to_json|is_int\\?|is_float\\?|is_str\\?|is_bool\\?|is_nil\\?|is_list\\?|is_map\\?|is_fn\\?|is_stream\\?|stdin_lines|sh_lines|collect|count|sh!|sh|try_read|try_write|try_parse_json|try_to_int|try_to_float|assert_raise|when|unless|id|raise)(?![A-Za-z0-9_?!])"
         }
       ]
     },

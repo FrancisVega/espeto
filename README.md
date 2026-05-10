@@ -234,7 +234,7 @@ espeto docs > spec.md
 | Categoría | Funciones |
 |---|---|
 | **I/O** | `print`, `read`, `try_read`, `write`, `try_write`, `exists?`, `env`, `env_or` |
-| **Strings** | `upcase`, `downcase`, `trim`, `split`, `join`, `replace`, `length`, `starts_with?`, `ends_with?`, `contains?` |
+| **Strings** | `upcase`, `downcase`, `trim`, `split`, `join`, `replace`, `length`, `starts_with?`, `ends_with?`, `contains?`, `slice`, `chars` |
 | **Números** | `to_int`, `to_float`, `to_str`, `abs`, `round`, `floor`, `ceil`, `min`, `max`, `div`, `mod` |
 | **Listas** | `length`, `head`, `tail`, `concat`, `map`, `filter`, `reduce`, `each`, `find`, `sort`, `sort_by`, `reverse`, `take`, `drop`, `unique`, `range`, `zip` |
 | **Maps** | `keys`, `values`, `get`, `get_or`, `put`, `delete`, `has_key?`, `merge` |

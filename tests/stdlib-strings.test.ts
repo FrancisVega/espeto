@@ -182,3 +182,99 @@ describe("stdlib/strings: contains?", () => {
 		);
 	});
 });
+
+describe("stdlib/strings: slice", () => {
+	it("3-arity extracts a substring of length n", () => {
+		expect(run(`slice("sardinas", 0, 3)`, "x.esp")).toBe("sar");
+		expect(run(`slice("sardinas", 3, 3)`, "x.esp")).toBe("din");
+	});
+
+	it("2-arity takes from start to end", () => {
+		expect(run(`slice("sardinas", 3)`, "x.esp")).toBe("dinas");
+		expect(run(`slice("sardinas", 0)`, "x.esp")).toBe("sardinas");
+	});
+
+	it("negative start counts from the end", () => {
+		expect(run(`slice("sardinas", -3, 3)`, "x.esp")).toBe("nas");
+		expect(run(`slice("sardinas", -3)`, "x.esp")).toBe("nas");
+		expect(run(`slice("sardinas", -1, 1)`, "x.esp")).toBe("s");
+	});
+
+	it("clamps start beyond bounds", () => {
+		expect(run(`slice("hi", 100, 3)`, "x.esp")).toBe("");
+		expect(run(`slice("hi", 100)`, "x.esp")).toBe("");
+		expect(run(`slice("hi", -100, 1)`, "x.esp")).toBe("h");
+		expect(run(`slice("hi", -100)`, "x.esp")).toBe("hi");
+	});
+
+	it("clamps length when it exceeds the string", () => {
+		expect(run(`slice("hi", 0, 100)`, "x.esp")).toBe("hi");
+		expect(run(`slice("hi", 1, 100)`, "x.esp")).toBe("i");
+	});
+
+	it("length 0 returns empty string", () => {
+		expect(run(`slice("sardinas", 2, 0)`, "x.esp")).toBe("");
+	});
+
+	it("works in pipe form", () => {
+		expect(run(`"sardinas" |> slice(0, 3)`, "x.esp")).toBe("sar");
+		expect(run(`"sardinas" |> slice(-3)`, "x.esp")).toBe("nas");
+	});
+
+	it("rejects negative length", () => {
+		expect(() => run(`slice("hi", 0, -1)`, "x.esp")).toThrow(
+			/slice: length must be non-negative/,
+		);
+	});
+
+	it("rejects wrong arity", () => {
+		expect(() => run(`slice("hi")`, "x.esp")).toThrow(
+			/slice: expected 2 or 3 args, got 1/,
+		);
+		expect(() => run(`slice("hi", 0, 1, 2)`, "x.esp")).toThrow(
+			/slice: expected 2 or 3 args, got 4/,
+		);
+	});
+
+	it("rejects non-str input", () => {
+		expect(() => run(`slice(1, 0, 1)`, "x.esp")).toThrow(
+			/slice: str must be str, got int/,
+		);
+	});
+
+	it("rejects non-int start", () => {
+		expect(() => run(`slice("hi", 1.5, 1)`, "x.esp")).toThrow(
+			/slice: start must be int, got float/,
+		);
+	});
+
+	it("rejects non-int length", () => {
+		expect(() => run(`slice("hi", 0, 1.5)`, "x.esp")).toThrow(
+			/slice: length must be int, got float/,
+		);
+	});
+});
+
+describe("stdlib/strings: chars", () => {
+	it("explodes a word into single-char strings", () => {
+		expect(run(`chars("hola")`, "x.esp")).toEqual(["h", "o", "l", "a"]);
+	});
+
+	it("returns empty list for empty string", () => {
+		expect(run(`chars("")`, "x.esp")).toEqual([]);
+	});
+
+	it("keeps surrogate pairs together (codepoint-aware)", () => {
+		expect(run(`chars("a😀b")`, "x.esp")).toEqual(["a", "😀", "b"]);
+	});
+
+	it("works in pipe form", () => {
+		expect(run(`"hi" |> chars`, "x.esp")).toEqual(["h", "i"]);
+	});
+
+	it("rejects non-str", () => {
+		expect(() => run(`chars(1)`, "x.esp")).toThrow(
+			/chars: str must be str, got int/,
+		);
+	});
+});

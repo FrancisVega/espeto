@@ -7,6 +7,13 @@ function expectStr(name: string, label: string, v: Value): string {
 	return v;
 }
 
+function expectInt(name: string, label: string, v: Value): bigint {
+	if (typeof v !== "bigint") {
+		throw new Error(`${name}: ${label} must be int, got ${typeName(v)}`);
+	}
+	return v;
+}
+
 function strFn(name: string, fn: (s: string) => string): BuiltinFn {
 	return {
 		kind: "builtin",
@@ -189,3 +196,67 @@ export const ends_with = strPredicate("ends_with?", (s, n) => s.endsWith(n));
  * contains?("hello", "ell") // => true
  */
 export const contains = strPredicate("contains?", (s, n) => s.includes(n));
+
+/**
+ * Extract a substring of `length` characters starting at `start`.
+ * Called with two args, takes from `start` to the end. A negative `start`
+ * counts from the end (`-1` is the last char). Out-of-range `start` clamps
+ * to the nearest end. Errors if `length` is negative.
+ *
+ * @param {str} s - the source string
+ * @param {int} start - zero-based index (negative counts from end)
+ * @param {int} length - number of characters to take (optional; must be non-negative)
+ * @returns {str} the extracted substring
+ *
+ * @example
+ * slice("sardinas", 0, 3)  // => "sar"
+ * slice("sardinas", 3, 3)  // => "din"
+ * slice("sardinas", -3, 3) // => "nas"
+ * slice("sardinas", 3)     // => "dinas"
+ */
+export const slice: BuiltinFn = {
+	kind: "builtin",
+	name: "slice",
+	arity: -1,
+	call: (args) => {
+		if (args.length !== 2 && args.length !== 3) {
+			throw new Error(
+				`slice: expected 2 or 3 args, got ${args.length}`,
+			);
+		}
+		const s = expectStr("slice", "str", args[0] ?? null);
+		const start = Number(expectInt("slice", "start", args[1] ?? null));
+		const slen = s.length;
+		const actualStart =
+			start < 0 ? Math.max(0, slen + start) : Math.min(start, slen);
+		if (args.length === 2) {
+			return s.slice(actualStart);
+		}
+		const length = expectInt("slice", "length", args[2] ?? null);
+		if (length < 0n) {
+			throw new Error("slice: length must be non-negative");
+		}
+		return s.slice(actualStart, actualStart + Number(length));
+	},
+};
+
+/**
+ * Split a string into a list of single-character strings (Unicode
+ * codepoints). Surrogate pairs (e.g. emoji) stay together.
+ *
+ * @param {str} s - the string to explode
+ * @returns {list} list of single-character strings
+ *
+ * @example
+ * chars("hola") // => ["h", "o", "l", "a"]
+ * chars("")     // => []
+ */
+export const chars: BuiltinFn = {
+	kind: "builtin",
+	name: "chars",
+	arity: 1,
+	call: (args) => {
+		const s = expectStr("chars", "str", args[0] ?? null);
+		return Array.from(s);
+	},
+};

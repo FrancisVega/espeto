@@ -78,11 +78,13 @@ import {
 	stdin_lines,
 } from "./streams";
 import {
+	chars,
 	contains,
 	downcase,
 	ends_with,
 	join,
 	replace,
+	slice,
 	split,
 	starts_with,
 	trim,
@@ -108,6 +110,8 @@ export function loadPrelude(env: Env): void {
 	env.define("split", split);
 	env.define("join", join);
 	env.define("replace", replace);
+	env.define("slice", slice);
+	env.define("chars", chars);
 	env.define("starts_with?", starts_with);
 	env.define("ends_with?", ends_with);
 	env.define("contains?", contains);
