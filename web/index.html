@@ -175,30 +175,17 @@
           <span class="text-border">/</span>
           <span class="text-text-primary bg-surface px-3 py-1.5 rounded-md border border-border/50 shadow-sm">LLM friendly</span>
           <span class="text-border">/</span>
-          <span class="text-text-primary bg-surface px-3 py-1.5 rounded-md border border-border/50 shadow-sm">yummy DX</span>
+          <span class="text-text-primary bg-surface px-3 py-1.5 rounded-md border border-border/50 shadow-sm">Yummy DX</span>
         </div>
         
         <div class="mb-8 flex flex-col gap-2 items-start">
-          <div class="inline-flex items-center gap-3 bg-gray-900 text-gray-100 font-mono text-sm md:text-base px-5 py-3 rounded-lg border border-gray-700 shadow-sm">
-            <span class="text-[var(--color-brand-orange)] select-none">$</span>
-            <code>brew install FrancisVega/espeto/espeto</code>
-          </div>
           <div class="inline-flex items-center gap-3 bg-gray-900 text-gray-100 font-mono text-sm md:text-base px-5 py-3 rounded-lg border border-gray-700 shadow-sm">
             <span class="text-[var(--color-brand-orange)] select-none">$</span>
             <code>npm install -g espeto</code>
           </div>
         </div>
 
-        <div class="flex flex-wrap gap-4">
-          <a href="#features" class="bg-black hover:bg-gray-800 text-white text-sm font-bold uppercase tracking-widest py-4 px-8 rounded-full transition-transform hover:scale-105">
-            Explorar Espeto
-          </a>
-          <a href="#docs" class="bg-surface hover:bg-gray-200 text-text-primary text-sm font-bold uppercase tracking-widest py-4 px-8 rounded-full transition-colors flex items-center gap-2">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
-            Leer Spec
-          </a>
         </div>
-      </div>
 
       <div class="code-window relative z-10 w-full max-w-lg mx-auto lg:ml-auto sticky top-8">
         <div class="flex items-center justify-between mb-6 border-b border-white/10 pb-4">
@@ -213,10 +200,9 @@
   <span class="text-green-400">"Hola, #{name}!"</span> <span class="text-[var(--color-brand-orange)] font-bold">|></span> when(loud, upcase) <span class="text-[var(--color-brand-orange)] font-bold">|></span> print
 <span class="text-[var(--color-brand-pink)]">end</span>
 
-<span class="text-gray-500">$ espeto run greet.esp -- Mundo --loud</span>
+<span class="text-gray-500">$ espeto run greet.esp mundo --loud</span>
 <span class="text-white font-bold text-lg">HOLA, MUNDO!</span>
-
-<span class="text-[var(--color-brand-pink)] font-bold">~/espeto ❯</span> <span class="w-2.5 h-5 bg-gray-400 animate-pulse"></span></code></pre>
+</pre>
       </div>
 
     </div>
@@ -275,9 +261,9 @@
   <span class="text-[#ff2a7a]">end</span>
 <span class="text-[#ff2a7a]">end</span>
 
-<span class="text-white/40">$ espeto run todo.esp -- --help</span>
+<span class="text-white/40">$ espeto run todo.esp --help</span>
 <span class="text-white/40">Usage: todo &lt;command&gt; [options]</span>
-<span class="text-white/40">Commands: add, remove</span></code></pre>
+<span class="text-white/40">Commands: add, remove</span></pre>
         </div>
       </div>
 
@@ -303,7 +289,7 @@
 
 <span class="text-white/40"># Truthiness explícito</span>
 <span class="text-[#ff2a7a]">if</span> "texto" <span class="text-[#ff2a7a]">do</span> <span class="text-white/40"># ERROR (requiere bool)</span>
-<span class="text-[#ff2a7a]">if</span> length(x) > 0 <span class="text-[#ff2a7a]">do</span> ... <span class="text-white/40"># CORRECTO</span></code></pre>
+<span class="text-[#ff2a7a]">if</span> length(x) > 0 <span class="text-[#ff2a7a]">do</span> ... <span class="text-white/40"># CORRECTO</span></pre>
         </div>
       </div>
 
@@ -341,7 +327,7 @@ users
   |> filter(<span class="text-[#ff2a7a]">fn</span> u => u.active)
   |> sort_by(.age)
   |> map(.name)
-  |> print</code></pre>
+  |> print</pre>
         </div>
       </div>
 
@@ -369,7 +355,7 @@ data = <span class="text-[#ff2a7a]">try do</span>
   raise(<span class="text-green-400">"Error crítico: #{err}"</span>)
 <span class="text-[#ff2a7a]">end</span>
 
-data |> map(.email) |> print</code></pre>
+data |> map(.email) |> print</pre>
         </div>
       </div>
 
@@ -406,16 +392,13 @@ data |> map(.email) |> print</code></pre>
 <span class="text-[var(--color-brand-pink)] font-bold">$</span> scp hola server:/usr/local/bin/
 
 <span class="text-white/40"># targets: darwin-arm64 · darwin-x64</span>
-<span class="text-white/40">#          linux-arm64 · linux-x64 · windows-x64</span></code></pre>
+<span class="text-white/40">#          linux-arm64 · linux-x64 · windows-x64</span></pre>
         </div>
       </div>
 
     </div>
   </section>
 
-  <!-- ===========================================================
-       ESPETO DOCS — spec generator para LLMs
-       =========================================================== -->
   <section id="docs" class="py-24 bg-white border-t border-border">
     <div class="max-w-6xl mx-auto px-6">
       <div class="grid lg:grid-cols-[1fr_1.1fr] gap-12 lg:gap-16 items-center">
@@ -465,9 +448,6 @@ data |> map(.email) |> print</code></pre>
     </div>
   </section>
 
-  <!-- ===========================================================
-       SPEC — el lenguaje en una página
-       =========================================================== -->
   <section id="spec" class="py-24 bg-white border-t border-border">
     <div class="max-w-5xl mx-auto px-6">
       <div class="text-center mb-16">
@@ -498,7 +478,7 @@ data |> map(.email) |> print</code></pre>
         <div class="grid md:grid-cols-[11rem_1fr] gap-x-6 gap-y-2 px-6 py-5 border-b border-border/50 hover:bg-white transition-colors">
           <div class="text-xs font-bold uppercase tracking-widest text-text-muted pt-1">program block</div>
           <div class="text-text-primary leading-relaxed">
-            Agrupa varios <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">cmd</code> como subcomandos con flags compartidas. <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">--help</code>/<code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">--version</code> auto.
+            <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">program</code> agrupa varios <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">cmd</code> como subcomandos con flags compartidas. <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">--help</code>/<code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">--version</code> auto.
           </div>
         </div>
 
@@ -603,9 +583,6 @@ data |> map(.email) |> print</code></pre>
     </div>
   </section>
 
-  <!-- ===========================================================
-       STDLIB — funciones auto-cargadas
-       =========================================================== -->
   <section id="stdlib" class="py-24 bg-surface border-t border-border">
     <div class="max-w-7xl mx-auto px-6">
       <div class="text-center mb-16">
@@ -820,10 +797,92 @@ data |> map(.email) |> print</code></pre>
     </div>
   </section>
 
-  <!-- ===========================================================
-       ROADMAP — 10 hitos
-       =========================================================== -->
-  <section id="roadmap" class="py-24 bg-white border-t border-border">
+  <section id="moraga" class="py-24 bg-white border-t border-border">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="text-center mb-16">
+        <div class="inline-block px-3 py-1 mb-6 bg-blue-100 text-blue-800 text-xs font-bold uppercase tracking-widest rounded-full border border-blue-200">
+          Moraga · Package Manager
+        </div>
+        <h2 class="text-4xl md:text-5xl mb-6">Cero registries. Todo en Git.</h2>
+        <p class="text-text-secondary text-lg max-w-2xl mx-auto leading-relaxed">
+          Un gestor de dependencias integrado que no necesita infraestructura central. Descarga desde repositorios Git, garantiza inmutabilidad con TOFU y te permite publicar con un solo comando.
+        </p>
+      </div>
+
+      <div class="grid lg:grid-cols-[1fr_1.1fr] gap-12 lg:gap-16 items-center mb-12">
+        <div>
+          <h3 class="text-3xl mb-4">Simple, predecible y seguro.</h3>
+          <p class="text-text-secondary leading-relaxed mb-6">
+            El manifiesto <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">moraga.esp</code> es un subconjunto JSON estricto. No hay rangos de versiones para las dependencias (solo versiones exactas) para evitar sorpresas.
+          </p>
+          <ul class="space-y-4 text-sm text-text-secondary font-bold">
+            <li class="flex items-start gap-3">
+              <div class="w-2 h-2 mt-1.5 rounded-full bg-[var(--color-brand-purple)] flex-shrink-0"></div>
+              <div>
+                <span class="text-text-primary">Checksums TOFU (Trust On First Use).</span> El <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">moraga.lock</code> pinea los SHA256 de los tarballs. Si el tag de git muta en el futuro, la build falla.
+              </div>
+            </li>
+            <li class="flex items-start gap-3">
+              <div class="w-2 h-2 mt-1.5 rounded-full bg-[var(--color-brand-purple)] flex-shrink-0"></div>
+              <div>
+                <span class="text-text-primary">Desarrollo local sin dolor.</span> Con <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">espeto link</code> rediriges la URL de un paquete a una ruta local en tu máquina creando un <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">moraga.local.esp</code> que puedes añadir al gitignore.
+              </div>
+            </li>
+            <li class="flex items-start gap-3">
+              <div class="w-2 h-2 mt-1.5 rounded-full bg-[var(--color-brand-purple)] flex-shrink-0"></div>
+              <div>
+                <span class="text-text-primary">Publicación transparente.</span> <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">espeto publish</code> taguea y hace push a origin usando la auth local de git que ya tienes configurada.
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <div class="code-window">
+          <div class="flex items-center justify-between mb-6 border-b border-white/10 pb-4">
+            <span class="text-xs text-white/50 uppercase tracking-widest">moraga.esp</span>
+            <span class="text-[10px] text-blue-400 uppercase tracking-widest font-bold">manifest + cli</span>
+          </div>
+<pre class="text-sm md:text-base leading-relaxed overflow-x-auto"><span class="text-white/40">{</span>
+  <span class="text-[#ff2a7a]">"name"</span><span class="text-white/40">:</span> <span class="text-green-400">"myproject"</span><span class="text-white/40">,</span>
+  <span class="text-[#ff2a7a]">"version"</span><span class="text-white/40">:</span> <span class="text-green-400">"0.1.0"</span><span class="text-white/40">,</span>
+  <span class="text-[#ff2a7a]">"espeto"</span><span class="text-white/40">:</span> <span class="text-green-400">">= 0.1.0"</span><span class="text-white/40">,</span>
+  <span class="text-[#ff2a7a]">"deps"</span><span class="text-white/40">: {</span>
+    <span class="text-green-400">"github.com/foo/ansi"</span><span class="text-white/40">:</span> <span class="text-green-400">"1.0.0"</span>
+  <span class="text-white/40">}</span>
+<span class="text-white/40">}</span>
+
+<span class="text-white/40"># resuelve, descarga y pinea el lockfile</span>
+<span class="text-[var(--color-brand-pink)] font-bold">$</span> espeto install
+<span class="text-white/50">🔒 github.com/foo/ansi v1.0.0 (sha256:abc123...)</span>
+
+<span class="text-white/40"># link para trabajar en local sin pushear a git</span>
+<span class="text-[var(--color-brand-pink)] font-bold">$</span> espeto link github.com/foo/ansi ../ansi
+<span class="text-white/50">🔗 Linked github.com/foo/ansi -> ../ansi</span></pre>
+        </div>
+      </div>
+
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-surface p-5 rounded-2xl border border-border/50">
+          <h4 class="text-base mb-2"><code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-sm">install / add</code></h4>
+          <p class="text-text-secondary text-sm leading-relaxed">Instala dependencias en <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-[11px]">~/.espeto/cache/</code> y hace symlink en el directorio local <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-[11px]">.espetos/</code>.</p>
+        </div>
+        <div class="bg-surface p-5 rounded-2xl border border-border/50">
+          <h4 class="text-base mb-2"><code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-sm">link / unlink</code></h4>
+          <p class="text-text-secondary text-sm leading-relaxed">Gestiona overrides locales guardados en <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-[11px]">moraga.local.esp</code> para probar cambios en deps locales.</p>
+        </div>
+        <div class="bg-surface p-5 rounded-2xl border border-border/50">
+          <h4 class="text-base mb-2"><code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-sm">publish</code></h4>
+          <p class="text-text-secondary text-sm leading-relaxed">Crea un tag git de la versión actual y lo sube al origin. Listo para que otros hagan <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-[11px]">add</code>.</p>
+        </div>
+        <div class="bg-surface p-5 rounded-2xl border border-border/50">
+          <h4 class="text-base mb-2"><code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-sm">update</code></h4>
+          <p class="text-text-secondary text-sm leading-relaxed">Comprueba repos remotos, actualiza las versiones exactas en el manifiesto y regenera el lockfile.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="roadmap" class="py-24 bg-surface border-t border-border">
     <div class="max-w-4xl mx-auto px-6">
       <div class="text-center mb-16">
         <div class="inline-block px-3 py-1 mb-6 bg-purple-100 text-purple-800 text-xs font-bold uppercase tracking-widest rounded-full border border-purple-200">
@@ -836,7 +895,7 @@ data |> map(.email) |> print</code></pre>
       </div>
 
       <div class="space-y-3 mb-12">
-        <div class="flex gap-5 items-start p-5 bg-surface rounded-2xl border border-border/50">
+        <div class="flex gap-5 items-start p-5 bg-white rounded-2xl border border-border/50">
           <div class="w-14 h-14 bg-text-primary text-white rounded-full flex items-center justify-center font-extrabold text-xl flex-shrink-0">
             00
           </div>
@@ -845,97 +904,97 @@ data |> map(.email) |> print</code></pre>
               <h3 class="text-xl">Setup proyecto</h3>
               <span class="px-2 py-0.5 bg-green-600 text-white text-[10px] font-bold uppercase tracking-widest rounded-full">Hecho</span>
             </div>
-            <p class="text-text-secondary text-sm leading-relaxed">pnpm + tsx + vitest, layout del proyecto, errores con source spans, binario <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">espeto</code>.</p>
+            <p class="text-text-secondary text-sm leading-relaxed">pnpm + tsx + vitest, layout del proyecto, errores con source spans, binario <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">espeto</code>.</p>
           </div>
         </div>
 
-        <div class="flex gap-5 items-start p-5 bg-surface rounded-2xl border border-border/50">
+        <div class="flex gap-5 items-start p-5 bg-white rounded-2xl border border-border/50">
           <div class="w-14 h-14 bg-text-primary text-white rounded-full flex items-center justify-center font-extrabold text-xl flex-shrink-0">
             01
           </div>
           <div class="flex-1 pt-2">
             <h3 class="text-xl mb-1">El primer pipe corre</h3>
-            <p class="text-text-secondary text-sm leading-relaxed"><code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">"hola" |&gt; print</code> — lexer, parser, evaluator base, primer builtin.</p>
+            <p class="text-text-secondary text-sm leading-relaxed"><code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">"hola" |&gt; print</code> — lexer, parser, evaluator base, primer builtin.</p>
           </div>
         </div>
 
-        <div class="flex gap-5 items-start p-5 bg-surface rounded-2xl border border-border/50">
+        <div class="flex gap-5 items-start p-5 bg-white rounded-2xl border border-border/50">
           <div class="w-14 h-14 bg-text-primary text-white rounded-full flex items-center justify-center font-extrabold text-xl flex-shrink-0">
             02
           </div>
           <div class="flex-1 pt-2">
             <h3 class="text-xl mb-1">Encadenamiento</h3>
-            <p class="text-text-secondary text-sm leading-relaxed"><code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">"x" |&gt; upcase |&gt; print</code> — más builtins, chains de pipes.</p>
+            <p class="text-text-secondary text-sm leading-relaxed"><code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">"x" |&gt; upcase |&gt; print</code> — más builtins, chains de pipes.</p>
           </div>
         </div>
 
-        <div class="flex gap-5 items-start p-5 bg-surface rounded-2xl border border-border/50">
+        <div class="flex gap-5 items-start p-5 bg-white rounded-2xl border border-border/50">
           <div class="w-14 h-14 bg-text-primary text-white rounded-full flex items-center justify-center font-extrabold text-xl flex-shrink-0">
             03
           </div>
           <div class="flex-1 pt-2">
             <h3 class="text-xl mb-1">Funciones de usuario</h3>
-            <p class="text-text-secondary text-sm leading-relaxed"><code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">def f(x) = …</code> y uso — scope, llamadas, <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">defp</code> para privadas.</p>
+            <p class="text-text-secondary text-sm leading-relaxed"><code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">def f(x) = …</code> y uso — scope, llamadas, <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">defp</code> para privadas.</p>
           </div>
         </div>
 
-        <div class="flex gap-5 items-start p-5 bg-surface rounded-2xl border border-border/50">
+        <div class="flex gap-5 items-start p-5 bg-white rounded-2xl border border-border/50">
           <div class="w-14 h-14 bg-text-primary text-white rounded-full flex items-center justify-center font-extrabold text-xl flex-shrink-0">
             04
           </div>
           <div class="flex-1 pt-2">
             <h3 class="text-xl mb-1">El primer CLI completo</h3>
-            <p class="text-text-secondary text-sm leading-relaxed"><code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">hola.esp</code> — <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">cmd</code>, <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">arg</code>, <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">flag</code>, interpolación, <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">when</code>.</p>
+            <p class="text-text-secondary text-sm leading-relaxed"><code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">hola.esp</code> — <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">cmd</code>, <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">arg</code>, <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">flag</code>, interpolación, <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">when</code>.</p>
           </div>
         </div>
 
-        <div class="flex gap-5 items-start p-5 bg-surface rounded-2xl border border-border/50">
+        <div class="flex gap-5 items-start p-5 bg-white rounded-2xl border border-border/50">
           <div class="w-14 h-14 bg-text-primary text-white rounded-full flex items-center justify-center font-extrabold text-xl flex-shrink-0">
             05
           </div>
           <div class="flex-1 pt-2">
             <h3 class="text-xl mb-1">REPL</h3>
-            <p class="text-text-secondary text-sm leading-relaxed"><code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">espeto repl</code> con env persistente — un sitio donde experimentar.</p>
+            <p class="text-text-secondary text-sm leading-relaxed"><code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">espeto repl</code> con env persistente — un sitio donde experimentar.</p>
           </div>
         </div>
 
-        <div class="flex gap-5 items-start p-5 bg-surface rounded-2xl border border-border/50">
+        <div class="flex gap-5 items-start p-5 bg-white rounded-2xl border border-border/50">
           <div class="w-14 h-14 bg-text-primary text-white rounded-full flex items-center justify-center font-extrabold text-xl flex-shrink-0">
             06
           </div>
           <div class="flex-1 pt-2">
             <h3 class="text-xl mb-1">Imports y módulos</h3>
-            <p class="text-text-secondary text-sm leading-relaxed">Resolución de paths, <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">import "./x" only [a, b as c]</code>, colisiones detectadas.</p>
+            <p class="text-text-secondary text-sm leading-relaxed">Resolución de paths, <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">import "./x" only [a, b as c]</code>, colisiones detectadas.</p>
           </div>
         </div>
 
-        <div class="flex gap-5 items-start p-5 bg-surface rounded-2xl border border-border/50">
+        <div class="flex gap-5 items-start p-5 bg-white rounded-2xl border border-border/50">
           <div class="w-14 h-14 bg-text-primary text-white rounded-full flex items-center justify-center font-extrabold text-xl flex-shrink-0">
             07
           </div>
           <div class="flex-1 pt-2">
             <h3 class="text-xl mb-1">Control flow + colecciones + lambdas</h3>
-            <p class="text-text-secondary text-sm leading-relaxed"><code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">if/else if/else</code>, listas, maps, lambdas, acceso a campos.</p>
+            <p class="text-text-secondary text-sm leading-relaxed"><code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">if/else if/else</code>, listas, maps, lambdas, acceso a campos.</p>
           </div>
         </div>
 
-        <div class="flex gap-5 items-start p-5 bg-surface rounded-2xl border border-border/50">
+        <div class="flex gap-5 items-start p-5 bg-white rounded-2xl border border-border/50">
           <div class="w-14 h-14 bg-text-primary text-white rounded-full flex items-center justify-center font-extrabold text-xl flex-shrink-0">
             08
           </div>
           <div class="flex-1 pt-2">
             <h3 class="text-xl mb-1">Stdlib amplia</h3>
-            <p class="text-text-secondary text-sm leading-relaxed"><code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">users.esp</code> entero — JSON, <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">sort_by</code>, <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">.field</code>, <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">try/rescue</code>.</p>
+            <p class="text-text-secondary text-sm leading-relaxed"><code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">users.esp</code> entero — JSON, <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">sort_by</code>, <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">.field</code>, <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">try/rescue</code>.</p>
           </div>
         </div>
 
-        <div class="flex gap-5 items-start p-5 bg-surface rounded-2xl border border-border/50">
+        <div class="flex gap-5 items-start p-5 bg-white rounded-2xl border border-border/50">
           <div class="w-14 h-14 bg-text-primary text-white rounded-full flex items-center justify-center font-extrabold text-xl flex-shrink-0">
             09
           </div>
           <div class="flex-1 pt-2">
             <h3 class="text-xl mb-1">Errores con caret</h3>
-            <p class="text-text-secondary text-sm leading-relaxed">Source spans formateados estilo gcc/rust: <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">file.esp:3:14: msg</code> + caret bajo la posición.</p>
+            <p class="text-text-secondary text-sm leading-relaxed">Source spans formateados estilo gcc/rust: <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">file.esp:3:14: msg</code> + caret bajo la posición.</p>
           </div>
         </div>
       </div>
@@ -951,62 +1010,59 @@ data |> map(.email) |> print</code></pre>
       </div>
 
       <div class="grid sm:grid-cols-2 gap-3">
-        <div class="p-5 bg-surface rounded-2xl border border-border/50">
-          <h4 class="text-base mb-1"><code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-sm">espeto build</code></h4>
-          <p class="text-text-secondary text-sm leading-relaxed">Empaquetado standalone vía Bun <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">--compile</code>. Cross-target a darwin/linux/windows.</p>
+        <div class="p-5 bg-white rounded-2xl border border-border/50">
+          <h4 class="text-base mb-1"><code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-sm">espeto build</code></h4>
+          <p class="text-text-secondary text-sm leading-relaxed">Empaquetado standalone vía Bun <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">--compile</code>. Cross-target a darwin/linux/windows.</p>
         </div>
-        <div class="p-5 bg-surface rounded-2xl border border-border/50">
-          <h4 class="text-base mb-1"><code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-sm">espeto run --watch</code></h4>
+        <div class="p-5 bg-white rounded-2xl border border-border/50">
+          <h4 class="text-base mb-1"><code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-sm">espeto run --watch</code></h4>
           <p class="text-text-secondary text-sm leading-relaxed">Re-ejecución on-change. Sigue corriendo entre errores.</p>
         </div>
-        <div class="p-5 bg-surface rounded-2xl border border-border/50">
-          <h4 class="text-base mb-1"><code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-sm">espeto lsp</code> + VS Code</h4>
+        <div class="p-5 bg-white rounded-2xl border border-border/50">
+          <h4 class="text-base mb-1"><code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-sm">espeto lsp</code> + VS Code</h4>
           <p class="text-text-secondary text-sm leading-relaxed">Servidor LSP por stdio + extensión: hover, go-to-def, diagnostics, completion, refs/rename, outline, signature help, semantic tokens.</p>
         </div>
-        <div class="p-5 bg-surface rounded-2xl border border-border/50">
-          <h4 class="text-base mb-1"><code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-sm">program</code> block</h4>
-          <p class="text-text-secondary text-sm leading-relaxed">Multi-subcomando con flags compartidas, <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">--help</code>/<code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">--version</code> auto.</p>
+        <div class="p-5 bg-white rounded-2xl border border-border/50">
+          <h4 class="text-base mb-1"><code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-sm">program</code> block</h4>
+          <p class="text-text-secondary text-sm leading-relaxed">Multi-subcomando con flags compartidas, <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">--help</code>/<code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">--version</code> auto.</p>
         </div>
-        <div class="p-5 bg-surface rounded-2xl border border-border/50">
-          <h4 class="text-base mb-1">Pipe placeholder <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-sm">_</code></h4>
-          <p class="text-text-secondary text-sm leading-relaxed">Reposicionar el LHS en cualquier argumento: <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">6 |&gt; div(30, _)</code>.</p>
+        <div class="p-5 bg-white rounded-2xl border border-border/50">
+          <h4 class="text-base mb-1">Pipe placeholder <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-sm">_</code></h4>
+          <p class="text-text-secondary text-sm leading-relaxed">Reposicionar el LHS en cualquier argumento: <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">6 |&gt; div(30, _)</code>.</p>
         </div>
-        <div class="p-5 bg-surface rounded-2xl border border-border/50">
-          <h4 class="text-base mb-1"><code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-sm">__file__</code> / <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-sm">__dir__</code></h4>
+        <div class="p-5 bg-white rounded-2xl border border-border/50">
+          <h4 class="text-base mb-1"><code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-sm">__file__</code> / <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-sm">__dir__</code></h4>
           <p class="text-text-secondary text-sm leading-relaxed">Paths source-relative por módulo (definition-site, closure-captured).</p>
         </div>
-        <div class="p-5 bg-surface rounded-2xl border border-border/50">
-          <h4 class="text-base mb-1"><code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-sm">sh</code> / <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-sm">sh!</code></h4>
-          <p class="text-text-secondary text-sm leading-relaxed">Comando shell vía <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">/bin/sh -c</code>. Result-shape o bang que devuelve stdout y lanza al fallar.</p>
+        <div class="p-5 bg-white rounded-2xl border border-border/50">
+          <h4 class="text-base mb-1"><code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-sm">sh</code> / <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-sm">sh!</code></h4>
+          <p class="text-text-secondary text-sm leading-relaxed">Comando shell vía <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">/bin/sh -c</code>. Result-shape o bang que devuelve stdout y lanza al fallar.</p>
         </div>
-        <div class="p-5 bg-surface rounded-2xl border border-border/50">
+        <div class="p-5 bg-white rounded-2xl border border-border/50">
           <h4 class="text-base mb-1">Streaming pipes</h4>
-          <p class="text-text-secondary text-sm leading-relaxed"><code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">read_lines</code>, <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">sh_lines</code>, <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">stdin_lines</code> — I/O lazy por líneas; <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">map</code>/<code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">filter</code>/<code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">take</code> aceptan streams.</p>
+          <p class="text-text-secondary text-sm leading-relaxed"><code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">read_lines</code>, <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">sh_lines</code>, <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">stdin_lines</code> — I/O lazy por líneas; <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">map</code>/<code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">filter</code>/<code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">take</code> aceptan streams.</p>
         </div>
-        <div class="p-5 bg-surface rounded-2xl border border-border/50">
-          <h4 class="text-base mb-1"><code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-sm">espeto test</code></h4>
-          <p class="text-text-secondary text-sm leading-relaxed">Runner para ficheros <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">*_test.esp</code>. Bloques <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">test "…" do … end</code> con <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">assert</code> introspectivo.</p>
+        <div class="p-5 bg-white rounded-2xl border border-border/50">
+          <h4 class="text-base mb-1"><code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-sm">espeto test</code></h4>
+          <p class="text-text-secondary text-sm leading-relaxed">Runner para ficheros <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">*_test.esp</code>. Bloques <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">test "…" do … end</code> con <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">assert</code> introspectivo.</p>
         </div>
-        <div class="p-5 bg-surface rounded-2xl border border-border/50">
-          <h4 class="text-base mb-1"><code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-sm">espeto docs</code></h4>
+        <div class="p-5 bg-white rounded-2xl border border-border/50">
+          <h4 class="text-base mb-1"><code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-sm">espeto docs</code></h4>
           <p class="text-text-secondary text-sm leading-relaxed">Imprime la referencia completa del lenguaje en markdown a stdout — pensada para pegársela a un LLM como spec.</p>
         </div>
-        <div class="p-5 bg-surface rounded-2xl border border-border/50">
-          <h4 class="text-base mb-1">Doc-comments <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-sm">##</code></h4>
-          <p class="text-text-secondary text-sm leading-relaxed">Líneas <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">## …</code> sobre un <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">def</code>/<code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">defp</code> se atachan como markdown y se renderizan en el hover del LSP.</p>
+        <div class="p-5 bg-white rounded-2xl border border-border/50">
+          <h4 class="text-base mb-1">Doc-comments <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-sm">##</code></h4>
+          <p class="text-text-secondary text-sm leading-relaxed">Líneas <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">## …</code> sobre un <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">def</code>/<code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">defp</code> se atachan como markdown y se renderizan en el hover del LSP.</p>
         </div>
-        <div class="p-5 bg-surface rounded-2xl border border-border/50">
-          <h4 class="text-base mb-1">Package manager <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-sm">moraga</code></h4>
-          <p class="text-text-secondary text-sm leading-relaxed">Manifest <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">moraga.esp</code>, lock sha-pinned con checksums TOFU, deps de GitHub. 8 comandos: <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">install</code>, <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">add</code>, <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">remove</code>, <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">update</code>, <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">outdated</code>, <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">link</code>, <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">unlink</code>, <code class="bg-white text-text-primary px-1.5 py-0.5 rounded text-xs">publish</code>. Sin registry central — todo vive en repos git.</p>
+        <div class="p-5 bg-white rounded-2xl border border-border/50">
+          <h4 class="text-base mb-1">Package manager <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-sm">moraga</code></h4>
+          <p class="text-text-secondary text-sm leading-relaxed">Manifest <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">moraga.esp</code>, lock sha-pinned con checksums TOFU, deps de GitHub. 8 comandos: <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">install</code>, <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">add</code>, <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">remove</code>, <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">update</code>, <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">outdated</code>, <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">link</code>, <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">unlink</code>, <code class="bg-surface text-text-primary px-1.5 py-0.5 rounded text-xs">publish</code>. Sin registry central — todo vive en repos git.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ===========================================================
-       WHY ESPETO + STACK
-       =========================================================== -->
-  <section class="py-24 bg-surface border-t border-border">
+  <section class="py-24 bg-white border-t border-border">
     <div class="max-w-6xl mx-auto px-6">
       <div class="grid lg:grid-cols-[1.3fr_1fr] gap-12 lg:gap-20 items-start">
 
@@ -1032,35 +1088,35 @@ data |> map(.email) |> print</code></pre>
           </div>
           <h3 class="text-2xl mb-6">Pequeño, sin sorpresas.</h3>
           <div class="space-y-2.5">
-            <div class="bg-white p-4 rounded-xl border border-border/50 flex items-baseline justify-between gap-4">
+            <div class="bg-surface p-4 rounded-xl border border-border/50 flex items-baseline justify-between gap-4">
               <span class="text-xs font-bold uppercase tracking-widest text-text-muted">Runtime</span>
               <span class="font-bold text-sm text-right">TypeScript / Node 20+</span>
             </div>
-            <div class="bg-white p-4 rounded-xl border border-border/50 flex items-baseline justify-between gap-4">
+            <div class="bg-surface p-4 rounded-xl border border-border/50 flex items-baseline justify-between gap-4">
               <span class="text-xs font-bold uppercase tracking-widest text-text-muted">Estrategia</span>
               <span class="font-bold text-sm text-right">Tree-walking interpreter</span>
             </div>
-            <div class="bg-white p-4 rounded-xl border border-border/50 flex items-baseline justify-between gap-4">
+            <div class="bg-surface p-4 rounded-xl border border-border/50 flex items-baseline justify-between gap-4">
               <span class="text-xs font-bold uppercase tracking-widest text-text-muted">Parser</span>
               <span class="font-bold text-sm text-right">Recursive descent a mano</span>
             </div>
-            <div class="bg-white p-4 rounded-xl border border-border/50 flex items-baseline justify-between gap-4">
+            <div class="bg-surface p-4 rounded-xl border border-border/50 flex items-baseline justify-between gap-4">
               <span class="text-xs font-bold uppercase tracking-widest text-text-muted">AST</span>
               <span class="font-bold text-sm text-right">Discriminated unions</span>
             </div>
-            <div class="bg-white p-4 rounded-xl border border-border/50 flex items-baseline justify-between gap-4">
+            <div class="bg-surface p-4 rounded-xl border border-border/50 flex items-baseline justify-between gap-4">
               <span class="text-xs font-bold uppercase tracking-widest text-text-muted">Tooling</span>
               <span class="font-bold text-sm text-right">pnpm · tsx · vitest</span>
             </div>
-            <div class="bg-white p-4 rounded-xl border border-border/50 flex items-baseline justify-between gap-4">
+            <div class="bg-surface p-4 rounded-xl border border-border/50 flex items-baseline justify-between gap-4">
               <span class="text-xs font-bold uppercase tracking-widest text-text-muted">Distribución</span>
               <span class="font-bold text-sm text-right">npm · bin <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded text-xs">espeto</code></span>
             </div>
-            <div class="bg-white p-4 rounded-xl border border-border/50 flex items-baseline justify-between gap-4">
+            <div class="bg-surface p-4 rounded-xl border border-border/50 flex items-baseline justify-between gap-4">
               <span class="text-xs font-bold uppercase tracking-widest text-text-muted">Binarios</span>
               <span class="font-bold text-sm text-right">Bun <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded text-xs">--compile</code> standalone</span>
             </div>
-            <div class="bg-white p-4 rounded-xl border border-border/50 flex items-baseline justify-between gap-4">
+            <div class="bg-surface p-4 rounded-xl border border-border/50 flex items-baseline justify-between gap-4">
               <span class="text-xs font-bold uppercase tracking-widest text-text-muted">Editor</span>
               <span class="font-bold text-sm text-right">LSP stdio · VS Code ext</span>
             </div>
@@ -1071,7 +1127,7 @@ data |> map(.email) |> print</code></pre>
     </div>
   </section>
 
-  <footer class="py-12 border-t border-border bg-white text-center">
+  <footer class="py-12 border-t border-border bg-surface text-center">
     <div class="max-w-5xl mx-auto px-6">
       <div class="flex justify-center items-center gap-3 mb-6">
         <img src="logo.svg" class="w-6 h-6" alt="Espeto" />
