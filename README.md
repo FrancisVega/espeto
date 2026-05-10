@@ -562,4 +562,4 @@ Targets soportados: `darwin-arm64`, `darwin-x64`, `linux-x64`, `linux-arm64`, `w
 
 ## Licencia
 
-Por definir.
+MIT — ver [`LICENSE`](LICENSE).

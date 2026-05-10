@@ -1,7 +1,8 @@
 {
 	"name": "espeto",
-	"version": "0.2.0",
+	"version": "0.2.1",
 	"description": "Pipe-centric DSL for building CLIs.",
+	"license": "MIT",
 	"type": "module",
 	"engines": {
 		"node": ">=20"
@@ -11,14 +12,15 @@
 	},
 	"files": [
 		"dist",
-		"README.md"
+		"README.md",
+		"LICENSE"
 	],
 	"scripts": {
 		"test": "vitest run",
 		"test:watch": "vitest",
 		"typecheck": "tsc --noEmit",
 		"build:manifest": "tsx scripts/build-manifest.ts",
-		"build": "pnpm build:manifest && esbuild src/cli.ts --bundle --platform=node --target=node20 --format=esm --outfile=dist/cli.js --banner:js='#!/usr/bin/env node' && chmod +x dist/cli.js && esbuild src/run.ts --bundle --platform=node --target=node20 --format=esm --outfile=dist/runtime.js && esbuild src/lsp/server.ts --bundle --platform=node --target=node20 --format=esm --outfile=dist/lsp.js --banner:js='#!/usr/bin/env node' --packages=external && chmod +x dist/lsp.js",
+		"build": "pnpm build:manifest && esbuild src/cli.ts --bundle --platform=node --target=node20 --format=esm --outfile=dist/cli.js --banner:js='#!/usr/bin/env node' && chmod +x dist/cli.js && esbuild src/run.ts --bundle --platform=node --target=node20 --format=esm --outfile=dist/runtime.js && esbuild src/lsp/server.ts --bundle --platform=node --target=node20 --format=esm --outfile=dist/lsp.js --banner:js='#!/usr/bin/env node\nimport{createRequire}from\"node:module\";const require=createRequire(import.meta.url);' && chmod +x dist/lsp.js",
 		"prepublishOnly": "pnpm build && ESPETO_OFFLINE=1 pnpm test",
 		"espeto": "tsx src/cli.ts"
 	},
