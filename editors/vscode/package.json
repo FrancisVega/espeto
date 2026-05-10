@@ -1,7 +1,7 @@
 {
   "name": "vscode-espeto",
   "displayName": "Espeto",
-  "description": "Language support for Espeto: syntax highlighting, hover docs, go-to-definition, completion, references, rename, outline, folding, signature help, and semantic tokens. Requires `espeto` installed globally (npm i -g espeto).",
+  "description": "Language support for Espeto: syntax highlighting, hover docs, go-to-definition, completion, references, rename, outline, folding, signature help, and semantic tokens. Requires `espeto` on PATH (install via `npm i -g espeto` or `brew install FrancisVega/espeto/espeto`).",
   "version": "0.2.1",
   "publisher": "hisco",
   "engines": {
