@@ -4,6 +4,7 @@ import { argv, cwd, exit, stderr, stdout } from "node:process";
 import { fileURLToPath } from "node:url";
 import { build, BuildError, type BuildTarget } from "./build";
 import { buildDocs } from "./docs";
+import { AddError, runAdd, type AddSpec } from "./moraga/add";
 import { install, InstallError } from "./moraga/install";
 import { startRepl } from "./repl";
 import { runMain } from "./run";
@@ -29,6 +30,9 @@ usage:
   espeto repl                                             start interactive REPL
   espeto lsp                                              run language server (stdio)
   espeto install                                          install deps from moraga.esp into .espetos/
+  espeto add <url>@<ver> [<url>@<ver>...]                 add deps to moraga.esp + install
+  espeto add --dev <url>@<ver> ...                        add to dev_deps
+  espeto add --as <name> <url>@<ver>                      add with alias (single dep only)
   espeto --help                                           show this help
   espeto --version                                        show version
 
@@ -77,6 +81,10 @@ async function main(): Promise<number> {
 
 	if (args[0] === "install") {
 		return await runInstall(args.slice(1));
+	}
+
+	if (args[0] === "add") {
+		return await runAddCli(args.slice(1));
 	}
 
 	stderr.write(`error: unknown command: ${args[0]}\n\n`);
@@ -260,6 +268,89 @@ async function runInstall(args: string[]): Promise<number> {
 		return 0;
 	} catch (e) {
 		if (e instanceof InstallError) {
+			stderr.write(`error: ${e.message}\n`);
+			return 1;
+		}
+		stderr.write(`error: ${e instanceof Error ? e.message : String(e)}\n`);
+		return 1;
+	}
+}
+
+async function runAddCli(args: string[]): Promise<number> {
+	let dev = false;
+	let alias: string | undefined;
+	const positional: string[] = [];
+	for (let i = 0; i < args.length; i++) {
+		const a = args[i]!;
+		if (a === "--dev") {
+			dev = true;
+			continue;
+		}
+		if (a === "--as") {
+			const v = args[++i];
+			if (!v) {
+				stderr.write("error: --as requires a value\n");
+				return 1;
+			}
+			alias = v;
+			continue;
+		}
+		if (a.startsWith("--as=")) {
+			alias = a.slice("--as=".length);
+			continue;
+		}
+		if (a.startsWith("-")) {
+			stderr.write(`error: unknown flag: ${a}\n`);
+			return 1;
+		}
+		positional.push(a);
+	}
+
+	if (positional.length === 0) {
+		stderr.write("error: missing <url>@<version>\n\n");
+		stderr.write("usage: espeto add [--dev] [--as <name>] <url>@<ver> ...\n");
+		return 1;
+	}
+
+	if (alias !== undefined && positional.length !== 1) {
+		stderr.write(
+			"error: --as can only be used with a single <url>@<version>\n",
+		);
+		return 1;
+	}
+
+	const specs: AddSpec[] = [];
+	for (const p of positional) {
+		const at = p.lastIndexOf("@");
+		if (at <= 0 || at === p.length - 1) {
+			stderr.write(
+				`error: "${p}" must be of the form <url>@<version> (e.g., github.com/foo/bar@1.2.3)\n`,
+			);
+			return 1;
+		}
+		const url = p.slice(0, at);
+		const version = p.slice(at + 1);
+		const spec: AddSpec = { url, version };
+		if (alias !== undefined) spec.alias = alias;
+		specs.push(spec);
+	}
+
+	try {
+		const r = await runAdd(cwd(), specs, { dev });
+		const count = r.added.length;
+		const noun = count === 1 ? "package" : "packages";
+		const where = dev ? "dev_deps" : "deps";
+		if (count > 0) {
+			stdout.write(`added ${count} ${noun} to ${where}\n`);
+		}
+		if (r.skipped.length > 0) {
+			stdout.write(
+				`already present (skipped): ${r.skipped.join(", ")}\n`,
+			);
+		}
+		return 0;
+	} catch (e) {
+		if (e instanceof AddError) {
 			stderr.write(`error: ${e.message}\n`);
 			return 1;
 		}

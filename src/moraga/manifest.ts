@@ -30,10 +30,10 @@ export type ManifestResult =
 	| { ok: true; manifest: Manifest }
 	| { ok: false; errors: ManifestError[] };
 
-const NAME_PATTERN = /^[a-z][a-z0-9_]*$/;
-const SEMVER_PATTERN =
+export const NAME_PATTERN = /^[a-z][a-z0-9_]*$/;
+export const SEMVER_PATTERN =
 	/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\.(?:0|[1-9]\d*|\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\+([0-9a-zA-Z-]+(?:\.[0-9a-zA-Z-]+)*))?$/;
-const URL_PATTERN =
+export const URL_PATTERN =
 	/^[a-z][a-z0-9-]*(?:\.[a-z0-9-]+)+(?:\/[a-zA-Z0-9_.-]+){2,}$/;
 const ESPETO_PART_PATTERN = /^(>=|<)\s*(\S+)$/;
 
