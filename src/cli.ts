@@ -15,6 +15,13 @@ import {
 	runOutdated,
 	totalOutdated,
 } from "./moraga/outdated";
+import { GitError } from "./moraga/git";
+import {
+	executePublish,
+	PublishError,
+	type Validation,
+	validatePublish,
+} from "./moraga/publish";
 import { UnlinkError, runUnlink } from "./moraga/unlink";
 import { runUpdate, UpdateError } from "./moraga/update";
 import { startRepl } from "./repl";
@@ -50,6 +57,7 @@ usage:
   espeto outdated [--pre] [--json] [--exit-code]          list deps with newer versions available
   espeto link <url> <path>                                link a dep to a local path (writes moraga.local.esp)
   espeto unlink <url> [<url>...]                          remove links from moraga.local.esp
+  espeto publish [--dry-run] [--allow-dirty]              tag and push <name>@<version> to origin
   espeto --help                                           show this help
   espeto --version                                        show version
 
@@ -122,6 +130,10 @@ async function main(): Promise<number> {
 
 	if (args[0] === "unlink") {
 		return await runUnlinkCli(args.slice(1));
+	}
+
+	if (args[0] === "publish") {
+		return await runPublishCli(args.slice(1));
 	}
 
 	stderr.write(`error: unknown command: ${args[0]}\n\n`);
@@ -598,6 +610,77 @@ async function runUnlinkCli(args: string[]): Promise<number> {
 		stderr.write(`error: ${e instanceof Error ? e.message : String(e)}\n`);
 		return 1;
 	}
+}
+
+async function runPublishCli(args: string[]): Promise<number> {
+	let dryRun = false;
+	let allowDirty = false;
+	for (const a of args) {
+		if (a === "--dry-run") {
+			dryRun = true;
+			continue;
+		}
+		if (a === "--allow-dirty") {
+			allowDirty = true;
+			continue;
+		}
+		if (a.startsWith("-")) {
+			stderr.write(`error: unknown flag: ${a}\n`);
+			return 1;
+		}
+		stderr.write(`error: unexpected argument: ${a}\n\n`);
+		stderr.write("usage: espeto publish [--dry-run] [--allow-dirty]\n");
+		return 1;
+	}
+
+	let validation: Validation;
+	try {
+		validation = await validatePublish(cwd(), { allowDirty });
+	} catch (e) {
+		if (e instanceof PublishError || e instanceof GitError) {
+			stderr.write(`error: ${e.message}\n`);
+			return 1;
+		}
+		stderr.write(`error: ${e instanceof Error ? e.message : String(e)}\n`);
+		return 1;
+	}
+
+	if (dryRun) {
+		const dirtyLine = validation.dirtyAllowed
+			? "✓ working tree dirty (allowed)"
+			: "✓ working tree clean";
+		stdout.write(
+			`✓ moraga.esp valid (name: ${validation.name}, version: ${validation.version})\n` +
+				`✓ entrypoint ${validation.name}.esp exists and parses\n` +
+				`✓ no local links\n` +
+				`${dirtyLine}\n` +
+				`✓ on default branch (${validation.branch})\n` +
+				`✓ tag ${validation.tagName} not in local or origin\n` +
+				`\n` +
+				`would publish ${validation.name} ${validation.tagName} to origin\n` +
+				`dry run — no changes made\n`,
+		);
+		return 0;
+	}
+
+	try {
+		await executePublish(cwd(), validation);
+	} catch (e) {
+		if (e instanceof GitError || e instanceof PublishError) {
+			stderr.write(`error: ${e.message}\n`);
+			if (e instanceof GitError && e.stderr) {
+				stderr.write(`\n${e.stderr}\n`);
+			}
+			return 1;
+		}
+		stderr.write(`error: ${e instanceof Error ? e.message : String(e)}\n`);
+		return 1;
+	}
+
+	stdout.write(
+		`published ${validation.name} ${validation.tagName} to origin\n`,
+	);
+	return 0;
 }
 
 async function runLsp(): Promise<number> {
