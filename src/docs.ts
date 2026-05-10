@@ -83,9 +83,30 @@ import "ansi" only [red, bold]
 \`\`\`
 Two forms:
 - **Relative paths** (\`./\` or \`../\`) resolve next to the importing file. The \`.esp\` extension is appended automatically.
-- **Bare names** (no leading \`./\` or \`../\`) resolve as packages: the resolver walks upward from the importing file looking for \`packages/<name>/<name>.esp\`. A nearer \`packages/\` shadows a farther one. Sub-paths like \`"ansi/internal"\` are not yet supported.
+- **Bare names** (no leading \`./\` or \`../\`) resolve as packages: the resolver walks upward from the importing file looking first in \`.espetos/<name>/<name>.esp\` (manager-installed deps) and then \`packages/<name>/<name>.esp\` (in-repo packages). A nearer match shadows a farther one. Sub-paths like \`"ansi/internal"\` are not yet supported.
 
 \`only [...]\` whitelists imported names; without it, every \`def\` is imported. Inside the list, \`name as alias\` renames a single binding.
+
+### Package manager (moraga)
+A project consuming packages declares them in \`moraga.esp\` (committed):
+\`\`\`
+{
+  "name": "myproject",
+  "version": "0.1.0",
+  "espeto": ">= 0.1.0",
+  "deps": {
+    "github.com/foo/ansi": "1.0.0"
+  },
+  "dev_deps": {}
+}
+\`\`\`
+JSON-subset Espeto map: string keys always, exact-only versions (no \`^\`/\`~\`/ranges). The \`espeto\` field is the only one that accepts operators (\`>=\`, \`<\`, combinable with \`,\`) since pre-1.0 the compiler may break APIs. Aliases for collisions: \`{"version": "1.0.0", "as": "bar_json"}\`.
+
+\`espeto install\` resolves the graph from GitHub, content-addressed at \`~/.espeto/cache/\`, writes \`moraga.lock\` (sha-pinned with TOFU sha256 checksums) and symlinks into \`.espetos/<name>/\`. \`moraga.esp\` and \`moraga.lock\` are committed; \`.espetos/\` is gitignored.
+
+Local development uses \`moraga.local.esp\` (gitignored) with a \`"links"\` map redirecting a dep URL to a local path — \`espeto link <url> <path>\` writes it.
+
+CLI: \`install\`, \`add\`, \`remove\`, \`update\`, \`outdated\`, \`link\`, \`unlink\`, \`publish\`. \`publish\` tags \`v<version>\` and pushes to \`origin\` — git auth uses your local config (SSH key or credential helper). API access (tarball download, tag listing) reads \`$GITHUB_TOKEN\` from the environment when set; required for private repos and to lift the 60/h unauth rate limit.
 
 ### Special variables
 - \`_\` — discard binding (e.g. \`rescue _ => "fallback"\`) and pipe placeholder (see Operators → pipe).
