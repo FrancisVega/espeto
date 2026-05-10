@@ -1,5 +1,5 @@
-# Tests for the `ansi` package. Run with: espeto test packages/ansi/
-import "ansi" only [
+# Tests for the `ansi` package. Run with: espeto test .
+import "./ansi" only [
   red, green, blue, yellow, black, white,
   bright_red, bright_green,
   bg_red, bg_green, bg_bright_red, bg_bright_white,
