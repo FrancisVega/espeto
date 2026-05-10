@@ -99,12 +99,12 @@ describe("parseManifest — happy paths", () => {
 describe("parseManifest — structural errors", () => {
 	it("rejects empty file", () => {
 		const errors = fail("");
-		expect(errors[0].message).toMatch(/file is empty/);
+		expect(errors[0]!.message).toMatch(/file is empty/);
 	});
 
 	it("rejects non-map top level", () => {
 		const errors = fail("def foo() do 1 end");
-		expect(errors[0].message).toMatch(/single map literal/);
+		expect(errors[0]!.message).toMatch(/single map literal/);
 	});
 
 	it("rejects multiple top-level items", () => {
@@ -115,7 +115,7 @@ describe("parseManifest — structural errors", () => {
 	it("propagates parser syntax errors", () => {
 		const errors = fail("{ name: ");
 		expect(errors).toHaveLength(1);
-		expect(errors[0].span.line).toBeGreaterThan(0);
+		expect(errors[0]!.span.line).toBeGreaterThan(0);
 	});
 });
 
@@ -123,7 +123,7 @@ describe("parseManifest — required fields", () => {
 	it("consolidates missing required fields into one error", () => {
 		const errors = fail("{}");
 		expect(errors).toHaveLength(1);
-		const msg = errors[0].message;
+		const msg = errors[0]!.message;
 		expect(msg).toMatch(/missing required fields/);
 		expect(msg).toMatch(/"name"/);
 		expect(msg).toMatch(/"version"/);
@@ -140,7 +140,7 @@ describe("parseManifest — required fields", () => {
   "deps": {}
 }`;
 		const errors = fail(src);
-		expect(errors[0].message).toMatch(/missing required field: "dev_deps"/);
+		expect(errors[0]!.message).toMatch(/missing required field: "dev_deps"/);
 	});
 
 	it("rejects unknown top-level fields", () => {
