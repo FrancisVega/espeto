@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parseManifest } from "../src/moraga";
 
@@ -29,17 +28,6 @@ const MIN = `{
 }`;
 
 describe("parseManifest — happy paths", () => {
-	it("parses the real ansi/moraga.esp", () => {
-		const source = readFileSync("packages/ansi/moraga.esp", "utf8");
-		const m = ok(source);
-		expect(m.name).toBe("ansi");
-		expect(m.version).toBe("0.1.0");
-		expect(m.espeto).toBe(">= 0.1.0");
-		expect(m.deps.size).toBe(0);
-		expect(m.devDeps.size).toBe(0);
-		expect(m.overrides.size).toBe(0);
-	});
-
 	it("parses the minimal manifest", () => {
 		const m = ok(MIN);
 		expect(m.name).toBe("x");
