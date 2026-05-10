@@ -2,7 +2,7 @@
 
 > Lenguaje funcional pequeño para construir CLIs. Pipe-céntrico, Elixir-flavored, optimizado para que los LLMs lo escriban perfecto.
 
-**Estado actual:** **v0.2.0 en npm** (mayo 2026). Build, watch, REPL, LSP + extensión VS Code, multi-subcomando, identificadores mágicos `__file__`/`__dir__`. **Package manager (`moraga`)**: 8 comandos (`install`/`add`/`remove`/`update`/`outdated`/`link`/`unlink`/`publish`), git-based descentralizado, manifest `moraga.esp`, lock `moraga.lock` con checksums TOFU, deps de GitHub.
+**Estado actual:** **v0.2.1 en npm + Homebrew tap** (mayo 2026). Instalable con `npm i -g espeto` o `brew tap FrancisVega/espeto && brew install espeto`. Build, watch, REPL, LSP + extensión VS Code, multi-subcomando, identificadores mágicos `__file__`/`__dir__`. **Package manager (`moraga`)**: 8 comandos (`install`/`add`/`remove`/`update`/`outdated`/`link`/`unlink`/`publish`), git-based descentralizado, manifest `moraga.esp`, lock `moraga.lock` con checksums TOFU, deps de GitHub.
 
 ---
 
@@ -354,6 +354,16 @@ Por el espeto de sardinas malagueño. La brocheta donde se asan a la brasa. La m
 ---
 
 ## Cómo arrancar
+
+Con Homebrew (macOS y Linuxbrew):
+
+```sh
+brew tap FrancisVega/espeto
+brew install espeto
+
+espeto run hola.esp
+espeto repl
+```
 
 Desde npm:
 
