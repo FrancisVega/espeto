@@ -31,6 +31,9 @@
         "extensions": [
           ".esp"
         ],
+        "filenames": [
+          "moraga.lock"
+        ],
         "configuration": "./language-configuration.json"
       }
     ],
