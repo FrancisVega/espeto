@@ -28,6 +28,7 @@ import {
 	parseManifest,
 } from "./manifest";
 import { ensurePackageCached } from "./resolve";
+import { compareSemver } from "./semver";
 
 const MAX_CONCURRENCY = 8;
 
@@ -396,25 +397,6 @@ export function checkEspetoConstraint(
 		}
 	}
 	return { ok: true };
-}
-
-function compareSemver(a: string, b: string): number {
-	const pa = parseTriple(a);
-	const pb = parseTriple(b);
-	for (let i = 0; i < 3; i++) {
-		const av = pa[i] ?? 0;
-		const bv = pb[i] ?? 0;
-		if (av !== bv) return av < bv ? -1 : 1;
-	}
-	return 0;
-}
-
-function parseTriple(s: string): number[] {
-	return s
-		.split("-")[0]!
-		.split("+")[0]!
-		.split(".")
-		.map((x) => Number.parseInt(x, 10) || 0);
 }
 
 async function processWithConcurrency<T>(

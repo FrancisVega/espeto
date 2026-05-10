@@ -37,6 +37,7 @@ export interface HostAdapter {
 	readonly host: string;
 	resolveSha(repoPath: string, ref: string): Promise<string>;
 	downloadTarball(repoPath: string, sha: string): Promise<Readable>;
+	listTags(repoPath: string): Promise<string[]>;
 }
 
 export function getAdapter(host: string, opts: AdapterOptions = {}): HostAdapter {
@@ -99,6 +100,29 @@ class GitHubAdapter implements HostAdapter {
 			);
 		}
 		return Readable.fromWeb(res.body as Parameters<typeof Readable.fromWeb>[0]);
+	}
+
+	async listTags(repoPath: string): Promise<string[]> {
+		const [owner, repo] = splitGitHubPath(repoPath);
+		const url = `https://api.github.com/repos/${owner}/${repo}/tags?per_page=100`;
+		const res = await this.request(url, {
+			headers: { Accept: "application/vnd.github+json" },
+		});
+		const body = (await res.json()) as unknown;
+		if (!Array.isArray(body)) {
+			throw new MoragaFetchError(
+				"http",
+				`tags API for ${owner}/${repo} did not return an array`,
+			);
+		}
+		const out: string[] = [];
+		for (const item of body) {
+			if (item && typeof item === "object" && "name" in item) {
+				const name = (item as { name: unknown }).name;
+				if (typeof name === "string") out.push(name);
+			}
+		}
+		return out;
 	}
 
 	private async request(url: string, init: RequestInit): Promise<Response> {

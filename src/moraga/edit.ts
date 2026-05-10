@@ -1,4 +1,4 @@
-import type { MapExpr, Module } from "../ast";
+import type { MapEntry, MapExpr, Module } from "../ast";
 import { EspetoError } from "../errors";
 import { lex } from "../lexer";
 import { parse } from "../parser";
@@ -19,6 +19,19 @@ export type AddDepOpts = {
 export type AddDepResult = {
 	source: string;
 	changed: boolean;
+};
+
+export type RemoveDepResult = {
+	source: string;
+	changed: boolean;
+	foundIn: "deps" | "dev_deps" | null;
+};
+
+export type SetVersionResult = {
+	source: string;
+	changed: boolean;
+	foundIn: "deps" | "dev_deps" | null;
+	oldVersion?: string;
 };
 
 const FILE = "<edit>";
@@ -130,6 +143,181 @@ export function addDepToManifest(
 			source.slice(insertAt),
 		changed: true,
 	};
+}
+
+export function removeDepFromManifest(
+	source: string,
+	url: string,
+): RemoveDepResult {
+	const r = parseManifest(source, FILE);
+	if (!r.ok) {
+		const lines = r.errors.map((e) => `  - ${e.message}`).join("\n");
+		throw new EditError(`manifest is invalid:\n${lines}`);
+	}
+	const manifest = r.manifest;
+
+	let foundIn: "deps" | "dev_deps" | null = null;
+	if (manifest.deps.has(url)) foundIn = "deps";
+	else if (manifest.devDeps.has(url)) foundIn = "dev_deps";
+
+	if (foundIn === null) {
+		return { source, changed: false, foundIn: null };
+	}
+
+	const targetMapExpr = locateTargetMap(source, foundIn);
+	const lbraceOffset = lineColToOffset(
+		source,
+		targetMapExpr.span.line,
+		targetMapExpr.span.col,
+	);
+	if (source[lbraceOffset] !== "{") {
+		throw new EditError(
+			`internal: expected '{' at offset ${lbraceOffset}, got ${JSON.stringify(source[lbraceOffset])}`,
+		);
+	}
+	const rbraceOffset = matchClosingBrace(source, lbraceOffset);
+
+	const entries = targetMapExpr.entries;
+	const idx = entries.findIndex((e) => e.key === url);
+	if (idx === -1) {
+		throw new EditError(
+			`internal: url ${url} present in manifest but not in MapExpr`,
+		);
+	}
+	const N = entries.length;
+
+	if (N === 1) {
+		return {
+			source:
+				source.slice(0, lbraceOffset) + "{}" + source.slice(rbraceOffset + 1),
+			changed: true,
+			foundIn,
+		};
+	}
+
+	const inner = source.slice(lbraceOffset + 1, rbraceOffset);
+	const isMultiline = inner.includes("\n");
+	if (!isMultiline) {
+		const targetMap = foundIn === "deps" ? manifest.deps : manifest.devDeps;
+		const remaining = new Map<string, DepSpec>();
+		for (const [k, v] of targetMap) {
+			if (k !== url) remaining.set(k, v);
+		}
+		const outerIndent = getLineIndent(source, lbraceOffset);
+		const entryIndent = `${outerIndent}  `;
+		const reprinted = reprintEntries(remaining, entryIndent);
+		const replacement = `{\n${entryIndent}${reprinted.join(`,\n${entryIndent}`)}\n${outerIndent}}`;
+		return {
+			source:
+				source.slice(0, lbraceOffset) +
+				replacement +
+				source.slice(rbraceOffset + 1),
+			changed: true,
+			foundIn,
+		};
+	}
+
+	const entry = entries[idx]!;
+	const entryStart = lineColToOffset(
+		source,
+		entry.keySpan.line,
+		entry.keySpan.col,
+	);
+	const entryEnd = computeEntryEnd(source, entry);
+	const lineStart = scanLineStart(source, entryStart);
+
+	if (idx < N - 1) {
+		const next = entries[idx + 1]!;
+		const nextStart = lineColToOffset(
+			source,
+			next.keySpan.line,
+			next.keySpan.col,
+		);
+		const nextLineStart = scanLineStart(source, nextStart);
+		return {
+			source: source.slice(0, lineStart) + source.slice(nextLineStart),
+			changed: true,
+			foundIn,
+		};
+	}
+
+	let i = lineStart - 1;
+	while (i >= 0 && /\s/.test(source[i]!)) i--;
+	if (source[i] !== ",") {
+		throw new EditError(
+			`internal: expected ',' before last entry, found ${JSON.stringify(source[i])}`,
+		);
+	}
+	return {
+		source: source.slice(0, i) + source.slice(entryEnd),
+		changed: true,
+		foundIn,
+	};
+}
+
+export function setDepVersion(
+	source: string,
+	url: string,
+	newVersion: string,
+): SetVersionResult {
+	const r = parseManifest(source, FILE);
+	if (!r.ok) {
+		const lines = r.errors.map((e) => `  - ${e.message}`).join("\n");
+		throw new EditError(`manifest is invalid:\n${lines}`);
+	}
+	const manifest = r.manifest;
+
+	let foundIn: "deps" | "dev_deps" | null = null;
+	let spec: DepSpec | undefined;
+	if (manifest.deps.has(url)) {
+		foundIn = "deps";
+		spec = manifest.deps.get(url);
+	} else if (manifest.devDeps.has(url)) {
+		foundIn = "dev_deps";
+		spec = manifest.devDeps.get(url);
+	}
+
+	if (foundIn === null || !spec) {
+		return { source, changed: false, foundIn: null };
+	}
+
+	if (spec.version === newVersion) {
+		return { source, changed: false, foundIn, oldVersion: spec.version };
+	}
+
+	const vs = spec.versionSpan;
+	const start = lineColToOffset(source, vs.line, vs.col);
+	const end = start + vs.length;
+	const replacement = JSON.stringify(newVersion);
+	return {
+		source: source.slice(0, start) + replacement + source.slice(end),
+		changed: true,
+		foundIn,
+		oldVersion: spec.version,
+	};
+}
+
+function computeEntryEnd(source: string, entry: MapEntry): number {
+	const v = entry.value;
+	if (v.kind === "string") {
+		return lineColToOffset(source, v.span.line, v.span.col) + v.span.length;
+	}
+	if (v.kind === "map") {
+		const valueOpen = lineColToOffset(source, v.span.line, v.span.col);
+		if (source[valueOpen] !== "{") {
+			throw new EditError(
+				`internal: expected '{' at value offset ${valueOpen}, got ${JSON.stringify(source[valueOpen])}`,
+			);
+		}
+		return matchClosingBrace(source, valueOpen) + 1;
+	}
+	throw new EditError(`internal: unexpected value kind ${v.kind}`);
+}
+
+function scanLineStart(source: string, offset: number): number {
+	let i = offset;
+	while (i > 0 && source[i - 1] !== "\n") i--;
+	return i;
 }
 
 function locateTargetMap(source: string, field: string): MapExpr {

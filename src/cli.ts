@@ -6,6 +6,15 @@ import { build, BuildError, type BuildTarget } from "./build";
 import { buildDocs } from "./docs";
 import { AddError, runAdd, type AddSpec } from "./moraga/add";
 import { install, InstallError } from "./moraga/install";
+import { RemoveError, runRemove } from "./moraga/remove";
+import {
+	formatJson as formatOutdatedJson,
+	formatText as formatOutdatedText,
+	OutdatedError,
+	runOutdated,
+	totalOutdated,
+} from "./moraga/outdated";
+import { runUpdate, UpdateError } from "./moraga/update";
 import { startRepl } from "./repl";
 import { runMain } from "./run";
 import { runTestsMain } from "./test";
@@ -33,6 +42,10 @@ usage:
   espeto add <url>@<ver> [<url>@<ver>...]                 add deps to moraga.esp + install
   espeto add --dev <url>@<ver> ...                        add to dev_deps
   espeto add --as <name> <url>@<ver>                      add with alias (single dep only)
+  espeto remove <url> [<url>...]                          remove deps from moraga.esp + install
+  espeto update [<url>...]                                update deps to latest (default: all)
+  espeto update --pre [<url>...]                          include pre-releases when picking latest
+  espeto outdated [--pre] [--json] [--exit-code]          list deps with newer versions available
   espeto --help                                           show this help
   espeto --version                                        show version
 
@@ -85,6 +98,18 @@ async function main(): Promise<number> {
 
 	if (args[0] === "add") {
 		return await runAddCli(args.slice(1));
+	}
+
+	if (args[0] === "remove") {
+		return await runRemoveCli(args.slice(1));
+	}
+
+	if (args[0] === "update") {
+		return await runUpdateCli(args.slice(1));
+	}
+
+	if (args[0] === "outdated") {
+		return await runOutdatedCli(args.slice(1));
 	}
 
 	stderr.write(`error: unknown command: ${args[0]}\n\n`);
@@ -351,6 +376,136 @@ async function runAddCli(args: string[]): Promise<number> {
 		return 0;
 	} catch (e) {
 		if (e instanceof AddError) {
+			stderr.write(`error: ${e.message}\n`);
+			return 1;
+		}
+		stderr.write(`error: ${e instanceof Error ? e.message : String(e)}\n`);
+		return 1;
+	}
+}
+
+async function runRemoveCli(args: string[]): Promise<number> {
+	const positional: string[] = [];
+	for (let i = 0; i < args.length; i++) {
+		const a = args[i]!;
+		if (a.startsWith("-")) {
+			stderr.write(`error: unknown flag: ${a}\n`);
+			return 1;
+		}
+		positional.push(a);
+	}
+
+	if (positional.length === 0) {
+		stderr.write("error: missing <url>\n\n");
+		stderr.write("usage: espeto remove <url> [<url>...]\n");
+		return 1;
+	}
+
+	try {
+		const r = await runRemove(cwd(), positional);
+		const count = r.removed.length;
+		if (count > 0) {
+			const noun = count === 1 ? "package" : "packages";
+			stdout.write(`removed ${count} ${noun}\n`);
+		}
+		if (r.skipped.length > 0) {
+			stdout.write(`not present (skipped): ${r.skipped.join(", ")}\n`);
+		}
+		return 0;
+	} catch (e) {
+		if (e instanceof RemoveError) {
+			stderr.write(`error: ${e.message}\n`);
+			return 1;
+		}
+		stderr.write(`error: ${e instanceof Error ? e.message : String(e)}\n`);
+		return 1;
+	}
+}
+
+async function runUpdateCli(args: string[]): Promise<number> {
+	let includePre = false;
+	const positional: string[] = [];
+	for (let i = 0; i < args.length; i++) {
+		const a = args[i]!;
+		if (a === "--pre") {
+			includePre = true;
+			continue;
+		}
+		if (a.startsWith("-")) {
+			stderr.write(`error: unknown flag: ${a}\n`);
+			return 1;
+		}
+		positional.push(a);
+	}
+
+	try {
+		const r = await runUpdate(
+			cwd(),
+			positional.length > 0 ? positional : undefined,
+			{ includePre },
+		);
+		if (r.changes.length === 0) {
+			if (r.upToDate.length > 0) {
+				stdout.write("all packages at latest\n");
+			} else {
+				stdout.write("nothing to update\n");
+			}
+			return 0;
+		}
+		const noun = r.changes.length === 1 ? "package" : "packages";
+		stdout.write(`updated ${r.changes.length} ${noun}:\n`);
+		const widest = Math.max(...r.changes.map((c) => c.url.length));
+		for (const c of r.changes) {
+			const pad = " ".repeat(widest - c.url.length);
+			stdout.write(`  ${c.url}${pad}  ${c.from} → ${c.to}\n`);
+		}
+		if (r.upToDate.length > 0) {
+			stdout.write(`already at latest: ${r.upToDate.join(", ")}\n`);
+		}
+		return 0;
+	} catch (e) {
+		if (e instanceof UpdateError) {
+			stderr.write(`error: ${e.message}\n`);
+			return 1;
+		}
+		stderr.write(`error: ${e instanceof Error ? e.message : String(e)}\n`);
+		return 1;
+	}
+}
+
+async function runOutdatedCli(args: string[]): Promise<number> {
+	let includePre = false;
+	let asJson = false;
+	let exitCode = false;
+	for (let i = 0; i < args.length; i++) {
+		const a = args[i]!;
+		if (a === "--pre") {
+			includePre = true;
+			continue;
+		}
+		if (a === "--json") {
+			asJson = true;
+			continue;
+		}
+		if (a === "--exit-code") {
+			exitCode = true;
+			continue;
+		}
+		if (a.startsWith("-")) {
+			stderr.write(`error: unknown flag: ${a}\n`);
+			return 1;
+		}
+		stderr.write(`error: unexpected argument: ${a}\n`);
+		return 1;
+	}
+
+	try {
+		const r = await runOutdated(cwd(), { includePre });
+		stdout.write(asJson ? formatOutdatedJson(r) : formatOutdatedText(r));
+		if (exitCode && totalOutdated(r) > 0) return 1;
+		return 0;
+	} catch (e) {
+		if (e instanceof OutdatedError) {
 			stderr.write(`error: ${e.message}\n`);
 			return 1;
 		}

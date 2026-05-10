@@ -6,3 +6,7 @@ export * from "./lock";
 export * from "./install";
 export * from "./edit";
 export * from "./add";
+export * from "./remove";
+export * from "./update";
+export * from "./outdated";
+export * from "./semver";

@@ -394,6 +394,67 @@ describe("ensurePackageCached", () => {
 	});
 });
 
+describe("GitHubAdapter.listTags", () => {
+	it("returns tag names from the tags endpoint", async () => {
+		const { fn, calls } = stubFetch([
+			jsonRes([
+				{ name: "v1.0.0", commit: { sha: SHA_A } },
+				{ name: "v1.1.0", commit: { sha: SHA_B } },
+				{ name: "v2.0.0-beta.1", commit: { sha: SHA_A } },
+			]),
+		]);
+		const adapter = getAdapter("github.com", { fetchImpl: fn, env: {} });
+		const tags = await adapter.listTags("foo/bar");
+		expect(tags).toEqual(["v1.0.0", "v1.1.0", "v2.0.0-beta.1"]);
+		expect(calls[0]?.url).toBe(
+			"https://api.github.com/repos/foo/bar/tags?per_page=100",
+		);
+	});
+
+	it("returns an empty array when there are no tags", async () => {
+		const { fn } = stubFetch([jsonRes([])]);
+		const adapter = getAdapter("github.com", { fetchImpl: fn, env: {} });
+		expect(await adapter.listTags("foo/bar")).toEqual([]);
+	});
+
+	it("throws when the response is not an array", async () => {
+		const { fn } = stubFetch([jsonRes({ error: "boom" })]);
+		const adapter = getAdapter("github.com", {
+			fetchImpl: fn,
+			env: {},
+			retries: 0,
+		});
+		await expect(adapter.listTags("foo/bar")).rejects.toThrow(/did not return an array/);
+	});
+
+	it("maps 404 to not_found", async () => {
+		const { fn } = stubFetch([errRes(404)]);
+		const adapter = getAdapter("github.com", {
+			fetchImpl: fn,
+			env: {},
+			retries: 0,
+		});
+		await expect(adapter.listTags("foo/bar")).rejects.toMatchObject({
+			code: "not_found",
+			status: 404,
+		});
+	});
+
+	it("skips entries without a string name", async () => {
+		const { fn } = stubFetch([
+			jsonRes([
+				{ name: "v1.0.0" },
+				{ name: 42 },
+				{ commit: { sha: SHA_A } },
+				{ name: "v2.0.0" },
+			]),
+		]);
+		const adapter = getAdapter("github.com", { fetchImpl: fn, env: {} });
+		const tags = await adapter.listTags("foo/bar");
+		expect(tags).toEqual(["v1.0.0", "v2.0.0"]);
+	});
+});
+
 describe("GitHubAdapter.downloadTarball", () => {
 	it("returns a Readable from the response body", async () => {
 		const tarball = makeWrappedTarballBytes("a-b-cccdddd", {
