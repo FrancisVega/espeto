@@ -1,15 +1,15 @@
 import { spawn } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
-import { argv, exit, stderr, stdout } from "node:process";
+import { argv, cwd, exit, stderr, stdout } from "node:process";
 import { fileURLToPath } from "node:url";
 import { build, BuildError, type BuildTarget } from "./build";
 import { buildDocs } from "./docs";
+import { install, InstallError } from "./moraga/install";
 import { startRepl } from "./repl";
 import { runMain } from "./run";
 import { runTestsMain } from "./test";
+import { VERSION } from "./version";
 import { startTestWatcher, watchAndRun } from "./watch";
-
-const VERSION = "0.1.0";
 
 const VALID_TARGETS: ReadonlySet<BuildTarget> = new Set([
 	"darwin-arm64",
@@ -28,6 +28,7 @@ usage:
   espeto docs                                             print language reference (markdown) to stdout
   espeto repl                                             start interactive REPL
   espeto lsp                                              run language server (stdio)
+  espeto install                                          install deps from moraga.esp into .espetos/
   espeto --help                                           show this help
   espeto --version                                        show version
 
@@ -72,6 +73,10 @@ async function main(): Promise<number> {
 
 	if (args[0] === "lsp") {
 		return runLsp();
+	}
+
+	if (args[0] === "install") {
+		return await runInstall(args.slice(1));
 	}
 
 	stderr.write(`error: unknown command: ${args[0]}\n\n`);
@@ -242,6 +247,25 @@ function runDocs(args: string[]): number {
 	}
 	stdout.write(buildDocs());
 	return 0;
+}
+
+async function runInstall(args: string[]): Promise<number> {
+	if (args.length > 0) {
+		stderr.write(`error: unexpected argument: ${args[0]}\n`);
+		stderr.write("usage: espeto install\n");
+		return 1;
+	}
+	try {
+		await install(cwd());
+		return 0;
+	} catch (e) {
+		if (e instanceof InstallError) {
+			stderr.write(`error: ${e.message}\n`);
+			return 1;
+		}
+		stderr.write(`error: ${e instanceof Error ? e.message : String(e)}\n`);
+		return 1;
+	}
 }
 
 async function runLsp(): Promise<number> {

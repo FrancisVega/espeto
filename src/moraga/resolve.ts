@@ -17,6 +17,7 @@ export type EnsureCachedOptions = AdapterOptions & {
 	paths?: CachePaths;
 	adapter?: HostAdapter;
 	expectedChecksum?: string;
+	knownSha?: string;
 };
 
 export type EnsureCachedResult = {
@@ -58,7 +59,7 @@ export async function ensurePackageCached(
 	const adapter = opts.adapter ?? getAdapter(host, opts);
 	const paths = opts.paths ?? defaultCachePaths();
 
-	const sha = await resolveTag(adapter, path, version);
+	const sha = opts.knownSha ?? (await resolveTag(adapter, path, version));
 	const finalPath = cacheDirFor(paths, host, path, sha);
 
 	let checksum: string;
