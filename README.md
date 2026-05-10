@@ -2,7 +2,7 @@
 
 > Lenguaje funcional pequeño para construir CLIs. Pipe-céntrico, Elixir-flavored, optimizado para que los LLMs lo escriban perfecto.
 
-**Estado actual:** **v0.1.0 publicado** (mayo 2026). Build, watch, REPL, LSP + extensión VS Code, multi-subcomando, identificadores mágicos `__file__`/`__dir__`. Sistema de paquetes con resolver walking-upward: `import "name"` busca `packages/<name>/<name>.esp` (primer paquete: `ansi`). Próximo: `pnpm publish` v0.2.0.
+**Estado actual:** **v0.1.0 publicado** (mayo 2026). Build, watch, REPL, LSP + extensión VS Code, multi-subcomando, identificadores mágicos `__file__`/`__dir__`. **Package manager (`moraga`)**: 8 comandos (`install`/`add`/`remove`/`update`/`outdated`/`link`/`unlink`/`publish`), git-based descentralizado, manifest `moraga.esp`, lock `moraga.lock` con checksums TOFU, deps de GitHub. Próximo: `pnpm publish` v0.2.0.
 
 ---
 
@@ -217,7 +217,7 @@ espeto docs > spec.md
 | **Funciones** | `def f(x) = expr` (one-liner) o `def f(x) do ... end` (bloque). `defp` para privadas. |
 | **Lambdas** | `fn x => expr`, `fn(x,y) => expr`, `fn() => expr`. Solo expresión. |
 | **Errores** | Excepciones con `raise`. Auto-rescue en `cmd`. `try do ... rescue err => ... end` para local. Variantes `try_*` para Result-style. |
-| **Módulos** | Fichero = módulo. Imports pelados: `import "./x" only [a, b as c]`. |
+| **Módulos** | Fichero = módulo. Imports relativos (`"./x"`) o por nombre (`"ansi"` resuelve buscando `.espetos/<name>/` y luego `packages/<name>/` ascendiendo). `only [a, b as c]` opcional. |
 | **Source bindings** | `__file__` / `__dir__` auto-inyectados por módulo (definition-site, closure-captured). |
 | **Tipos** | `int`, `float`, `str`, `bool`, `nil`, `list`, `map`, `fn`. Sin coerción. |
 | **Igualdad** | `==` único, estructural. `1 == 1.0` es false. |
@@ -306,7 +306,7 @@ end
 - **Parser**: recursive descent escrito a mano
 - **AST**: discriminated unions tipadas con campo `kind`
 - **Source spans desde día 1**: cada token y cada nodo conocen su `{ file, line, col, length }`
-- **Tooling**: `pnpm`, `tsx` (sin build step en dev), `vitest` (~770 tests)
+- **Tooling**: `pnpm`, `tsx` (sin build step en dev), `vitest` (~1340 tests)
 - **Build de la CLI**: `esbuild` bundle → `dist/cli.js`, `dist/runtime.js`, `dist/lsp.js`
 - **Build de programas `.esp`**: `espeto build` → Bun `--compile` (binario autocontenido)
 
@@ -376,6 +376,14 @@ espeto test [-w|--watch] [path]                        corre *_test.esp bajo pat
 espeto docs                                            imprime referencia del lenguaje (markdown)
 espeto repl                                            REPL interactivo
 espeto lsp                                             servidor LSP (stdio)
+espeto install                                         instala deps de moraga.esp en .espetos/
+espeto add <url>@<ver> [...]                           añade deps + install (--dev / --as <name>)
+espeto remove <url> [...]                              quita deps + install
+espeto update [<url>...]                               actualiza deps a latest (--pre incluye pre-releases)
+espeto outdated [--pre] [--json] [--exit-code]         lista deps con versiones nuevas
+espeto link <url> <path>                               linkea dep a path local (moraga.local.esp)
+espeto unlink <url> [...]                              quita link
+espeto publish [--dry-run] [--allow-dirty]             tag + push v<version> a origin
 espeto --help / --version
 ```
 
@@ -408,6 +416,109 @@ pnpm install
 pnpm package    # genera espeto-*.vsix
 code --install-extension espeto-*.vsix
 ```
+
+---
+
+## Package manager (`moraga`)
+
+Espeto se distribuye sus paquetes con un manager git-based descentralizado, sin registry central. Identifier completo: `github.com/<owner>/<repo>@<version>` — copy-paste directo desde la barra del navegador. Solo `github.com` en v0; multi-host (gitlab/codeberg) cuando aparezca el primer caso.
+
+### Manifest `moraga.esp`
+
+Map literal Espeto, JSON-subset con string keys siempre. Schema mínimo:
+
+```esp
+{
+  "name": "myproject",
+  "version": "0.1.0",
+  "espeto": ">= 0.1.0",
+  "deps": {
+    "github.com/foo/ansi": "1.0.0",
+    "github.com/bar/json": {"version": "2.1.0", "as": "bar_json"}
+  },
+  "dev_deps": {}
+}
+```
+
+- **Versioning exact-only** — sin `^`/`~`/ranges. Una sola forma canónica. La excepción es el campo `espeto` (constraint del compilador), que admite `>=` y `<` combinables con `,`.
+- **Aliases** (`"as": "<name>"`) sólo en el manifest raíz, para resolver colisiones entre deps.
+- **Overrides** opcional al top-level para forzar una versión cuando hay conflicto transitivo.
+
+### Comandos
+
+```sh
+espeto install                                 # popula .espetos/ desde manifest+lock
+espeto add github.com/foo/ansi@1.0.0           # añade dep + install
+espeto add --dev github.com/foo/test@1.0.0     # añade dev_dep
+espeto add --as fancy github.com/x/json@1.0.0  # con alias (single dep)
+espeto remove github.com/foo/ansi              # quita dep + install
+espeto update [<url>...]                       # actualiza al latest tag
+espeto outdated [--pre] [--json]               # lista deps desactualizadas
+espeto link github.com/foo/ansi ../ansi-local  # apunta a path local
+espeto unlink github.com/foo/ansi              # deshace el link
+espeto publish [--dry-run]                     # tag + push v<version>
+```
+
+### Filesystem
+
+```
+proyecto/
+├── moraga.esp           # commiteado, manifest principal
+├── moraga.local.esp     # gitignored, links locales (opcional)
+├── moraga.lock          # commiteado, sha-pinned + sha256 checksums
+└── .espetos/            # gitignored, packages instalados (symlinks)
+    ├── ansi/
+    │   └── ansi.esp
+    └── json/
+        └── json.esp
+
+~/.espeto/cache/         # global, content-addressed por sha
+└── github.com/foo/ansi/<sha>/...
+```
+
+El **resolver de imports** busca primero en `.espetos/<name>/<name>.esp`, luego en `packages/<name>/<name>.esp`, ascendiendo desde el fichero importador. Subir un nivel encuentra deps del proyecto consumidor. `import "ansi"` funciona igual sea el package linked, instalado o in-repo.
+
+### Lock + TOFU
+
+`moraga.lock` (commiteado) registra cada dep resuelta con `version`, `sha` (commit) y `checksum` (Merkle `h1:<sha256-hex>` cross-host). En `install`, el cache valida el checksum esperado — TOFU strict. Manifest sin cambios + lock presente → cero llamadas API (`knownSha` skipea `resolveSha`).
+
+### Linking local (`moraga.local.esp`)
+
+Para desarrollar un package y un consumidor en la misma máquina sin publicar:
+
+```esp
+{
+  "links": {
+    "github.com/foo/mi-package": "../mi-package"
+  }
+}
+```
+
+Gitignored — es estado local, como `docker-compose.override.yml`. `espeto link` lo escribe; `espeto unlink` lo limpia. El package aún tiene que estar declarado en `moraga.esp` (el link redirige, no añade).
+
+### Publish
+
+`espeto publish` (sin servidor, wrapper de git):
+
+1. Valida manifest (`name`, `version`, entrypoint `<name>.esp` parsea, sin links activos).
+2. Verifica working tree limpio + branch == default-branch del remote + tag `v<version>` no existe.
+3. `git tag -a v<version>` + `git push origin refs/tags/v<version>`.
+
+`--dry-run` corre todas las validaciones (incluye `ls-remote`) sin tocar refs. `--allow-dirty` salta el check de working tree.
+
+### Auth
+
+Dos pathways separados:
+
+- **API tarball / tag listing**: `$GITHUB_TOKEN` env var → `Authorization: Bearer <tok>`. Necesario para repos privados y para subir el rate-limit de 60/h a 5000/h. Sin fichero de credenciales en v0.
+- **`git push` en publish**: 100% delegado al git CLI (SSH key, credential helper, etc.). Sin mezcla de pathways.
+
+### Filosofía
+
+- Cero registry central — todo vive en repos git.
+- Una sola forma canónica de hacer cada cosa (LLM-friendly).
+- Lock siempre commiteado, install reproducible.
+- Sin `--frozen` flag en v0 — siempre clean rebuild de `.espetos/`.
 
 ---
 
