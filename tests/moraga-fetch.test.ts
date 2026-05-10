@@ -251,6 +251,36 @@ describe("GitHubAdapter — error mapping", () => {
 			{ code: "not_found", status: 404 },
 		);
 	});
+
+	it("404 without token includes $GITHUB_TOKEN hint", async () => {
+		const { fn } = stubFetch([errRes(404)]);
+		const adapter = getAdapter("github.com", {
+			fetchImpl: fn,
+			env: {},
+			retries: 0,
+		});
+		await expect(adapter.resolveSha("foo/bar", "v1.0.0")).rejects.toThrow(
+			/set \$GITHUB_TOKEN if this is a private repo/,
+		);
+	});
+
+	it("404 with token omits $GITHUB_TOKEN hint", async () => {
+		const { fn } = stubFetch([errRes(404)]);
+		const adapter = getAdapter("github.com", {
+			fetchImpl: fn,
+			env: { GITHUB_TOKEN: "tok" },
+			retries: 0,
+		});
+		let caught: Error | undefined;
+		try {
+			await adapter.resolveSha("foo/bar", "v1.0.0");
+		} catch (e) {
+			caught = e as Error;
+		}
+		expect(caught).toBeDefined();
+		expect((caught as MoragaFetchError).code).toBe("not_found");
+		expect(caught?.message).not.toMatch(/GITHUB_TOKEN/);
+	});
 });
 
 describe("GitHubAdapter — retries", () => {

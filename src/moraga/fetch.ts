@@ -130,6 +130,7 @@ class GitHubAdapter implements HostAdapter {
 		headers.set("User-Agent", this.userAgent);
 		const token = this.env.GITHUB_TOKEN;
 		if (token) headers.set("Authorization", `Bearer ${token}`);
+		const hasToken = Boolean(token);
 
 		let lastErr: unknown;
 		for (let attempt = 0; attempt <= this.retries; attempt++) {
@@ -145,7 +146,7 @@ class GitHubAdapter implements HostAdapter {
 					signal: controller.signal,
 				});
 				if (res.ok) return res;
-				const err = await mapHttpError(res, url);
+				const err = await mapHttpError(res, url, hasToken);
 				if (!isRetryable(err) || attempt === this.retries) throw err;
 				lastErr = err;
 			} catch (e) {
@@ -183,6 +184,7 @@ function splitGitHubPath(repoPath: string): [string, string] {
 async function mapHttpError(
 	res: Response,
 	url: string,
+	hasToken: boolean,
 ): Promise<MoragaFetchError> {
 	const status = res.status;
 	const remaining = res.headers.get("X-RateLimit-Remaining");
@@ -209,9 +211,12 @@ async function mapHttpError(
 		);
 	}
 	if (status === 404) {
+		const hint = hasToken
+			? ""
+			: " — set $GITHUB_TOKEN if this is a private repo";
 		return new MoragaFetchError(
 			"not_found",
-			`404 not found: ${url}`,
+			`404 not found: ${url}${hint}`,
 			status,
 		);
 	}
