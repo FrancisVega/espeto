@@ -2,7 +2,7 @@
 
 > Lenguaje funcional pequeño para construir CLIs. Pipe-céntrico, Elixir-flavored, optimizado para que los LLMs lo escriban perfecto.
 
-**Estado actual:** **v0.1.0 publicado** (mayo 2026). Build, watch, REPL, LSP + extensión VS Code, multi-subcomando, identificadores mágicos `__file__`/`__dir__`. **Package manager (`moraga`)**: 8 comandos (`install`/`add`/`remove`/`update`/`outdated`/`link`/`unlink`/`publish`), git-based descentralizado, manifest `moraga.esp`, lock `moraga.lock` con checksums TOFU, deps de GitHub. Próximo: `pnpm publish` v0.2.0.
+**Estado actual:** **v0.2.0 en npm** (mayo 2026). Build, watch, REPL, LSP + extensión VS Code, multi-subcomando, identificadores mágicos `__file__`/`__dir__`. **Package manager (`moraga`)**: 8 comandos (`install`/`add`/`remove`/`update`/`outdated`/`link`/`unlink`/`publish`), git-based descentralizado, manifest `moraga.esp`, lock `moraga.lock` con checksums TOFU, deps de GitHub.
 
 ---
 
@@ -281,7 +281,7 @@ end
 | **8** | `users.esp` completo — JSON, `sort_by`, `.field`, `try/rescue`, stdlib amplia |
 | **9** | Errores formateados pretty — source spans con snippet + caret |
 
-### Post-v0.1.0 (en `main`)
+### v0.2.0 (en npm)
 
 - `espeto build` — empaquetado standalone vía Bun `--compile`
 - `espeto run --watch` — re-ejecución on-change
@@ -290,10 +290,10 @@ end
 - Pipe placeholder `_` — reposicionar LHS en cualquier argumento
 - `__file__` / `__dir__` — paths source-relative por módulo
 - Stdlib JSDoc → manifest → hover docs en LSP
+- Package manager `moraga` — manifest, lock, install, add/remove/update/outdated, link/unlink, publish
 
 ### Próximo
 
-- v0.2.0 publicado a npm (`pnpm publish`)
 - v1: transpiler `.esp → .js` (AOT real, sin runtime embebido)
 - v1: regex, HTTP, fechas, pattern matching, async
 
@@ -355,7 +355,17 @@ Por el espeto de sardinas malagueño. La brocheta donde se asan a la brasa. La m
 
 ## Cómo arrancar
 
-Desde fuente (npm publish llega en v0.2.0):
+Desde npm:
+
+```sh
+npm install -g espeto
+# o: pnpm add -g espeto
+
+espeto run hola.esp
+espeto repl
+```
+
+Desde fuente:
 
 ```sh
 git clone https://github.com/<...>/espeto-language.git

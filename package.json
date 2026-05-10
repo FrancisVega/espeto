@@ -1,6 +1,6 @@
 {
-	"name": "espeto-lang",
-	"version": "0.1.0",
+	"name": "espeto",
+	"version": "0.2.0",
 	"description": "Pipe-centric DSL for building CLIs.",
 	"type": "module",
 	"engines": {
@@ -19,7 +19,7 @@
 		"typecheck": "tsc --noEmit",
 		"build:manifest": "tsx scripts/build-manifest.ts",
 		"build": "pnpm build:manifest && esbuild src/cli.ts --bundle --platform=node --target=node20 --format=esm --outfile=dist/cli.js --banner:js='#!/usr/bin/env node' && chmod +x dist/cli.js && esbuild src/run.ts --bundle --platform=node --target=node20 --format=esm --outfile=dist/runtime.js && esbuild src/lsp/server.ts --bundle --platform=node --target=node20 --format=esm --outfile=dist/lsp.js --banner:js='#!/usr/bin/env node' --packages=external && chmod +x dist/lsp.js",
-		"prepublishOnly": "pnpm build && pnpm test",
+		"prepublishOnly": "pnpm build && ESPETO_OFFLINE=1 pnpm test",
 		"espeto": "tsx src/cli.ts"
 	},
 	"packageManager": "pnpm@10.23.0",
