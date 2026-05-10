@@ -7,7 +7,7 @@ import {
 	symlink,
 	writeFile,
 } from "node:fs/promises";
-import { join } from "node:path";
+import { isAbsolute, resolve as resolvePath, join } from "node:path";
 import { platform } from "node:process";
 import { VERSION } from "../version";
 import { type CachePaths, defaultCachePaths } from "./cache";
@@ -15,6 +15,7 @@ import {
 	type AdapterOptions,
 	type HostAdapter,
 } from "./fetch";
+import { parseLocal } from "./local";
 import {
 	type Lock,
 	type LockEntry,
@@ -58,6 +59,7 @@ type ResolvedEntry = {
 	manifest: Manifest;
 	alias?: string;
 	depUrls: string[];
+	linked: boolean;
 };
 
 type QueueItem = {
@@ -111,9 +113,30 @@ export async function install(
 		prevLock = lr.lock;
 	}
 
+	const localPath = join(rootDir, "moraga.local.esp");
+	const linkedAbs = new Map<string, string>();
+	if (existsSync(localPath)) {
+		const localSrc = await readFile(localPath, "utf8");
+		const lr = parseLocal(localSrc, localPath);
+		if (!lr.ok) {
+			const lines = lr.errors.map((e) => `  - ${e.message}`).join("\n");
+			throw new InstallError(`moraga.local.esp has errors:\n${lines}`);
+		}
+		for (const [url, p] of lr.local.links) {
+			const abs = isAbsolute(p) ? p : resolvePath(rootDir, p);
+			linkedAbs.set(url, abs);
+		}
+	}
+
 	const paths = opts.paths ?? defaultCachePaths();
 
-	const resolved = await resolveGraph(rootManifest, prevLock, paths, opts);
+	const resolved = await resolveGraph(
+		rootManifest,
+		prevLock,
+		paths,
+		opts,
+		linkedAbs,
+	);
 	validateAliasesAndCollisions(resolved);
 
 	const newLock = buildLock(resolved);
@@ -146,6 +169,7 @@ async function resolveGraph(
 	prevLock: Lock,
 	paths: CachePaths,
 	opts: InstallOptions,
+	linkedAbs: Map<string, string>,
 ): Promise<Map<string, ResolvedEntry>> {
 	const resolved = new Map<string, ResolvedEntry>();
 	const requested = new Map<string, { version: string; chain: string[] }>();
@@ -164,54 +188,96 @@ async function resolveGraph(
 		const collected: QueueItem[] = [];
 
 		await processWithConcurrency(toProcess, MAX_CONCURRENCY, async (item) => {
-			const lockHit = prevLock.get(item.url);
-			const useLock = lockHit && lockHit.version === item.version;
-			const result = await ensurePackageCached(item.url, item.version, {
-				...opts.fetchOpts,
-				paths,
-				adapter: opts.adapter,
-				knownSha: useLock ? lockHit.sha : undefined,
-				expectedChecksum: useLock ? lockHit.checksum : undefined,
-			});
+			const linkedPath = linkedAbs.get(item.url);
 
-			const pkgManifestPath = join(result.cachePath, "moraga.esp");
-			if (!existsSync(pkgManifestPath)) {
-				throw new InstallError(
-					`package ${item.url}@${item.version} is missing moraga.esp (sha=${result.sha})`,
-				);
+			let pkgManifest: Manifest;
+			let cachePath: string;
+			let sha: string;
+			let checksum: string;
+			let linked: boolean;
+
+			if (linkedPath !== undefined) {
+				if (!existsSync(linkedPath)) {
+					throw new InstallError(
+						`linked package ${item.url} path not found: ${linkedPath}`,
+					);
+				}
+				const pkgManifestPath = join(linkedPath, "moraga.esp");
+				if (!existsSync(pkgManifestPath)) {
+					throw new InstallError(
+						`linked package ${item.url} is missing moraga.esp at ${linkedPath}`,
+					);
+				}
+				const pkgSrc = await readFile(pkgManifestPath, "utf8");
+				const pmr = parseManifest(pkgSrc, pkgManifestPath);
+				if (!pmr.ok) {
+					const lines = pmr.errors.map((e) => `  - ${e.message}`).join("\n");
+					throw new InstallError(
+						`linked package ${item.url} has invalid moraga.esp:\n${lines}`,
+					);
+				}
+				pkgManifest = pmr.manifest;
+				cachePath = linkedPath;
+				sha = "";
+				checksum = "";
+				linked = true;
+			} else {
+				const lockHit = prevLock.get(item.url);
+				const useLock = lockHit && lockHit.version === item.version;
+				const result = await ensurePackageCached(item.url, item.version, {
+					...opts.fetchOpts,
+					paths,
+					adapter: opts.adapter,
+					knownSha: useLock ? lockHit.sha : undefined,
+					expectedChecksum: useLock ? lockHit.checksum : undefined,
+				});
+
+				const pkgManifestPath = join(result.cachePath, "moraga.esp");
+				if (!existsSync(pkgManifestPath)) {
+					throw new InstallError(
+						`package ${item.url}@${item.version} is missing moraga.esp (sha=${result.sha})`,
+					);
+				}
+				const pkgSrc = await readFile(pkgManifestPath, "utf8");
+				const pmr = parseManifest(pkgSrc, pkgManifestPath);
+				if (!pmr.ok) {
+					const lines = pmr.errors.map((e) => `  - ${e.message}`).join("\n");
+					throw new InstallError(
+						`package ${item.url}@${item.version} has invalid moraga.esp:\n${lines}`,
+					);
+				}
+				pkgManifest = pmr.manifest;
+				cachePath = result.cachePath;
+				sha = result.sha;
+				checksum = result.checksum;
+				linked = false;
 			}
-			const pkgSrc = await readFile(pkgManifestPath, "utf8");
-			const pmr = parseManifest(pkgSrc, pkgManifestPath);
-			if (!pmr.ok) {
-				const lines = pmr.errors.map((e) => `  - ${e.message}`).join("\n");
-				throw new InstallError(
-					`package ${item.url}@${item.version} has invalid moraga.esp:\n${lines}`,
-				);
-			}
-			const pkgManifest = pmr.manifest;
 
 			rejectAliasInDeps(item.url, item.version, pkgManifest.deps, "deps");
 			rejectAliasInDeps(item.url, item.version, pkgManifest.devDeps, "dev_deps");
 
 			const c = checkEspetoConstraint(pkgManifest.espeto, VERSION);
 			if (!c.ok) {
+				const where = linked ? "linked" : `@${item.version}`;
 				throw new InstallError(
-					`package ${item.url}@${item.version} requires espeto ${pkgManifest.espeto}, but compiler is ${VERSION}`,
+					`package ${item.url} ${where} requires espeto ${pkgManifest.espeto}, but compiler is ${VERSION}`,
 				);
 			}
 
 			resolved.set(item.url, {
 				url: item.url,
 				version: item.version,
-				sha: result.sha,
-				checksum: result.checksum,
-				cachePath: result.cachePath,
+				sha,
+				checksum,
+				cachePath,
 				manifest: pkgManifest,
 				alias: item.alias,
 				depUrls: [...pkgManifest.deps.keys()],
+				linked,
 			});
 
-			const childChain = [...item.chain, `${item.url}@${item.version}`];
+			const childTag = linked ? `${item.url}@linked` : `${item.url}@${item.version}`;
+			const childChain = [...item.chain, childTag];
 			for (const [depUrl, depSpec] of applyOverrides(
 				pkgManifest.deps,
 				rootManifest.overrides,
@@ -328,6 +394,7 @@ function buildLock(resolved: Map<string, ResolvedEntry>): Lock {
 	const lock: Lock = new Map();
 	const fakeSpan = { file: "moraga.lock", line: 1, col: 1, length: 1 };
 	for (const [url, entry] of resolved) {
+		if (entry.linked) continue;
 		const lockEntry: LockEntry = {
 			url,
 			urlSpan: fakeSpan,

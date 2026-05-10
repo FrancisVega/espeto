@@ -6,6 +6,7 @@ import { build, BuildError, type BuildTarget } from "./build";
 import { buildDocs } from "./docs";
 import { AddError, runAdd, type AddSpec } from "./moraga/add";
 import { install, InstallError } from "./moraga/install";
+import { LinkError, runLink } from "./moraga/link";
 import { RemoveError, runRemove } from "./moraga/remove";
 import {
 	formatJson as formatOutdatedJson,
@@ -14,6 +15,7 @@ import {
 	runOutdated,
 	totalOutdated,
 } from "./moraga/outdated";
+import { UnlinkError, runUnlink } from "./moraga/unlink";
 import { runUpdate, UpdateError } from "./moraga/update";
 import { startRepl } from "./repl";
 import { runMain } from "./run";
@@ -46,6 +48,8 @@ usage:
   espeto update [<url>...]                                update deps to latest (default: all)
   espeto update --pre [<url>...]                          include pre-releases when picking latest
   espeto outdated [--pre] [--json] [--exit-code]          list deps with newer versions available
+  espeto link <url> <path>                                link a dep to a local path (writes moraga.local.esp)
+  espeto unlink <url> [<url>...]                          remove links from moraga.local.esp
   espeto --help                                           show this help
   espeto --version                                        show version
 
@@ -110,6 +114,14 @@ async function main(): Promise<number> {
 
 	if (args[0] === "outdated") {
 		return await runOutdatedCli(args.slice(1));
+	}
+
+	if (args[0] === "link") {
+		return await runLinkCli(args.slice(1));
+	}
+
+	if (args[0] === "unlink") {
+		return await runUnlinkCli(args.slice(1));
 	}
 
 	stderr.write(`error: unknown command: ${args[0]}\n\n`);
@@ -506,6 +518,80 @@ async function runOutdatedCli(args: string[]): Promise<number> {
 		return 0;
 	} catch (e) {
 		if (e instanceof OutdatedError) {
+			stderr.write(`error: ${e.message}\n`);
+			return 1;
+		}
+		stderr.write(`error: ${e instanceof Error ? e.message : String(e)}\n`);
+		return 1;
+	}
+}
+
+async function runLinkCli(args: string[]): Promise<number> {
+	const positional: string[] = [];
+	for (let i = 0; i < args.length; i++) {
+		const a = args[i]!;
+		if (a.startsWith("-")) {
+			stderr.write(`error: unknown flag: ${a}\n`);
+			return 1;
+		}
+		positional.push(a);
+	}
+
+	if (positional.length !== 2) {
+		stderr.write("error: link requires exactly <url> and <path>\n\n");
+		stderr.write("usage: espeto link <url> <path>\n");
+		return 1;
+	}
+
+	const [url, path] = positional as [string, string];
+	try {
+		const r = await runLink(cwd(), url, path);
+		if (r.changed) {
+			stdout.write(`linked ${url} → ${path}\n`);
+		} else {
+			stdout.write(`already linked ${url} → ${path}\n`);
+		}
+		return 0;
+	} catch (e) {
+		if (e instanceof LinkError) {
+			stderr.write(`error: ${e.message}\n`);
+			return 1;
+		}
+		stderr.write(`error: ${e instanceof Error ? e.message : String(e)}\n`);
+		return 1;
+	}
+}
+
+async function runUnlinkCli(args: string[]): Promise<number> {
+	const positional: string[] = [];
+	for (let i = 0; i < args.length; i++) {
+		const a = args[i]!;
+		if (a.startsWith("-")) {
+			stderr.write(`error: unknown flag: ${a}\n`);
+			return 1;
+		}
+		positional.push(a);
+	}
+
+	if (positional.length === 0) {
+		stderr.write("error: missing <url>\n\n");
+		stderr.write("usage: espeto unlink <url> [<url>...]\n");
+		return 1;
+	}
+
+	try {
+		const r = await runUnlink(cwd(), positional);
+		const count = r.unlinked.length;
+		if (count > 0) {
+			const noun = count === 1 ? "package" : "packages";
+			stdout.write(`unlinked ${count} ${noun}\n`);
+		}
+		if (r.skipped.length > 0) {
+			stdout.write(`not linked (skipped): ${r.skipped.join(", ")}\n`);
+		}
+		return 0;
+	} catch (e) {
+		if (e instanceof UnlinkError) {
 			stderr.write(`error: ${e.message}\n`);
 			return 1;
 		}
