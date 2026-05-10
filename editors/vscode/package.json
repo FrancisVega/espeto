@@ -1,8 +1,8 @@
 {
   "name": "vscode-espeto",
   "displayName": "Espeto",
-  "description": "Language support for Espeto: syntax highlighting, hover docs, go-to-definition, completion, references, rename, outline, folding, signature help, and semantic tokens.",
-  "version": "0.2.0",
+  "description": "Language support for Espeto: syntax highlighting, hover docs, go-to-definition, completion, references, rename, outline, folding, signature help, and semantic tokens. Requires `espeto` installed globally (npm i -g espeto).",
+  "version": "0.2.1",
   "publisher": "hisco",
   "engines": {
     "vscode": "^1.75.0"
@@ -15,9 +15,7 @@
     "onLanguage:espeto"
   ],
   "scripts": {
-    "build:server": "cd ../.. && pnpm build:manifest && esbuild src/lsp/server.ts --bundle --platform=node --target=node18 --format=cjs --outfile=editors/vscode/dist/lsp.js",
-    "build:client": "esbuild src/extension.ts --bundle --platform=node --target=node18 --format=cjs --outfile=dist/extension.js --external:vscode",
-    "build": "pnpm build:server && pnpm build:client",
+    "build": "esbuild src/extension.ts --bundle --platform=node --target=node18 --format=cjs --outfile=dist/extension.js --external:vscode",
     "typecheck": "tsc --noEmit"
   },
   "contributes": {

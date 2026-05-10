@@ -1,5 +1,4 @@
-import * as path from "node:path";
-import { type ExtensionContext } from "vscode";
+import type { ExtensionContext } from "vscode";
 import {
 	LanguageClient,
 	type LanguageClientOptions,
@@ -9,11 +8,10 @@ import {
 
 let client: LanguageClient | undefined;
 
-export function activate(context: ExtensionContext): void {
-	const serverModule = context.asAbsolutePath(path.join("dist", "lsp.js"));
+export function activate(_context: ExtensionContext): void {
 	const serverOptions: ServerOptions = {
-		run: { module: serverModule, transport: TransportKind.stdio },
-		debug: { module: serverModule, transport: TransportKind.stdio },
+		run: { command: "espeto", args: ["lsp"], transport: TransportKind.stdio },
+		debug: { command: "espeto", args: ["lsp"], transport: TransportKind.stdio },
 	};
 	const clientOptions: LanguageClientOptions = {
 		documentSelector: [{ scheme: "file", language: "espeto" }],
