@@ -175,15 +175,19 @@
           v0.2.1 en npm + brew
         </div>
         
-        <h1 class="text-6xl md:text-[5.5rem] leading-[0.95] mb-6">
-          Funcional.<br/>
-          Minimalista.<br/>
-          <span class="text-gradient">Para CLIs.</span>
-        </h1>
+        <!-- <h1 class="text-6xl md:text-[5.5rem] leading-[0.95] mb-6"> -->
+        <!--   Funcional.<br/> -->
+        <!--   LLM Ready.<br/> -->
+        <!--   <span class="text-gradient">Para CLIs.</span> -->
+        <!-- </h1> -->
+        <h1 class="text-6xl md:text-[5.1rem] leading-[0.95] mb-6">
 
-        <p class="text-text-secondary text-base md:text-lg font-medium leading-relaxed mb-8 max-w-md">
-          No mess, no guess. Aquí no se alucina.
-        </p>
+          <span class="text-gradient">LLM friendly.</span>
+          Functional. For CLIs.</h1>
+
+        <!-- <p class="text-text-secondary text-base md:text-lg font-medium leading-relaxed mb-8 max-w-md"> -->
+        <!--   No mess, no guess. Aquí no se alucina. -->
+        <!-- </p> -->
         
         <div class="flex flex-wrap items-center gap-3 text-sm md:text-base font-bold text-text-secondary mb-12">
           <span class="text-text-primary bg-surface px-3 py-1.5 rounded-md border border-border/50 shadow-sm">CLI first</span>
@@ -205,18 +209,17 @@
       <div class="code-window relative z-10 w-full max-w-lg mx-auto lg:ml-auto sticky top-8">
         <div class="flex items-center justify-between mb-6 border-b border-white/10 pb-4">
           <span class="text-xs text-white/50 uppercase tracking-widest">greet.esp</span>
-          <span class="text-[10px] text-white/40 uppercase tracking-widest">un cli en 6 líneas</span>
+          <span class="text-[10px] text-white/40 uppercase tracking-widest">un cli en 4 líneas</span>
         </div>
-<pre class="text-sm md:text-base leading-relaxed overflow-x-auto"><span class="text-gray-500"># greet.esp</span>
+<pre class="text-sm md:text-base leading-relaxed overflow-x-auto">
 <span class="text-[var(--color-brand-pink)]">cmd</span> greet <span class="text-[var(--color-brand-pink)]">do</span>
   <span class="text-[var(--color-brand-pink)]">arg</span> name: str
-  <span class="text-[var(--color-brand-pink)]">flag</span> loud: bool = <span class="text-[var(--color-brand-pink)]">false</span>
 
-  <span class="text-green-400">"Hola, #{name}!"</span> <span class="text-[var(--color-brand-orange)] font-bold">|></span> when(loud, upcase) <span class="text-[var(--color-brand-orange)] font-bold">|></span> print
+  print(<span class="text-green-400">"Hola, #{name}!"</span></span>)
 <span class="text-[var(--color-brand-pink)]">end</span>
 
-<span class="text-gray-500">$ espeto run greet.esp mundo --loud</span>
-<span class="text-white font-bold text-lg">HOLA, MUNDO!</span>
+<span class="text-gray-500">$ greet.esp Mundo</span>
+<span class="text-white font-bold text-lg">Hola, Mundo!</span>
 </pre>
       </div>
 
@@ -306,7 +309,7 @@
           <div class="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center mb-6">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--color-brand-orange)" stroke-width="2.5"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
           </div>
-          <h3 class="text-3xl mb-4">Todo fluye hacia adelante.</h3>
+          <h3 class="text-3xl mb-4">Todo fluye hacia adelante (o hacia abajo).</h3>
           <p class="text-text-secondary leading-relaxed mb-6">
             El operador <code class="bg-gray-200 text-text-primary px-1.5 py-0.5 rounded">|></code> no es azúcar sintáctico, es la base del lenguaje. Cualquier dato pasa como primer argumento a la función de su derecha. No necesitas anidar llamadas ni declarar variables temporales.
           </p>
