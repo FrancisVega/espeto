@@ -8,6 +8,7 @@ export type Expr =
 	| NilLiteral
 	| Identifier
 	| Call
+	| PipeExpr
 	| BinaryOp
 	| UnaryOp
 	| IfExpr
@@ -163,6 +164,13 @@ export type Call = {
 	kind: "call";
 	callee: Expr;
 	args: Expr[];
+	span: Span;
+};
+
+export type PipeExpr = {
+	kind: "pipe";
+	lhs: Expr;
+	rhs: Call;
 	span: Span;
 };
 

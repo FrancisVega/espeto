@@ -33,6 +33,9 @@ function lastLineExpr(expr: Expr): number {
 			max = Math.max(max, lastLineExpr(expr.callee));
 			for (const a of expr.args) max = Math.max(max, lastLineExpr(a));
 			break;
+		case "pipe":
+			max = Math.max(max, lastLineExpr(expr.lhs), lastLineExpr(expr.rhs));
+			break;
 		case "binop":
 			max = Math.max(max, lastLineExpr(expr.lhs), lastLineExpr(expr.rhs));
 			break;
@@ -222,6 +225,10 @@ function visitFoldingExpr(expr: Expr, out: FoldingRange[]): void {
 		case "call":
 			visitFoldingExpr(expr.callee, out);
 			for (const a of expr.args) visitFoldingExpr(a, out);
+			return;
+		case "pipe":
+			visitFoldingExpr(expr.lhs, out);
+			visitFoldingExpr(expr.rhs, out);
 			return;
 		case "binop":
 			visitFoldingExpr(expr.lhs, out);

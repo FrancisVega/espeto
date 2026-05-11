@@ -23,6 +23,7 @@ import type {
 	MapExpr,
 	MetaStmt,
 	Module,
+	PipeExpr,
 	ProgramDecl,
 	Stmt,
 	StringExpr,
@@ -757,10 +758,16 @@ class Parser {
 		return this.tokens[j]?.type ?? "eof";
 	}
 
-	private parsePipeRhs(lhs: Expr): Call {
+	private parsePipeRhs(lhs: Expr): PipeExpr {
 		if (this.match("kw_fn")) {
 			const lambda = this.parseLambda();
-			return { kind: "call", callee: lambda, args: [lhs], span: lhs.span };
+			const rhs: Call = {
+				kind: "call",
+				callee: lambda,
+				args: [],
+				span: lhs.span,
+			};
+			return { kind: "pipe", lhs, rhs, span: lhs.span };
 		}
 
 		if (this.match("dot")) {
@@ -771,12 +778,13 @@ class Parser {
 				field: fieldTok.value,
 				span: dotTok.span,
 			};
-			return {
+			const rhs: Call = {
 				kind: "call",
 				callee: shorthand,
-				args: [lhs],
+				args: [],
 				span: lhs.span,
 			};
+			return { kind: "pipe", lhs, rhs, span: lhs.span };
 		}
 
 		const ident = this.expect("ident", "function name or 'fn' after |>");
@@ -804,13 +812,7 @@ class Parser {
 				if (a.kind === "ident" && a.name === "_") placeholders.push(i);
 			}
 
-			let args: Expr[];
-			if (placeholders.length === 0) {
-				args = [lhs, ...explicitArgs];
-			} else if (placeholders.length === 1) {
-				args = explicitArgs.slice();
-				args[placeholders[0]!] = lhs;
-			} else {
+			if (placeholders.length > 1) {
 				const second = explicitArgs[placeholders[1]!]!;
 				throw new EspetoError(
 					"pipe placeholder '_' may appear at most once per call",
@@ -819,10 +821,17 @@ class Parser {
 				);
 			}
 
-			return { kind: "call", callee, args, span: lhs.span };
+			const rhs: Call = {
+				kind: "call",
+				callee,
+				args: explicitArgs,
+				span: lhs.span,
+			};
+			return { kind: "pipe", lhs, rhs, span: lhs.span };
 		}
 
-		return { kind: "call", callee, args: [lhs], span: lhs.span };
+		const rhs: Call = { kind: "call", callee, args: [], span: lhs.span };
+		return { kind: "pipe", lhs, rhs, span: lhs.span };
 	}
 
 	private parsePrimary(): Expr {

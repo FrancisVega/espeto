@@ -252,6 +252,16 @@ function evalExpr(expr: Expr, env: Env, source: string): Value {
 				throw new EspetoError(msg, expr.span, source);
 			}
 		}
+		case "pipe": {
+			const placeholder = expr.rhs.args.findIndex(
+				(a) => a.kind === "ident" && a.name === "_",
+			);
+			const args =
+				placeholder === -1
+					? [expr.lhs, ...expr.rhs.args]
+					: expr.rhs.args.map((a, i) => (i === placeholder ? expr.lhs : a));
+			return evalExpr({ ...expr.rhs, args }, env, source);
+		}
 		case "binop":
 			return evalBinaryOp(expr, env, source);
 		case "unop":

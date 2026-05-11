@@ -36,40 +36,55 @@ describe("parser: expressions", () => {
 		});
 	});
 
-	it("desugars `x |> f` to `f(x)`", () => {
+	it("parses `x |> f` as PipeExpr with empty rhs.args", () => {
 		const p = ast(`"hola" |> print`);
 		expect(p.items[0]).toMatchObject({
-			kind: "call",
-			callee: { kind: "ident", name: "print" },
-			args: [{ kind: "string", parts: ["hola"] }],
+			kind: "pipe",
+			lhs: { kind: "string", parts: ["hola"] },
+			rhs: {
+				kind: "call",
+				callee: { kind: "ident", name: "print" },
+				args: [],
+			},
 		});
 	});
 
-	it("desugars chained pipes left-associative", () => {
+	it("parses chained pipes left-associative", () => {
 		const p = ast(`"a" |> upcase |> print`);
 		const outer = p.items[0]!;
 		expect(outer).toMatchObject({
-			kind: "call",
-			callee: { kind: "ident", name: "print" },
+			kind: "pipe",
+			rhs: {
+				kind: "call",
+				callee: { kind: "ident", name: "print" },
+				args: [],
+			},
 		});
-		const inner = (outer as { args: unknown[] }).args[0];
+		const inner = (outer as { lhs: unknown }).lhs;
 		expect(inner).toMatchObject({
-			kind: "call",
-			callee: { kind: "ident", name: "upcase" },
-			args: [{ kind: "string", parts: ["a"] }],
+			kind: "pipe",
+			lhs: { kind: "string", parts: ["a"] },
+			rhs: {
+				kind: "call",
+				callee: { kind: "ident", name: "upcase" },
+				args: [],
+			},
 		});
 	});
 
-	it("desugars `x |> f(y)` to `f(x, y)`", () => {
+	it("parses `x |> f(y)` as PipeExpr preserving explicit args", () => {
 		const p = ast(`"hello" |> replace("l", "L")`);
 		expect(p.items[0]).toMatchObject({
-			kind: "call",
-			callee: { kind: "ident", name: "replace" },
-			args: [
-				{ kind: "string", parts: ["hello"] },
-				{ kind: "string", parts: ["l"] },
-				{ kind: "string", parts: ["L"] },
-			],
+			kind: "pipe",
+			lhs: { kind: "string", parts: ["hello"] },
+			rhs: {
+				kind: "call",
+				callee: { kind: "ident", name: "replace" },
+				args: [
+					{ kind: "string", parts: ["l"] },
+					{ kind: "string", parts: ["L"] },
+				],
+			},
 		});
 	});
 
@@ -194,7 +209,7 @@ describe("parser: assign", () => {
 		const p = ast(`x = 42\nx |> print`);
 		expect(p.items).toHaveLength(2);
 		expect(p.items[0]).toMatchObject({ kind: "assign", name: "x" });
-		expect(p.items[1]).toMatchObject({ kind: "call" });
+		expect(p.items[1]).toMatchObject({ kind: "pipe" });
 	});
 });
 
@@ -241,8 +256,9 @@ describe("parser: fn_def", () => {
 		const p = ast(`def grita(s) = s |> upcase`);
 		const fnDef = p.items[0] as { body: unknown[] };
 		expect(fnDef.body[0]).toMatchObject({
-			kind: "call",
-			callee: { kind: "ident", name: "upcase" },
+			kind: "pipe",
+			lhs: { kind: "ident", name: "s" },
+			rhs: { kind: "call", callee: { kind: "ident", name: "upcase" } },
 		});
 	});
 
@@ -250,7 +266,7 @@ describe("parser: fn_def", () => {
 		const p = ast(`def f(x) = x\n"a" |> f`);
 		expect(p.items).toHaveLength(2);
 		expect(p.items[0]).toMatchObject({ kind: "fn_def" });
-		expect(p.items[1]).toMatchObject({ kind: "call" });
+		expect(p.items[1]).toMatchObject({ kind: "pipe" });
 	});
 
 	it("rejects def without '='", () => {
@@ -310,7 +326,7 @@ describe("parser: cmd block", () => {
 		const p = ast(`cmd hola do\n  "hi" |> print\nend`);
 		const cmd = p.items[0] as { body: unknown[] };
 		expect(cmd.body).toHaveLength(1);
-		expect(cmd.body[0]).toMatchObject({ kind: "call" });
+		expect(cmd.body[0]).toMatchObject({ kind: "pipe" });
 	});
 
 	it("parses arg with type", () => {
@@ -371,7 +387,7 @@ describe("parser: cmd block", () => {
 		);
 		const cmd = p.items[0] as { body: { kind: string }[] };
 		expect(cmd.body[0]!.kind).toBe("assign");
-		expect(cmd.body[1]!.kind).toBe("call");
+		expect(cmd.body[1]!.kind).toBe("pipe");
 	});
 
 	it("rejects meta after a decl", () => {
@@ -666,7 +682,11 @@ describe("parser: hito 7a — operators + if", () => {
 		expect(p.items[0]).toMatchObject({
 			kind: "binop",
 			op: "or",
-			lhs: { kind: "call", callee: { kind: "ident", name: "f" } },
+			lhs: {
+				kind: "pipe",
+				lhs: { kind: "ident", name: "x" },
+				rhs: { kind: "call", callee: { kind: "ident", name: "f" } },
+			},
 			rhs: { kind: "ident", name: "y" },
 		});
 	});
@@ -783,9 +803,13 @@ describe("parser: lambdas", () => {
 	it("accepts lambda as pipe RHS", () => {
 		const p = ast(`5 |> fn n => n + 1`);
 		expect(p.items[0]).toMatchObject({
-			kind: "call",
-			callee: { kind: "lambda", params: ["n"] },
-			args: [{ kind: "int", value: 5 }],
+			kind: "pipe",
+			lhs: { kind: "int", value: 5 },
+			rhs: {
+				kind: "call",
+				callee: { kind: "lambda", params: ["n"] },
+				args: [],
+			},
 		});
 	});
 
@@ -989,20 +1013,27 @@ describe("parser: hito 7c — maps + .field", () => {
 
 	it("parses pipe with .field shorthand", () => {
 		const p = ast(`users |> map(.name)`);
-		const node = p.items[0] as {
-			kind: string;
-			args: { kind: string; args: { kind: string }[] }[];
-		};
-		expect(node.kind).toBe("call");
-		expect(node.args[1]!.kind).toBe("field_shorthand");
+		expect(p.items[0]).toMatchObject({
+			kind: "pipe",
+			lhs: { kind: "ident", name: "users" },
+			rhs: {
+				kind: "call",
+				callee: { kind: "ident", name: "map" },
+				args: [{ kind: "field_shorthand", field: "name" }],
+			},
+		});
 	});
 
 	it("parses pipe directly into .field shorthand", () => {
 		const p = ast(`user |> .name`);
 		expect(p.items[0]).toMatchObject({
-			kind: "call",
-			callee: { kind: "field_shorthand", field: "name" },
-			args: [{ kind: "ident", name: "user" }],
+			kind: "pipe",
+			lhs: { kind: "ident", name: "user" },
+			rhs: {
+				kind: "call",
+				callee: { kind: "field_shorthand", field: "name" },
+				args: [],
+			},
 		});
 	});
 
@@ -1054,7 +1085,7 @@ describe("parser: hito 7c — maps + .field", () => {
 			tryBody: { kind: string }[];
 		};
 		expect(node.kind).toBe("try");
-		expect(node.tryBody[0]!.kind).toBe("call");
+		expect(node.tryBody[0]!.kind).toBe("pipe");
 	});
 
 	it("parses try inside an assignment (cmd-like context)", () => {
@@ -1201,6 +1232,99 @@ describe("parser: doc-comments on def/defp", () => {
 		expect(p.items[0]).toMatchObject({
 			kind: "fn_def",
 			doc: "### Section\nbody",
+		});
+	});
+});
+
+describe("parser: PipeExpr AST shape", () => {
+	it("emits PipeExpr (not Call) for bare-ident RHS", () => {
+		const p = ast(`x |> f`);
+		const node = p.items[0] as { kind: string };
+		expect(node.kind).toBe("pipe");
+		expect(node.kind).not.toBe("call");
+	});
+
+	it("emits PipeExpr (not Call) for parenthesized RHS", () => {
+		const p = ast(`x |> f(y)`);
+		const node = p.items[0] as { kind: string };
+		expect(node.kind).toBe("pipe");
+	});
+
+	it("does not inject lhs into rhs.args when no placeholder", () => {
+		const p = ast(`x |> f(a, b)`);
+		expect(p.items[0]).toMatchObject({
+			kind: "pipe",
+			lhs: { kind: "ident", name: "x" },
+			rhs: {
+				kind: "call",
+				callee: { kind: "ident", name: "f" },
+				args: [
+					{ kind: "ident", name: "a" },
+					{ kind: "ident", name: "b" },
+				],
+			},
+		});
+	});
+
+	it("preserves `_` placeholder as Identifier literal in rhs.args", () => {
+		const p = ast(`x |> f(a, _, b)`);
+		expect(p.items[0]).toMatchObject({
+			kind: "pipe",
+			lhs: { kind: "ident", name: "x" },
+			rhs: {
+				kind: "call",
+				callee: { kind: "ident", name: "f" },
+				args: [
+					{ kind: "ident", name: "a" },
+					{ kind: "ident", name: "_" },
+					{ kind: "ident", name: "b" },
+				],
+			},
+		});
+	});
+
+	it("rejects multiple `_` placeholders in a single pipe call", () => {
+		expect(() => ast(`x |> f(_, _)`)).toThrow(
+			/placeholder '_' may appear at most once/,
+		);
+	});
+
+	it("emits PipeExpr with empty rhs.args for lambda RHS", () => {
+		const p = ast(`5 |> fn n => n + 1`);
+		expect(p.items[0]).toMatchObject({
+			kind: "pipe",
+			lhs: { kind: "int", value: 5 },
+			rhs: {
+				kind: "call",
+				callee: { kind: "lambda", params: ["n"] },
+				args: [],
+			},
+		});
+	});
+
+	it("emits PipeExpr with field_shorthand callee for `.field` RHS", () => {
+		const p = ast(`u |> .name`);
+		expect(p.items[0]).toMatchObject({
+			kind: "pipe",
+			lhs: { kind: "ident", name: "u" },
+			rhs: {
+				kind: "call",
+				callee: { kind: "field_shorthand", field: "name" },
+				args: [],
+			},
+		});
+	});
+
+	it("nests PipeExpr left-associatively in chains", () => {
+		const p = ast(`a |> b |> c`);
+		expect(p.items[0]).toMatchObject({
+			kind: "pipe",
+			lhs: {
+				kind: "pipe",
+				lhs: { kind: "ident", name: "a" },
+				rhs: { kind: "call", callee: { kind: "ident", name: "b" } },
+			},
+			rhs: { kind: "call", callee: { kind: "ident", name: "c" } },
 		});
 	});
 });

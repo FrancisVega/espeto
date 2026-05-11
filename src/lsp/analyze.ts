@@ -79,6 +79,10 @@ export function findIdentAt(
 				visitExpr(expr.callee);
 				for (const a of expr.args) visitExpr(a);
 				return;
+			case "pipe":
+				visitExpr(expr.lhs);
+				visitExpr(expr.rhs);
+				return;
 			case "binop":
 				visitExpr(expr.lhs);
 				visitExpr(expr.rhs);
@@ -235,6 +239,10 @@ export function walkIdents(
 					if (stop) return;
 					visitExpr(a);
 				}
+				return;
+			case "pipe":
+				visitExpr(expr.lhs);
+				if (!stop) visitExpr(expr.rhs);
 				return;
 			case "binop":
 				visitExpr(expr.lhs);
@@ -558,6 +566,10 @@ export function findResolvableAt(
 			case "call":
 				visitExpr(expr.callee);
 				for (const a of expr.args) visitExpr(a);
+				return;
+			case "pipe":
+				visitExpr(expr.lhs);
+				visitExpr(expr.rhs);
 				return;
 			case "binop":
 				visitExpr(expr.lhs);
