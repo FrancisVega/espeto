@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { build, BuildError, type BuildTarget } from "./build";
 import { buildDocs } from "./docs";
 import { AddError, runAdd, type AddSpec } from "./moraga/add";
+import { InitError, runInit } from "./moraga/init";
 import { install, InstallError } from "./moraga/install";
 import { LinkError, runLink } from "./moraga/link";
 import { RemoveError, runRemove } from "./moraga/remove";
@@ -47,6 +48,7 @@ usage:
   espeto docs                                             print language reference (markdown) to stdout
   espeto repl                                             start interactive REPL
   espeto lsp                                              run language server (stdio)
+  espeto init [--name N] [--version V] [--force]          scaffold a new Espeto package in cwd
   espeto install                                          install deps from moraga.esp into .espetos/
   espeto add <url>@<ver> [<url>@<ver>...]                 add deps to moraga.esp + install
   espeto add --dev <url>@<ver> ...                        add to dev_deps
@@ -102,6 +104,10 @@ async function main(): Promise<number> {
 
 	if (args[0] === "lsp") {
 		return runLsp();
+	}
+
+	if (args[0] === "init") {
+		return await runInitCli(args.slice(1));
 	}
 
 	if (args[0] === "install") {
@@ -304,6 +310,70 @@ function runDocs(args: string[]): number {
 	}
 	stdout.write(buildDocs());
 	return 0;
+}
+
+async function runInitCli(args: string[]): Promise<number> {
+	let name: string | undefined;
+	let version: string | undefined;
+	let force = false;
+	for (let i = 0; i < args.length; i++) {
+		const a = args[i]!;
+		if (a === "--force") {
+			force = true;
+			continue;
+		}
+		if (a === "--name") {
+			const v = args[++i];
+			if (!v) {
+				stderr.write("error: --name requires a value\n");
+				return 1;
+			}
+			name = v;
+			continue;
+		}
+		if (a.startsWith("--name=")) {
+			name = a.slice("--name=".length);
+			continue;
+		}
+		if (a === "--version") {
+			const v = args[++i];
+			if (!v) {
+				stderr.write("error: --version requires a value\n");
+				return 1;
+			}
+			version = v;
+			continue;
+		}
+		if (a.startsWith("--version=")) {
+			version = a.slice("--version=".length);
+			continue;
+		}
+		if (a.startsWith("-")) {
+			stderr.write(`error: unknown flag: ${a}\n`);
+			return 1;
+		}
+		stderr.write(`error: unexpected argument: ${a}\n`);
+		return 1;
+	}
+
+	try {
+		const r = await runInit(cwd(), { name, version, force });
+		stdout.write(`created package "${r.name}":\n`);
+		for (const f of r.files) {
+			stdout.write(`  ${f}\n`);
+		}
+		stdout.write(
+			`\nnext steps:\n  espeto test .            # run tests\n  espeto add <url>@<ver>   # add a dependency\n  espeto publish           # publish via git tag\n`,
+		);
+		return 0;
+	} catch (e) {
+		if (e instanceof InitError) {
+			stderr.write(`error: ${e.message}\n`);
+			return 1;
+		}
+		stderr.write(`error: ${e instanceof Error ? e.message : String(e)}\n`);
+		return 1;
+	}
 }
 
 async function runInstall(args: string[]): Promise<number> {

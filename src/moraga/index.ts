@@ -6,6 +6,7 @@ export * from "./lock";
 export * from "./install";
 export * from "./edit";
 export * from "./add";
+export * from "./init";
 export * from "./local";
 export * from "./local-edit";
 export * from "./link";
