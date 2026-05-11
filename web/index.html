@@ -80,6 +80,17 @@
     body[data-theme="dark"] .bg-orange-100 { background-color: #451a03; }
     body[data-theme="dark"] nav { background-color: rgba(10, 10, 12, 0.8); }
 
+    body[data-theme="dark"] .code-window {
+      background-color: #f0ede8;
+      color: #1a1a1a;
+    }
+    body[data-theme="dark"] .code-window .text-white\/50 { color: #6b7280; }
+    body[data-theme="dark"] .code-window .text-white\/40 { color: #9ca3af; }
+    body[data-theme="dark"] .code-window .border-white\/10 { border-color: rgba(0,0,0,0.12); }
+    body[data-theme="dark"] .code-window .text-white { color: #1a1a1a; }
+    body[data-theme="dark"] .code-window .text-gray-500 { color: #9ca3af; }
+    body[data-theme="dark"] .code-window .text-green-400 { color: #16a34a; }
+
     ::selection {
       background-color: var(--color-brand-purple);
       color: white;
@@ -164,11 +175,15 @@
           v0.2.1 en npm + brew
         </div>
         
-        <h1 class="text-6xl md:text-[5.5rem] leading-[0.95] mb-8">
+        <h1 class="text-6xl md:text-[5.5rem] leading-[0.95] mb-6">
           Funcional.<br/>
           Minimalista.<br/>
           <span class="text-gradient">Para CLIs.</span>
         </h1>
+
+        <p class="text-text-secondary text-base md:text-lg font-medium leading-relaxed mb-8 max-w-md">
+          No mess, no guess. Aquí no se alucina.
+        </p>
         
         <div class="flex flex-wrap items-center gap-3 text-sm md:text-base font-bold text-text-secondary mb-12">
           <span class="text-text-primary bg-surface px-3 py-1.5 rounded-md border border-border/50 shadow-sm">CLI first</span>
@@ -211,13 +226,6 @@
   <section id="features" class="py-24 bg-surface">
     <div class="max-w-7xl mx-auto px-6">
       
-      <div class="text-center mb-16">
-        <h2 class="text-4xl md:text-5xl mb-6">Menos ambigüedad, más precisión.</h2>
-        <p class="text-text-primary text-lg md:text-xl max-w-3xl mx-auto font-medium leading-relaxed border-l-4 border-text-primary pl-6 text-left inline-block">
-          Un lenguaje de programación pequeño, <strong class="text-[var(--color-brand-orange)]">pipe-céntrico</strong> y estructurado para que los modelos de IA lo escriban con precisión.
-        </p>
-      </div>
-
       <div class="flex flex-wrap justify-center gap-2 md:gap-4 mb-16">
         <button class="tab-btn active" onclick="openTab(event, 'tab-cli')">CLI Nativo</button>
         <button class="tab-btn" onclick="openTab(event, 'tab-llm')">LLM-Friendly</button>
