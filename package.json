@@ -1,6 +1,6 @@
 {
 	"name": "espeto",
-	"version": "0.2.1",
+	"version": "0.3.0",
 	"description": "Pipe-centric DSL for building CLIs.",
 	"license": "MIT",
 	"type": "module",
