@@ -38,7 +38,7 @@ function setupRepoWithRemote(opts: { name?: string; version?: string } = {}): {
 	const rootDir = mkTmp();
 	const bareDir = mkTmp("moraga-publish-int-bare-");
 
-	git(bareDir, "init", "-q", "--bare");
+	git(bareDir, "init", "-q", "--bare", "-b", "main");
 	git(rootDir, "init", "-q", "-b", "main");
 	git(rootDir, "config", "user.email", "test@example.com");
 	git(rootDir, "config", "user.name", "Test");

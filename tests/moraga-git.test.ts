@@ -42,7 +42,7 @@ function initRepo(): string {
 
 function initBareRemote(workingRepo: string, name = "origin"): string {
 	const bare = mkTmp("moraga-git-bare-");
-	git(bare, "init", "-q", "--bare");
+	git(bare, "init", "-q", "--bare", "-b", "main");
 	git(workingRepo, "remote", "add", name, bare);
 	git(workingRepo, "push", "-q", name, "main");
 	return bare;
