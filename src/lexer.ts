@@ -33,6 +33,7 @@ export type TokenType =
 	| "gte"
 	| "newline"
 	| "doc_line"
+	| "comment"
 	| "eof"
 	| "kw_def"
 	| "kw_defp"
@@ -123,9 +124,21 @@ class Lexer {
 				});
 				return;
 			}
+			const start = this.mark();
+			this.advance();
+			if (this.source[this.i] === " ") this.advance();
+			const contentStart = this.i;
 			while (this.i < this.source.length && this.source[this.i] !== "\n") {
 				this.advance();
 			}
+			const text = this.source
+				.slice(contentStart, this.i)
+				.replace(/[ \t]+$/, "");
+			this.out.push({
+				type: "comment",
+				value: text,
+				span: this.spanFrom(start),
+			});
 			return;
 		}
 
@@ -585,5 +598,8 @@ function isDigit(ch: string): boolean {
 }
 
 export function lex(source: string, file: string): Token[] {
-	return new Lexer(source, file).tokenize();
+	let normalized = source;
+	if (normalized.charCodeAt(0) === 0xfeff) normalized = normalized.slice(1);
+	normalized = normalized.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+	return new Lexer(normalized, file).tokenize();
 }

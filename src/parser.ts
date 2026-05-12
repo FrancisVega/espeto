@@ -6,6 +6,7 @@ import type {
 	Call,
 	CliType,
 	Cmd,
+	Comment,
 	DeclAttrs,
 	Expr,
 	FieldShorthand,
@@ -55,9 +56,9 @@ class Parser {
 		let testSeen = false;
 		const testNames = new Set<string>();
 		let nonImportSeen = false;
-		let pendingDocs = this.collectPendingDocs();
+		let prefix = this.gatherStmtPrefix();
 		while (!this.match("eof")) {
-			const item = this.parseTopLevelItem(pendingDocs);
+			const item = this.parseTopLevelItem(prefix.pendingDocs);
 			if (item.kind === "import") {
 				if (nonImportSeen) {
 					throw new EspetoError(
@@ -135,13 +136,37 @@ class Parser {
 					testSeen = true;
 				}
 			}
+			this.attachLeading(item, prefix.trivia);
+			const trailing = this.tryConsumeTrailing();
+			if (trailing) item.trailingComment = trailing;
 			items.push(item);
 			this.expectStmtEnd("eof");
-			this.skipNewlines();
-			pendingDocs = this.collectPendingDocs();
+			prefix = this.gatherStmtPrefix();
 		}
 		const span = items[0]?.span ?? this.peek().span;
-		return { kind: "module", items, span };
+		const mod: Module = { kind: "module", items, span };
+		if (prefix.trivia.leadingComments.length > 0) {
+			mod.danglingComments = prefix.trivia.leadingComments;
+		}
+		return mod;
+	}
+
+	private gatherStmtPrefix(): {
+		trivia: { leadingComments: Comment[]; leadingBlankLine: boolean };
+		pendingDocs: { doc: string; docSpan: Span } | undefined;
+	} {
+		const trivia = this.consumeStmtTrivia();
+		let pendingDocs = this.collectPendingDocs();
+		while (
+			pendingDocs === undefined &&
+			(this.match("comment") || this.match("newline"))
+		) {
+			const more = this.consumeStmtTrivia();
+			trivia.leadingComments.push(...more.leadingComments);
+			if (more.leadingBlankLine) trivia.leadingBlankLine = true;
+			pendingDocs = this.collectPendingDocs();
+		}
+		return { trivia, pendingDocs };
 	}
 
 	private parseTopLevelItem(pendingDocs?: { doc: string; docSpan: Span }): Item {
@@ -178,8 +203,9 @@ class Parser {
 		}
 		this.advance();
 		this.expect("kw_do", "'do' to open test block");
-		this.skipNewlines();
+		let trivia = this.consumeStmtTrivia();
 		const body: Stmt[] = [];
+		let danglingComments: Comment[] | undefined;
 		while (!this.match("kw_end")) {
 			if (this.match("eof")) {
 				throw new EspetoError(
@@ -188,25 +214,34 @@ class Parser {
 					this.source,
 				);
 			}
-			body.push(this.parseStmt());
+			const stmt = this.parseStmt();
+			this.attachLeading(stmt, trivia);
+			const trailing = this.tryConsumeTrailing();
+			if (trailing) stmt.trailingComment = trailing;
+			body.push(stmt);
 			this.expectStmtEnd("kw_end");
-			this.skipNewlines();
+			trivia = this.consumeStmtTrivia();
 		}
 		this.expect("kw_end", "'end' to close test");
-		if (body.length === 0) {
+		if (trivia.leadingComments.length > 0) {
+			danglingComments = trivia.leadingComments;
+		}
+		if (body.length === 0 && danglingComments === undefined) {
 			throw new EspetoError(
 				"test block must contain at least one statement",
 				kw.span,
 				this.source,
 			);
 		}
-		return {
+		const test: TestBlock = {
 			kind: "test",
 			name: nameTok.value,
 			nameSpan: nameTok.span,
 			body,
 			span: kw.span,
 		};
+		if (danglingComments) test.danglingComments = danglingComments;
+		return test;
 	}
 
 	private parseImport(): ImportItem {
@@ -303,7 +338,7 @@ class Parser {
 		const kw = this.advance();
 		const nameTok = this.expect("ident", "cmd name");
 		this.expect("kw_do", "'do' to open cmd block");
-		this.skipNewlines();
+		let trivia = this.consumeStmtTrivia();
 
 		const meta: MetaStmt[] = [];
 		while (this.match("kw_desc") || this.match("kw_version")) {
@@ -315,17 +350,18 @@ class Parser {
 				span: metaTok.span,
 			});
 			this.expectStmtEnd("kw_end");
-			this.skipNewlines();
+			trivia = this.consumeStmtTrivia();
 		}
 
 		const decls: (ArgDecl | FlagDecl)[] = [];
 		while (this.match("kw_arg") || this.match("kw_flag")) {
 			decls.push(this.parseDecl());
 			this.expectStmtEnd("kw_end");
-			this.skipNewlines();
+			trivia = this.consumeStmtTrivia();
 		}
 
 		const body: Stmt[] = [];
+		let danglingComments: Comment[] | undefined;
 		while (!this.match("kw_end")) {
 			if (this.match("eof")) {
 				throw new EspetoError(
@@ -348,13 +384,20 @@ class Parser {
 					this.source,
 				);
 			}
-			body.push(this.parseStmt());
+			const stmt = this.parseStmt();
+			this.attachLeading(stmt, trivia);
+			const trailing = this.tryConsumeTrailing();
+			if (trailing) stmt.trailingComment = trailing;
+			body.push(stmt);
 			this.expectStmtEnd("kw_end");
-			this.skipNewlines();
+			trivia = this.consumeStmtTrivia();
 		}
 		this.expect("kw_end", "'end' to close cmd");
+		if (trivia.leadingComments.length > 0) {
+			danglingComments = trivia.leadingComments;
+		}
 
-		return {
+		const cmd: Cmd = {
 			kind: "cmd",
 			name: nameTok.value,
 			meta,
@@ -362,13 +405,15 @@ class Parser {
 			body,
 			span: kw.span,
 		};
+		if (danglingComments) cmd.danglingComments = danglingComments;
+		return cmd;
 	}
 
 	private parseProgramDecl(): ProgramDecl {
 		const kw = this.advance();
 		const nameTok = this.expect("ident", "program name");
 		this.expect("kw_do", "'do' to open program block");
-		this.skipNewlines();
+		let trivia = this.consumeStmtTrivia();
 
 		const meta: MetaStmt[] = [];
 		while (this.match("kw_desc") || this.match("kw_version")) {
@@ -380,7 +425,7 @@ class Parser {
 				span: metaTok.span,
 			});
 			this.expectStmtEnd("kw_end");
-			this.skipNewlines();
+			trivia = this.consumeStmtTrivia();
 		}
 
 		const flags: FlagDecl[] = [];
@@ -388,7 +433,7 @@ class Parser {
 			const decl = this.parseDecl();
 			flags.push(decl as FlagDecl);
 			this.expectStmtEnd("kw_end");
-			this.skipNewlines();
+			trivia = this.consumeStmtTrivia();
 		}
 
 		if (this.match("kw_arg")) {
@@ -403,6 +448,9 @@ class Parser {
 		const cmdNames = new Set<string>();
 		while (this.match("kw_cmd")) {
 			const cmd = this.parseCmd();
+			this.attachLeading(cmd, trivia);
+			const trailing = this.tryConsumeTrailing();
+			if (trailing) cmd.trailingComment = trailing;
 			if (cmdNames.has(cmd.name)) {
 				throw new EspetoError(
 					`duplicate command '${cmd.name}' in program '${nameTok.value}'`,
@@ -424,7 +472,7 @@ class Parser {
 			}
 			cmds.push(cmd);
 			this.expectStmtEnd("kw_end");
-			this.skipNewlines();
+			trivia = this.consumeStmtTrivia();
 		}
 
 		if (!this.match("kw_end")) {
@@ -465,7 +513,7 @@ class Parser {
 			);
 		}
 
-		return {
+		const program: ProgramDecl = {
 			kind: "program",
 			name: nameTok.value,
 			meta,
@@ -473,6 +521,10 @@ class Parser {
 			cmds,
 			span: kw.span,
 		};
+		if (trivia.leadingComments.length > 0) {
+			program.danglingComments = trivia.leadingComments;
+		}
+		return program;
 	}
 
 	private parseDecl(): ArgDecl | FlagDecl {
@@ -585,9 +637,10 @@ class Parser {
 		this.expect("rparen", "')'");
 
 		let body: Stmt[];
+		let danglingComments: Comment[] | undefined;
 		if (this.match("kw_do")) {
 			this.advance();
-			this.skipNewlines();
+			let trivia = this.consumeStmtTrivia();
 			body = [];
 			while (!this.match("kw_end")) {
 				if (this.match("eof")) {
@@ -597,12 +650,19 @@ class Parser {
 						this.source,
 					);
 				}
-				body.push(this.parseStmt());
+				const stmt = this.parseStmt();
+				this.attachLeading(stmt, trivia);
+				const trailing = this.tryConsumeTrailing();
+				if (trailing) stmt.trailingComment = trailing;
+				body.push(stmt);
 				this.expectStmtEnd("kw_end");
-				this.skipNewlines();
+				trivia = this.consumeStmtTrivia();
 			}
 			this.expect("kw_end", "'end' to close def");
-			if (body.length === 0) {
+			if (trivia.leadingComments.length > 0) {
+				danglingComments = trivia.leadingComments;
+			}
+			if (body.length === 0 && danglingComments === undefined) {
 				throw new EspetoError(
 					"def block must contain at least one statement",
 					kw.span,
@@ -614,7 +674,7 @@ class Parser {
 			body = [this.parseExpr()];
 		}
 
-		return {
+		const fnDef: FnDef = {
 			kind: "fn_def",
 			name: nameTok.value,
 			nameSpan: nameTok.span,
@@ -626,6 +686,8 @@ class Parser {
 			docSpan: pendingDocs?.docSpan,
 			span: kw.span,
 		};
+		if (danglingComments) fnDef.danglingComments = danglingComments;
+		return fnDef;
 	}
 
 	private parseAssign(): AssignStmt {
@@ -754,7 +816,12 @@ class Parser {
 
 	private peekPastNewlines(): TokenType {
 		let j = this.i;
-		while (j < this.tokens.length && this.tokens[j]!.type === "newline") j++;
+		while (
+			j < this.tokens.length &&
+			(this.tokens[j]!.type === "newline" || this.tokens[j]!.type === "comment")
+		) {
+			j++;
+		}
 		return this.tokens[j]?.type ?? "eof";
 	}
 
@@ -954,7 +1021,9 @@ class Parser {
 		}
 
 		throw new EspetoError(
-			`unexpected token: ${tok.type}`,
+			tok.type === "comment"
+				? "comments inside expressions are not supported in v1"
+				: `unexpected token: ${tok.type}`,
 			tok.span,
 			this.source,
 		);
@@ -1097,9 +1166,10 @@ class Parser {
 		const kw = this.advance();
 		this.skipNewlines();
 		this.expect("kw_do", "'do' after 'try'");
-		this.skipNewlines();
+		let trivia = this.consumeStmtTrivia();
 
 		const tryBody: Stmt[] = [];
+		let tryDangling: Comment[] | undefined;
 		while (!this.match("kw_rescue")) {
 			if (this.match("eof")) {
 				throw new EspetoError(
@@ -1108,9 +1178,16 @@ class Parser {
 					this.source,
 				);
 			}
-			tryBody.push(this.parseStmt());
+			const stmt = this.parseStmt();
+			this.attachLeading(stmt, trivia);
+			const trailing = this.tryConsumeTrailing();
+			if (trailing) stmt.trailingComment = trailing;
+			tryBody.push(stmt);
 			this.expectStmtEnd("kw_rescue");
-			this.skipNewlines();
+			trivia = this.consumeStmtTrivia();
+		}
+		if (trivia.leadingComments.length > 0) {
+			tryDangling = trivia.leadingComments;
 		}
 
 		this.advance();
@@ -1121,9 +1198,10 @@ class Parser {
 		);
 		this.skipNewlines();
 		this.expect("fat_arrow", "'=>' after rescue binding");
-		this.skipNewlines();
+		trivia = this.consumeStmtTrivia();
 
 		const rescueBody: Stmt[] = [];
+		let rescueDangling: Comment[] | undefined;
 		while (!this.match("kw_end")) {
 			if (this.match("eof")) {
 				throw new EspetoError(
@@ -1132,13 +1210,20 @@ class Parser {
 					this.source,
 				);
 			}
-			rescueBody.push(this.parseStmt());
+			const stmt = this.parseStmt();
+			this.attachLeading(stmt, trivia);
+			const trailing = this.tryConsumeTrailing();
+			if (trailing) stmt.trailingComment = trailing;
+			rescueBody.push(stmt);
 			this.expectStmtEnd("kw_end");
-			this.skipNewlines();
+			trivia = this.consumeStmtTrivia();
 		}
 		this.advance();
+		if (trivia.leadingComments.length > 0) {
+			rescueDangling = trivia.leadingComments;
+		}
 
-		return {
+		const tryExpr: TryExpr = {
 			kind: "try",
 			tryBody,
 			errBinding: errIdent.value,
@@ -1146,6 +1231,9 @@ class Parser {
 			rescueBody,
 			span: kw.span,
 		};
+		if (tryDangling) tryExpr.tryDanglingComments = tryDangling;
+		if (rescueDangling) tryExpr.rescueDanglingComments = rescueDangling;
+		return tryExpr;
 	}
 
 	private parseStringTemplate(): StringExpr {
@@ -1192,6 +1280,13 @@ class Parser {
 
 	private expect(type: TokenType, what: string): Token {
 		const tok = this.peek();
+		if (tok.type === "comment") {
+			throw new EspetoError(
+				"comments inside expressions are not supported in v1",
+				tok.span,
+				this.source,
+			);
+		}
 		if (tok.type !== type) {
 			throw new EspetoError(
 				`expected ${what}, got ${tok.type}`,
@@ -1204,6 +1299,63 @@ class Parser {
 
 	private skipNewlines(): void {
 		while (this.match("newline")) this.advance();
+		if (this.match("comment")) {
+			throw new EspetoError(
+				"comments inside expressions are not supported in v1",
+				this.peek().span,
+				this.source,
+			);
+		}
+	}
+
+	private consumeStmtTrivia(): {
+		leadingComments: Comment[];
+		leadingBlankLine: boolean;
+	} {
+		let newlinesBefore = 0;
+		while (this.match("newline")) {
+			this.advance();
+			newlinesBefore++;
+		}
+		const leadingBlankLine = newlinesBefore >= 2;
+		const leadingComments: Comment[] = [];
+		while (this.match("comment")) {
+			const tok = this.advance();
+			leadingComments.push({ text: tok.value, span: tok.span });
+			while (this.match("newline")) this.advance();
+		}
+		return { leadingComments, leadingBlankLine };
+	}
+
+	private tryConsumeTrailing(): Comment | undefined {
+		if (!this.match("comment")) return undefined;
+		const tok = this.peek();
+		const lastTok = this.tokens[this.i - 1];
+		if (lastTok === undefined || lastTok.span.line !== tok.span.line) {
+			return undefined;
+		}
+		this.advance();
+		return { text: tok.value, span: tok.span };
+	}
+
+	private attachLeading(
+		node:
+			| Stmt
+			| Item
+			| FnDef
+			| AssignStmt
+			| Cmd
+			| ProgramDecl
+			| ImportItem
+			| TestBlock,
+		trivia: { leadingComments: Comment[]; leadingBlankLine: boolean },
+	): void {
+		if (trivia.leadingComments.length > 0) {
+			node.leadingComments = trivia.leadingComments;
+		}
+		if (trivia.leadingBlankLine) {
+			node.leadingBlankLine = true;
+		}
 	}
 
 	private collectPendingDocs():

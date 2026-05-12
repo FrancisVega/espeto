@@ -48,14 +48,16 @@ describe("lexer", () => {
 		]);
 	});
 
-	it("skips comments to end of line", () => {
+	it("emits comments as tokens until end of line", () => {
 		const tokens = lex(`"a" # this is a comment\n"b"`, "x.esp");
 		expect(tokens.map((t) => t.type)).toEqual([
 			"string",
+			"comment",
 			"newline",
 			"string",
 			"eof",
 		]);
+		expect(tokens[1]!.value).toBe("this is a comment");
 	});
 
 	it("throws on unterminated string", () => {
@@ -423,17 +425,20 @@ describe("lexer", () => {
 
 		it("treats `### foo` as a regular comment (strict marker)", () => {
 			const tokens = lex(`### foo`, "x.esp");
-			expect(tokens.map((t) => t.type)).toEqual(["eof"]);
+			expect(tokens.map((t) => t.type)).toEqual(["comment", "eof"]);
+			expect(tokens[0]!.value).toBe("## foo");
 		});
 
 		it("treats `##hello` as a regular comment (no space after ##)", () => {
 			const tokens = lex(`##hello`, "x.esp");
-			expect(tokens.map((t) => t.type)).toEqual(["eof"]);
+			expect(tokens.map((t) => t.type)).toEqual(["comment", "eof"]);
+			expect(tokens[0]!.value).toBe("#hello");
 		});
 
 		it("treats `##!important` as a regular comment", () => {
 			const tokens = lex(`##!important`, "x.esp");
-			expect(tokens.map((t) => t.type)).toEqual(["eof"]);
+			expect(tokens.map((t) => t.type)).toEqual(["comment", "eof"]);
+			expect(tokens[0]!.value).toBe("#!important");
 		});
 
 		it("does not interfere with `##{var}` inside strings", () => {

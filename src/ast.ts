@@ -1,5 +1,10 @@
 import type { Span } from "./errors";
 
+export type Comment = {
+	text: string;
+	span: Span;
+};
+
 export type Expr =
 	| StringExpr
 	| IntLiteral
@@ -41,6 +46,10 @@ export type BinaryOp = {
 	lhs: Expr;
 	rhs: Expr;
 	span: Span;
+	leadingComments?: Comment[];
+	trailingComment?: Comment;
+	leadingBlankLine?: boolean;
+	danglingComments?: Comment[];
 };
 
 export type UnaryOp = {
@@ -48,6 +57,10 @@ export type UnaryOp = {
 	op: UnaryOpKind;
 	operand: Expr;
 	span: Span;
+	leadingComments?: Comment[];
+	trailingComment?: Comment;
+	leadingBlankLine?: boolean;
+	danglingComments?: Comment[];
 };
 
 export type IfBranch = {
@@ -60,6 +73,10 @@ export type IfExpr = {
 	branches: IfBranch[];
 	elseBody?: Expr;
 	span: Span;
+	leadingComments?: Comment[];
+	trailingComment?: Comment;
+	leadingBlankLine?: boolean;
+	danglingComments?: Comment[];
 };
 
 export type LambdaExpr = {
@@ -68,12 +85,20 @@ export type LambdaExpr = {
 	paramSpans?: Span[];
 	body: Expr;
 	span: Span;
+	leadingComments?: Comment[];
+	trailingComment?: Comment;
+	leadingBlankLine?: boolean;
+	danglingComments?: Comment[];
 };
 
 export type ListExpr = {
 	kind: "list";
 	items: Expr[];
 	span: Span;
+	leadingComments?: Comment[];
+	trailingComment?: Comment;
+	leadingBlankLine?: boolean;
+	danglingComments?: Comment[];
 };
 
 export type MapEntry = {
@@ -86,6 +111,10 @@ export type MapExpr = {
 	kind: "map";
 	entries: MapEntry[];
 	span: Span;
+	leadingComments?: Comment[];
+	trailingComment?: Comment;
+	leadingBlankLine?: boolean;
+	danglingComments?: Comment[];
 };
 
 export type FieldAccess = {
@@ -94,12 +123,20 @@ export type FieldAccess = {
 	field: string;
 	fieldSpan: Span;
 	span: Span;
+	leadingComments?: Comment[];
+	trailingComment?: Comment;
+	leadingBlankLine?: boolean;
+	danglingComments?: Comment[];
 };
 
 export type FieldShorthand = {
 	kind: "field_shorthand";
 	field: string;
 	span: Span;
+	leadingComments?: Comment[];
+	trailingComment?: Comment;
+	leadingBlankLine?: boolean;
+	danglingComments?: Comment[];
 };
 
 export type TryExpr = {
@@ -109,12 +146,22 @@ export type TryExpr = {
 	errBindingSpan: Span;
 	rescueBody: Stmt[];
 	span: Span;
+	leadingComments?: Comment[];
+	trailingComment?: Comment;
+	leadingBlankLine?: boolean;
+	danglingComments?: Comment[];
+	tryDanglingComments?: Comment[];
+	rescueDanglingComments?: Comment[];
 };
 
 export type AssertExpr = {
 	kind: "assert";
 	expr: Expr;
 	span: Span;
+	leadingComments?: Comment[];
+	trailingComment?: Comment;
+	leadingBlankLine?: boolean;
+	danglingComments?: Comment[];
 };
 
 export type TestBlock = {
@@ -123,41 +170,69 @@ export type TestBlock = {
 	nameSpan: Span;
 	body: Stmt[];
 	span: Span;
+	leadingComments?: Comment[];
+	trailingComment?: Comment;
+	leadingBlankLine?: boolean;
+	danglingComments?: Comment[];
 };
 
 export type StringExpr = {
 	kind: "string";
 	parts: (string | Expr)[];
 	span: Span;
+	leadingComments?: Comment[];
+	trailingComment?: Comment;
+	leadingBlankLine?: boolean;
+	danglingComments?: Comment[];
 };
 
 export type IntLiteral = {
 	kind: "int";
 	value: number;
 	span: Span;
+	leadingComments?: Comment[];
+	trailingComment?: Comment;
+	leadingBlankLine?: boolean;
+	danglingComments?: Comment[];
 };
 
 export type FloatLiteral = {
 	kind: "float";
 	value: number;
 	span: Span;
+	leadingComments?: Comment[];
+	trailingComment?: Comment;
+	leadingBlankLine?: boolean;
+	danglingComments?: Comment[];
 };
 
 export type BoolLiteral = {
 	kind: "bool";
 	value: boolean;
 	span: Span;
+	leadingComments?: Comment[];
+	trailingComment?: Comment;
+	leadingBlankLine?: boolean;
+	danglingComments?: Comment[];
 };
 
 export type NilLiteral = {
 	kind: "nil";
 	span: Span;
+	leadingComments?: Comment[];
+	trailingComment?: Comment;
+	leadingBlankLine?: boolean;
+	danglingComments?: Comment[];
 };
 
 export type Identifier = {
 	kind: "ident";
 	name: string;
 	span: Span;
+	leadingComments?: Comment[];
+	trailingComment?: Comment;
+	leadingBlankLine?: boolean;
+	danglingComments?: Comment[];
 };
 
 export type Call = {
@@ -165,6 +240,10 @@ export type Call = {
 	callee: Expr;
 	args: Expr[];
 	span: Span;
+	leadingComments?: Comment[];
+	trailingComment?: Comment;
+	leadingBlankLine?: boolean;
+	danglingComments?: Comment[];
 };
 
 export type PipeExpr = {
@@ -172,6 +251,10 @@ export type PipeExpr = {
 	lhs: Expr;
 	rhs: Call;
 	span: Span;
+	leadingComments?: Comment[];
+	trailingComment?: Comment;
+	leadingBlankLine?: boolean;
+	danglingComments?: Comment[];
 };
 
 export type FnDef = {
@@ -185,6 +268,10 @@ export type FnDef = {
 	doc?: string;
 	docSpan?: Span;
 	span: Span;
+	leadingComments?: Comment[];
+	trailingComment?: Comment;
+	leadingBlankLine?: boolean;
+	danglingComments?: Comment[];
 };
 
 export type AssignStmt = {
@@ -192,6 +279,10 @@ export type AssignStmt = {
 	name: string;
 	value: Expr;
 	span: Span;
+	leadingComments?: Comment[];
+	trailingComment?: Comment;
+	leadingBlankLine?: boolean;
+	danglingComments?: Comment[];
 };
 
 export type Stmt = AssignStmt | Expr;
@@ -236,6 +327,10 @@ export type Cmd = {
 	decls: (ArgDecl | FlagDecl)[];
 	body: Stmt[];
 	span: Span;
+	leadingComments?: Comment[];
+	trailingComment?: Comment;
+	leadingBlankLine?: boolean;
+	danglingComments?: Comment[];
 };
 
 export type ProgramDecl = {
@@ -245,6 +340,10 @@ export type ProgramDecl = {
 	flags: FlagDecl[];
 	cmds: Cmd[];
 	span: Span;
+	leadingComments?: Comment[];
+	trailingComment?: Comment;
+	leadingBlankLine?: boolean;
+	danglingComments?: Comment[];
 };
 
 export type ImportSelector = {
@@ -260,6 +359,10 @@ export type ImportItem = {
 	pathSpan: Span;
 	only?: ImportSelector[];
 	span: Span;
+	leadingComments?: Comment[];
+	trailingComment?: Comment;
+	leadingBlankLine?: boolean;
+	danglingComments?: Comment[];
 };
 
 export type Item =
@@ -275,4 +378,5 @@ export type Module = {
 	kind: "module";
 	items: Item[];
 	span: Span;
+	danglingComments?: Comment[];
 };
