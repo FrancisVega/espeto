@@ -1,13 +1,13 @@
 cmd inventario do
-  items = [
-    {name: "espada", precio: 100, en_stock: true},
-    {name: "escudo", precio: 50, en_stock: false},
-    {name: "poción", precio: 20, en_stock: true}
-  ]
+	items = [
+		{name: "espada", precio: 100, en_stock: true},
+		{name: "escudo", precio: 50, en_stock: false},
+		{name: "poción", precio: 20, en_stock: true},
+	]
 
-  disponibles = items |> filter(.en_stock) |> map(.name)
-  total = items |> filter(.en_stock) |> map(.precio) |> reduce(0, fn(acc, n) => acc + n)
+	disponibles = items |> filter(.en_stock) |> map(.name)
+	total = items |> filter(.en_stock) |> map(.precio) |> reduce(0, fn(acc, n) => acc + n)
 
-  "Disponibles: #{disponibles}" |> print
-  "Precio total: #{total}" |> print
+	"Disponibles: #{disponibles}" |> print
+	"Precio total: #{total}" |> print
 end

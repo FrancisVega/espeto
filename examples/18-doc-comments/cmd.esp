@@ -1,13 +1,9 @@
 import "./greeter" only [saludar, gritar]
 
 cmd hola do
-  desc "doc-comments en defs (hover en LSP)"
-  arg name: str
-  flag loud: bool = false
+	desc "doc-comments en defs (hover en LSP)"
+	arg name: str
+	flag loud: bool = false
 
-  if loud do
-    gritar(name) |> print
-  else
-    saludar(name) |> print
-  end
+	if loud do gritar(name) |> print else saludar(name) |> print end
 end

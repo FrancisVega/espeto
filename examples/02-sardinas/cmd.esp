@@ -1,4 +1,1 @@
-"  sardinas frescas  "
-	|> trim
-	|> upcase
-	|> print
+"  sardinas frescas  " |> trim |> upcase |> print

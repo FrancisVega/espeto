@@ -1,7 +1,7 @@
 cmd hola do
-  arg name: str
-  flag loud: bool = false
+	arg name: str
+	flag loud: bool = false
 
-  greeting = "Hola, #{name}!"
-  greeting |> when(loud, upcase) |> print
+	greeting = "Hola, #{name}!"
+	greeting |> when(loud, upcase) |> print
 end

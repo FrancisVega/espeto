@@ -1,7 +1,4 @@
 cmd active_users do
-  users = parse_json(read("#{__dir__}/users.json"))
-  users
-    |> filter(.active)
-    |> map(.name)
-    |> each(print)
+	users = parse_json(read("#{__dir__}/users.json"))
+	users |> filter(.active) |> map(.name) |> each(print)
 end

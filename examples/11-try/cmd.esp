@@ -1,22 +1,18 @@
 cmd parseint do
-  arg val: str
-  flag fallback: int = 0
+	arg val: str
+	flag fallback: int = 0
 
-  # fallback simple
-  n = try do
-    to_int(val)
-  rescue err =>
-    fallback
-  end
+	# fallback simple
+	n = try do to_int(val) rescue err => fallback end
 
-  # con detalle
-  detail = try do
-    parsed = to_int(val)
-    "ok: #{parsed}"
-  rescue err =>
-    "fail: #{err}"
-  end
+	# con detalle
+	detail = try do
+		parsed = to_int(val)
+		"ok: #{parsed}"
+	rescue err =>
+		"fail: #{err}"
+	end
 
-  "n=#{n}" |> print
-  detail |> print
+	"n=#{n}" |> print
+	detail |> print
 end

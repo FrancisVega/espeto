@@ -1,12 +1,12 @@
 cmd edad do
-  arg years: int
+	arg years: int
 
-  msg = if years < 18 do
-          "menor"
-        else if years < 65 do
-          "adulto"
-        else
-          "mayor"
-        end
-  msg |> print
+	msg = if years < 18 do
+		"menor"
+	else if years < 65 do
+		"adulto"
+	else
+		"mayor"
+	end
+	msg |> print
 end

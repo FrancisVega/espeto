@@ -1,7 +1,7 @@
 import "./format" only [bullet]
 
 cmd greet do
-  arg name: str
+	arg name: str
 
-  "Hola, #{name}!" |> bullet |> print
+	"Hola, #{name}!" |> bullet |> print
 end

@@ -1,28 +1,23 @@
 import "./format" only [bullet]
 
 cmd users do
-  desc "Lista usuarios activos desde un fichero JSON."
-  version "0.1.0"
+	desc "Lista usuarios activos desde un fichero JSON."
+	version "0.1.0"
+	arg file: str, desc: "ruta al fichero JSON"
+	flag min_age: int = 0, short: "a", desc: "edad mínima"
+	flag loud: bool = false, short: "l", desc: "saluda gritando"
 
-  arg file: str, desc: "ruta al fichero JSON"
-  flag min_age: int = 0, short: "a", desc: "edad mínima"
-  flag loud: bool = false, short: "l", desc: "saluda gritando"
+	data = try do file |> read |> parse_json rescue err => raise("No pude leer #{file}: #{err}") end
 
-  data = try do
-    file |> read |> parse_json
-  rescue err =>
-    raise("No pude leer #{file}: #{err}")
-  end
-
-  data
-    |> filter(fn u => u.active and u.age >= min_age)
-    |> sort_by(.age)
-    |> map(.name)
-    |> map(fn n => saludar(n, loud))
-    |> each(fn s => bullet(s) |> print)
+	data
+	|> filter(fn u => u.active and u.age >= min_age)
+	|> sort_by(.age)
+	|> map(.name)
+	|> map(fn n => saludar(n, loud))
+	|> each(fn s => bullet(s) |> print)
 end
 
 def saludar(name, loud) do
-  base = "Hola, #{name}!"
-  if loud do upcase(base) else base end
+	base = "Hola, #{name}!"
+	if loud do upcase(base) else base end
 end
