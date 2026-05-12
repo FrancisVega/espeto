@@ -1,0 +1,609 @@
+import { describe, expect, it } from "vitest";
+import type { Module } from "../src/ast";
+import { format } from "../src/format";
+import { lex } from "../src/lexer";
+import { parse } from "../src/parser";
+
+function ast(src: string): Module {
+	return parse(lex(src, "x.esp"), src);
+}
+
+function fmt(src: string): string {
+	return format(ast(src));
+}
+
+describe("format: literals & idents", () => {
+	it("int", () => {
+		expect(fmt("42")).toBe("42\n");
+	});
+
+	it("float preserves trailing zero", () => {
+		expect(fmt("1.0")).toBe("1.0\n");
+	});
+
+	it("float with fractional", () => {
+		expect(fmt("3.14")).toBe("3.14\n");
+	});
+
+	it("float whole-number value", () => {
+		expect(fmt("5.0")).toBe("5.0\n");
+	});
+
+	it("bool true/false", () => {
+		expect(fmt("true")).toBe("true\n");
+		expect(fmt("false")).toBe("false\n");
+	});
+
+	it("nil", () => {
+		expect(fmt("nil")).toBe("nil\n");
+	});
+
+	it("identifier", () => {
+		expect(fmt("foo")).toBe("foo\n");
+	});
+
+	it("string plain", () => {
+		expect(fmt(`"hola"`)).toBe(`"hola"\n`);
+	});
+
+	it("string with escapes", () => {
+		expect(fmt(`"a\\nb\\tc"`)).toBe(`"a\\nb\\tc"\n`);
+	});
+
+	it("string with quote escape", () => {
+		expect(fmt(`"a\\"b"`)).toBe(`"a\\"b"\n`);
+	});
+
+	it("string with backslash escape", () => {
+		expect(fmt(`"a\\\\b"`)).toBe(`"a\\\\b"\n`);
+	});
+
+	it("string with interp", () => {
+		expect(fmt(`"hi #{name}"`)).toBe(`"hi #{name}"\n`);
+	});
+
+	it("string with multiple interps", () => {
+		expect(fmt(`"#{a} y #{b}"`)).toBe(`"#{a} y #{b}"\n`);
+	});
+
+	it("string with escaped interp", () => {
+		expect(fmt(`"a\\#{b}"`)).toBe(`"a\\#{b}"\n`);
+	});
+});
+
+describe("format: binops naive", () => {
+	it("simple addition", () => {
+		expect(fmt("1 + 2")).toBe("1 + 2\n");
+	});
+
+	it("left-assoc chain", () => {
+		expect(fmt("1 + 2 + 3")).toBe("1 + 2 + 3\n");
+	});
+
+	it("mixed precedence", () => {
+		expect(fmt("1 + 2 * 3")).toBe("1 + 2 * 3\n");
+	});
+
+	it("parens required: lower prec lhs", () => {
+		expect(fmt("(a + b) * c")).toBe("(a + b) * c\n");
+	});
+
+	it("no parens: same-prec lhs (left-assoc)", () => {
+		expect(fmt("a + b + c")).toBe("a + b + c\n");
+	});
+
+	it("parens for non-canonical right-leaning", () => {
+		expect(fmt("a + (b + c)")).toBe("a + (b + c)\n");
+	});
+
+	it("comparison no chain", () => {
+		expect(fmt("a < b")).toBe("a < b\n");
+	});
+
+	it("and/or", () => {
+		expect(fmt("a and b or c")).toBe("a and b or c\n");
+	});
+
+	it("equality", () => {
+		expect(fmt("a == b")).toBe("a == b\n");
+	});
+});
+
+describe("format: unop", () => {
+	it("unary minus", () => {
+		expect(fmt("-x")).toBe("-x\n");
+	});
+
+	it("not", () => {
+		expect(fmt("not x")).toBe("not x\n");
+	});
+
+	it("unary on parens", () => {
+		expect(fmt("-(a + b)")).toBe("-(a + b)\n");
+	});
+
+	it("not on parens", () => {
+		expect(fmt("not (a and b)")).toBe("not (a and b)\n");
+	});
+
+	it("double negation", () => {
+		expect(fmt("not not x")).toBe("not not x\n");
+	});
+
+	it("unary inside binop wraps if needed", () => {
+		expect(fmt("a + -b")).toBe("a + -b\n");
+	});
+});
+
+describe("format: pipe naive", () => {
+	it("simple pipe", () => {
+		expect(fmt("a |> b")).toBe("a |> b\n");
+	});
+
+	it("pipe with args", () => {
+		expect(fmt("a |> b(c)")).toBe("a |> b(c)\n");
+	});
+
+	it("pipe with placeholder", () => {
+		expect(fmt("a |> b(_, c)")).toBe("a |> b(_, c)\n");
+	});
+
+	it("pipe chain", () => {
+		expect(fmt("a |> b |> c")).toBe("a |> b |> c\n");
+	});
+
+	it("pipe with field shorthand", () => {
+		expect(fmt("xs |> map(.name)")).toBe("xs |> map(.name)\n");
+	});
+
+	it("pipe rhs is bare .field shortcut", () => {
+		expect(fmt("xs |> .name")).toBe("xs |> .name\n");
+	});
+
+	it("pipe with lambda rhs", () => {
+		expect(fmt("xs |> fn x => x + 1")).toBe("xs |> fn x => x + 1\n");
+	});
+
+	it("pipe lhs with binop needs parens", () => {
+		expect(fmt("(a + b) |> f")).toBe("(a + b) |> f\n");
+	});
+
+	it("pipe inside additive — no parens (pipe > add)", () => {
+		expect(fmt("a + b |> f")).toBe("a + b |> f\n");
+	});
+});
+
+describe("format: call & field access", () => {
+	it("plain call", () => {
+		expect(fmt("f(x)")).toBe("f(x)\n");
+	});
+
+	it("call no args", () => {
+		expect(fmt("f()")).toBe("f()\n");
+	});
+
+	it("call many args", () => {
+		expect(fmt("f(a, b, c)")).toBe("f(a, b, c)\n");
+	});
+
+	it("chained call", () => {
+		expect(fmt("f(x)(y)")).toBe("f(x)(y)\n");
+	});
+
+	it("field access", () => {
+		expect(fmt("a.b")).toBe("a.b\n");
+	});
+
+	it("nested field access", () => {
+		expect(fmt("a.b.c")).toBe("a.b.c\n");
+	});
+
+	it("field on call", () => {
+		expect(fmt("f(x).name")).toBe("f(x).name\n");
+	});
+
+	it("field shorthand as expr", () => {
+		expect(fmt(".name")).toBe(".name\n");
+	});
+});
+
+describe("format: list", () => {
+	it("empty list", () => {
+		expect(fmt("[]")).toBe("[]\n");
+	});
+
+	it("inline list", () => {
+		expect(fmt("[1, 2, 3]")).toBe("[1, 2, 3]\n");
+	});
+
+	it("nested list inline", () => {
+		expect(fmt("[[1, 2], [3, 4]]")).toBe("[[1, 2], [3, 4]]\n");
+	});
+
+	it("list wraps multi-line when too wide", () => {
+		const longList = `[${"abcdefghij, ".repeat(10).slice(0, -2)}]`;
+		const out = fmt(longList);
+		expect(out).toContain("[\n\t");
+		expect(out).toContain(",\n]");
+	});
+});
+
+describe("format: map", () => {
+	it("empty map", () => {
+		expect(fmt("{}")).toBe("{}\n");
+	});
+
+	it("inline map", () => {
+		expect(fmt(`{a: 1, b: 2}`)).toBe(`{a: 1, b: 2}\n`);
+	});
+
+	it("map with various values", () => {
+		expect(fmt(`{name: "foo", price: 10}`)).toBe(
+			`{name: "foo", price: 10}\n`,
+		);
+	});
+});
+
+describe("format: lambda", () => {
+	it("single-param no parens", () => {
+		expect(fmt("fn x => x + 1")).toBe("fn x => x + 1\n");
+	});
+
+	it("multi-param with parens", () => {
+		expect(fmt("fn(a, b) => a + b")).toBe("fn(a, b) => a + b\n");
+	});
+
+	it("zero-param", () => {
+		expect(fmt("fn() => 42")).toBe("fn() => 42\n");
+	});
+
+	it("normalizes single-param paren form", () => {
+		// User wrote with parens; canonical is no parens for single.
+		expect(fmt("fn(x) => x")).toBe("fn x => x\n");
+	});
+});
+
+describe("format: if", () => {
+	it("inline single-branch with else", () => {
+		expect(fmt("if c do a else b end")).toBe("if c do a else b end\n");
+	});
+
+	it("inline single-branch no else", () => {
+		expect(fmt("if c do a end")).toBe("if c do a end\n");
+	});
+
+	it("else-if chain always multi-line", () => {
+		const src = `if a do 1 else if b do 2 else 3 end`;
+		const out = fmt(src);
+		expect(out).toBe(
+			[
+				"if a do",
+				"\t1",
+				"else if b do",
+				"\t2",
+				"else",
+				"\t3",
+				"end",
+				"",
+			].join("\n"),
+		);
+	});
+
+	it("breaks when too wide", () => {
+		const src = `if some_really_really_long_condition_here do "a_long_branch_value_indeed" else "another_really_long_branch_value" end`;
+		const out = fmt(src);
+		expect(out).toContain("\n\t");
+		expect(out).toContain("\nend");
+	});
+});
+
+describe("format: try", () => {
+	it("inline try when both bodies single expr", () => {
+		expect(fmt("try do read(f) rescue err => 0 end")).toBe(
+			"try do read(f) rescue err => 0 end\n",
+		);
+	});
+
+	it("multi-line when tryBody has assignment", () => {
+		const src = ["try do", "x = 1", "x + 1", "rescue err =>", "0", "end"].join(
+			"\n",
+		);
+		const out = fmt(src);
+		expect(out).toContain("try do\n");
+		expect(out).toContain("rescue err =>");
+		expect(out).toMatch(/\nend\n$/);
+	});
+});
+
+describe("format: assert", () => {
+	it("assert with simple expr", () => {
+		expect(fmt("assert 1 == 1")).toBe("assert 1 == 1\n");
+	});
+
+	it("assert with call", () => {
+		expect(fmt("assert f(x)")).toBe("assert f(x)\n");
+	});
+});
+
+describe("format: def", () => {
+	it("inline single-expr def", () => {
+		expect(fmt("def f(x) = x + 1")).toBe("def f(x) = x + 1\n");
+	});
+
+	it("multi-stmt def uses do/end", () => {
+		const src = ["def f(x) do", "y = x + 1", "y * 2", "end"].join("\n");
+		expect(fmt(src)).toBe(
+			["def f(x) do", "\ty = x + 1", "\ty * 2", "end", ""].join("\n"),
+		);
+	});
+
+	it("defp emits private form", () => {
+		expect(fmt("defp f(x) = x")).toBe("defp f(x) = x\n");
+	});
+
+	it("def with doc comment", () => {
+		const src = `## Saluda a alguien.\ndef saludar(name) = "Hola, #{name}!"`;
+		expect(fmt(src)).toBe(
+			[
+				"## Saluda a alguien.",
+				`def saludar(name) = "Hola, #{name}!"`,
+				"",
+			].join("\n"),
+		);
+	});
+
+	it("def with multi-line doc", () => {
+		const src = `## Line 1.\n## \n## Line 3.\ndef f(x) = x`;
+		expect(fmt(src)).toBe(
+			["## Line 1.", "##", "## Line 3.", "def f(x) = x", ""].join("\n"),
+		);
+	});
+
+	it("def with long inline body breaks to do/end", () => {
+		const src = `def f(x) = some_really_really_long_function_name(another_really_long_arg_value_here, yet_more_args_here)`;
+		const out = fmt(src);
+		expect(out).toContain("def f(x) do\n\t");
+		expect(out).toContain("\nend");
+	});
+});
+
+describe("format: assign", () => {
+	it("simple assign", () => {
+		expect(fmt("x = 1")).toBe("x = 1\n");
+	});
+
+	it("assign with multi-line if", () => {
+		const src = `x = if a do 1 else if b do 2 else 3 end`;
+		const out = fmt(src);
+		expect(out).toBe(
+			[
+				"x = if a do",
+				"\t1",
+				"else if b do",
+				"\t2",
+				"else",
+				"\t3",
+				"end",
+				"",
+			].join("\n"),
+		);
+	});
+});
+
+describe("format: cmd", () => {
+	it("simple cmd", () => {
+		const src = `cmd hello do "hi" |> print end`;
+		expect(fmt(src)).toBe(
+			["cmd hello do", `\t"hi" |> print`, "end", ""].join("\n"),
+		);
+	});
+
+	it("cmd with meta and decls", () => {
+		const src = [
+			"cmd greet do",
+			`desc "say hi"`,
+			"arg name: str",
+			`msg = "Hola, #{name}!"`,
+			"msg |> print",
+			"end",
+		].join("\n");
+		const out = fmt(src);
+		expect(out).toContain("cmd greet do");
+		expect(out).toContain(`\tdesc "say hi"`);
+		expect(out).toContain("\targ name: str");
+		expect(out).toContain(`\tmsg = "Hola, #{name}!"`);
+		expect(out).toContain("\tmsg |> print");
+		expect(out).toMatch(/\nend\n$/);
+	});
+
+	it("flag decl with attrs", () => {
+		const src = [
+			"cmd c do",
+			`flag loud: bool = false, short: "l", desc: "loud"`,
+			`"x"`,
+			"end",
+		].join("\n");
+		const out = fmt(src);
+		expect(out).toContain(
+			`\tflag loud: bool = false, short: "l", desc: "loud"`,
+		);
+	});
+});
+
+describe("format: program", () => {
+	it("program with cmds", () => {
+		const src = [
+			"program todo do",
+			`desc "x"`,
+			"cmd a do",
+			`"1"`,
+			"end",
+			"cmd b do",
+			`"2"`,
+			"end",
+			"end",
+		].join("\n");
+		const out = fmt(src);
+		expect(out).toContain("program todo do");
+		expect(out).toContain(`\tdesc "x"`);
+		expect(out).toContain("\tcmd a do");
+		expect(out).toContain("\tcmd b do");
+		expect(out).toMatch(/\nend\n$/);
+	});
+});
+
+describe("format: test", () => {
+	it("test block", () => {
+		const src = `test "x" do assert 1 == 1 end`;
+		expect(fmt(src)).toBe(
+			[`test "x" do`, "\tassert 1 == 1", "end", ""].join("\n"),
+		);
+	});
+});
+
+describe("format: import", () => {
+	it("import without only", () => {
+		expect(fmt(`import "./foo"`)).toBe(`import "./foo"\n`);
+	});
+
+	it("import with only", () => {
+		expect(fmt(`import "./foo" only [a, b]`)).toBe(
+			`import "./foo" only [a, b]\n`,
+		);
+	});
+
+	it("import with alias", () => {
+		expect(fmt(`import "./foo" only [a as b]`)).toBe(
+			`import "./foo" only [a as b]\n`,
+		);
+	});
+
+	it("import wraps when too wide", () => {
+		const src = `import "./very_long_path_name_here_yes_yes" only [abc, ddd, ggg, jjj, mmm, ppp, sss, vvv, www, zzz, qqq]`;
+		const out = fmt(src);
+		expect(out).toContain("only [\n\t");
+		expect(out).toContain(",\n]");
+	});
+});
+
+describe("format: top-level", () => {
+	it("blank line between items", () => {
+		const src = `import "./x"\ncmd hi do "hi" end`;
+		expect(fmt(src)).toBe(
+			[`import "./x"`, "", "cmd hi do", `\t"hi"`, "end", ""].join("\n"),
+		);
+	});
+
+	it("multiple defs separated by blank lines", () => {
+		const src = `def f(x) = x\ndef g(y) = y`;
+		expect(fmt(src)).toBe(
+			["def f(x) = x", "", "def g(y) = y", ""].join("\n"),
+		);
+	});
+});
+
+describe("format: idempotency on canonical inputs", () => {
+	const canonical = [
+		"42\n",
+		"1.0\n",
+		`"hola"\n`,
+		`"hi #{name}"\n`,
+		"a + b * c\n",
+		"(a + b) * c\n",
+		"a |> b |> c\n",
+		"a |> map(fn x => x + 1)\n",
+		"xs |> filter(.activo)\n",
+		"[1, 2, 3]\n",
+		"{a: 1, b: 2}\n",
+		"if c do a else b end\n",
+		"fn x => x + 1\n",
+		"fn(a, b) => a + b\n",
+		"def f(x) = x + 1\n",
+		`def saludar(name) = "Hola, #{name}!"\n`,
+		"x = 1\n",
+		`import "./foo" only [a, b]\n`,
+		[
+			"if a do",
+			"\t1",
+			"else if b do",
+			"\t2",
+			"else",
+			"\t3",
+			"end",
+			"",
+		].join("\n"),
+		["cmd hello do", `\t"hi" |> print`, "end", ""].join("\n"),
+		[`test "adds" do`, "\tassert 1 + 1 == 2", "end", ""].join("\n"),
+	];
+
+	for (const src of canonical) {
+		const preview = src.replace(/\n/g, "\\n").slice(0, 50);
+		it(`canonical: ${preview}`, () => {
+			expect(fmt(src)).toBe(src);
+		});
+	}
+});
+
+describe("format: round-trip stability", () => {
+	const inputs = [
+		"1+2",
+		"a+b+c",
+		"a |> b |> c",
+		"if c do a else b end",
+		`if a do 1 else if b do 2 else 3 end`,
+		"def f(x)=x+1",
+		"[ 1 , 2 , 3 ]",
+		"{ a : 1 , b : 2 }",
+		`import "./foo"  only  [ a , b ]`,
+		"fn(x)=>x",
+		"cmd hello do\n\"hi\"|>print\nend",
+	];
+
+	for (const src of inputs) {
+		const preview = src.replace(/\n/g, "\\n").slice(0, 50);
+		it(`stable: ${preview}`, () => {
+			const once = fmt(src);
+			const twice = fmt(once);
+			expect(twice).toBe(once);
+		});
+	}
+});
+
+describe("Lindig core: render", () => {
+	// We exercise the core indirectly via format(). These tests check the
+	// observable shape: width breaks, indent, group flat-vs-break.
+
+	it("respects 100-col width: short list inline", () => {
+		const src = "[1, 2, 3]";
+		expect(fmt(src)).toBe("[1, 2, 3]\n");
+	});
+
+	it("forces break when content exceeds width", () => {
+		const items = Array.from(
+			{ length: 14 },
+			(_, i) => `long_item_name_${i}`,
+		).join(", ");
+		const src = `[${items}]`;
+		const out = fmt(src);
+		const lines = out.split("\n");
+		expect(lines.length).toBeGreaterThan(2);
+		expect(lines[0]).toBe("[");
+		for (let i = 1; i < lines.length - 2; i++) {
+			expect(lines[i]!.startsWith("\t")).toBe(true);
+		}
+	});
+
+	it("uses tabs not spaces for indent", () => {
+		const src = `cmd c do
+\t\t"a"
+end`;
+		const out = fmt(src);
+		expect(out).toContain("\n\t");
+		expect(out).not.toMatch(/\n  [^\t]/); // no two-space indent
+	});
+
+	it("trailing newline always exactly one", () => {
+		expect(fmt("1").endsWith("\n")).toBe(true);
+		expect(fmt("1").endsWith("\n\n")).toBe(false);
+	});
+});
