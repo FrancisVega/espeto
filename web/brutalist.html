@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Espeto · Specimen</title>
+  <meta
+    name="description"
+    content="Lenguaje funcional pequeño para construir CLIs. Pipe-céntrico, diseñado para que los LLMs lo escriban con precisión."
+  />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+    rel="stylesheet"
+  />
+
+  <style>
+    :root {
+      --bg: #c8c8c8;
+      --bg-deep: #b8b8b8;
+      --ink: #000;
+      --paper: #d8d8d8;
+      --accent: #ff4500;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Inter', -apple-system, system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    ::selection { background: var(--ink); color: var(--bg); }
+
+    .display { font-family: 'Archivo Black', 'Inter', sans-serif; font-weight: 900; letter-spacing: -0.03em; line-height: 0.85; }
+    .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+    /* ------ pill button ------ */
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.55rem 1.4rem;
+      border: 1.5px solid var(--ink);
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.75rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--ink);
+      text-decoration: none;
+      background: transparent;
+      transition: background 0.15s, color 0.15s;
+    }
+    .pill:hover { background: var(--ink); color: var(--bg); }
+    .pill.filled { background: var(--ink); color: var(--bg); }
+    .pill.filled:hover { background: var(--bg); color: var(--ink); }
+
+    /* ------ bleed wordmark ------ */
+    .bleed {
+      font-family: 'Archivo Black', sans-serif;
+      font-size: clamp(8rem, 28vw, 28rem);
+      line-height: 0.78;
+      letter-spacing: -0.06em;
+      margin: 0;
+      padding: 0;
+      color: var(--ink);
+      white-space: nowrap;
+      transform: translateY(-0.05em);
+    }
+    .bleed-wrap {
+      overflow: hidden;
+      border-bottom: 1.5px solid var(--ink);
+      padding-bottom: 0;
+    }
+
+    /* ------ cards ------ */
+    .card {
+      background: var(--paper);
+      border-radius: 1rem;
+      padding: 1.25rem 1.5rem;
+      min-height: 5.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .card-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(0,0,0,0.55);
+    }
+    .card-value {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    /* ------ specimen blocks ------ */
+    .spec-keyword {
+      font-family: 'Archivo Black', sans-serif;
+      font-size: clamp(3rem, 9vw, 8rem);
+      letter-spacing: -0.04em;
+      line-height: 0.95;
+      color: var(--ink);
+    }
+    .spec-pipe {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: clamp(12rem, 36vw, 32rem);
+      line-height: 1;
+      letter-spacing: -0.08em;
+    }
+    .spec-numbers {
+      font-family: 'Archivo Black', sans-serif;
+      font-size: clamp(4rem, 14vw, 12rem);
+      letter-spacing: -0.05em;
+      line-height: 0.9;
+    }
+    .spec-pangram {
+      font-family: 'Archivo Black', sans-serif;
+      font-size: clamp(2.5rem, 7vw, 6.5rem);
+      line-height: 0.95;
+      letter-spacing: -0.035em;
+    }
+
+    /* ------ section frames ------ */
+    .frame {}
+    .frame-tag {
+      display: flex;
+      align-items: baseline;
+      gap: 1rem;
+      padding: 1rem 1.5rem;
+    }
+    .frame-tag-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      border-bottom: 1.5px solid var(--ink);
+      padding-bottom: 0.4rem;
+    }
+    .frame-tag-meta {
+      font-size: 0.7rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(0,0,0,0.55);
+      margin-left: auto;
+    }
+
+    /* ------ code panel (inverse) ------ */
+    .code-panel {
+      background: var(--ink);
+      color: var(--bg);
+      padding: 2rem 1.75rem;
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+      font-size: 1rem;
+      line-height: 1.6;
+      white-space: pre;
+      overflow-x: auto;
+      border-radius: 1rem;
+    }
+    .code-panel .kw { color: #ff8a3d; font-weight: 700; }
+    .code-panel .str { color: #a4f7a4; }
+    .code-panel .com { color: rgba(255,255,255,0.45); }
+    .code-panel .accent { color: #ffb86b; font-weight: 700; }
+
+    /* ------ stdlib chip ------ */
+    .chip {
+      display: inline-block;
+      padding: 0.4rem 0.85rem;
+      margin: 0.2rem;
+      border: 1.5px solid var(--ink);
+      border-radius: 999px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      font-weight: 500;
+      background: transparent;
+    }
+    .chip.pred { background: var(--ink); color: var(--bg); }
+
+    /* ------ underline link ------ */
+    .ul { text-decoration: underline; text-underline-offset: 3px; text-decoration-thickness: 1.5px; }
+
+    /* ------ tight container ------ */
+    .wrap { max-width: 1400px; margin: 0 auto; padding: 0 1.5rem; }
+
+    @media (max-width: 640px) {
+      .frame-tag { padding: 0.75rem 1rem; }
+      .frame-tag-meta { display: none; }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ============ HEADER BLEED ============ -->
+  <header class="bleed-wrap">
+    <div style="padding: 0 1.5rem;">
+      <h1 class="bleed">espeto</h1>
+    </div>
+  </header>
+
+  <!-- ============ INFO CARDS ============ -->
+  <section class="wrap" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem; padding-top: 2rem; padding-bottom: 2rem;">
+    <div class="card">
+      <div class="card-label">Versión</div>
+      <div class="card-value">0.3.0</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Licencia</div>
+      <div class="card-value">MIT</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Clasificación</div>
+      <div class="card-value">Functional CLI DSL</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Publicado</div>
+      <div class="card-value">11 Mayo, 2026</div>
+    </div>
+  </section>
+
+  <!-- ============ SPECIMEN: NUMBERS (stdlib count) ============ -->
+  <section class="frame">
+    <div class="frame-tag">
+      <span class="frame-tag-label">01 — Stdlib</span>
+      <span class="frame-tag-meta">~80 funciones · cero imports</span>
+    </div>
+    <div class="wrap" style="padding: 2.5rem 1.5rem;">
+      <p style="max-width: 36rem; font-size: 1rem; line-height: 1.6;">
+        Stdlib auto-cargada en el prelude. <code class="mono" style="background:var(--paper); padding:2px 6px; border-radius:4px;">snake_case</code>, <code class="mono" style="background:var(--paper); padding:2px 6px; border-radius:4px;">?</code> al final de predicados, síncrona, sin loops.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ SPECIMEN: KEYWORDS ============ -->
+  <section class="frame">
+    <div class="frame-tag">
+      <span class="frame-tag-label">02 — Keywords</span>
+      <span class="frame-tag-meta">Vocabulario completo</span>
+    </div>
+    <div class="wrap" style="padding: 2.5rem 1.5rem;">
+      <div class="spec-keyword">
+        cmd&nbsp; do&nbsp; end<br/>
+        def&nbsp; defp&nbsp; fn<br/>
+        if&nbsp; else&nbsp; try<br/>
+        rescue&nbsp; raise<br/>
+        arg&nbsp; flag&nbsp; desc
+      </div>
+      <p style="max-width: 36rem; margin-top: 2rem; font-size: 1rem; line-height: 1.6;">
+        Quince keywords. Una sola forma canónica para cada cosa.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ SPECIMEN: PIPE OPERATOR ============ -->
+  <section class="frame" style="background: var(--bg-deep);">
+    <div class="frame-tag" style="background: var(--bg-deep);">
+      <span class="frame-tag-label">03 — Operador</span>
+      <span class="frame-tag-meta">El corazón del lenguaje</span>
+    </div>
+    <div class="wrap" style="padding: 1rem 1.5rem 2rem; text-align:center;">
+      <div class="spec-pipe">|&gt;</div>
+      <p style="max-width: 32rem; margin: 0 auto; font-size: 1.05rem; line-height: 1.6; padding-top: 1rem;">
+        First-arg piping. Cualquier dato pasa como primer argumento de la función a su derecha.
+      </p>
+    </div>
+  </section>
+
+  <!-- ============ SPECIMEN: PANGRAM (pipe chain) ============ -->
+  <section class="frame">
+    <div class="frame-tag">
+      <span class="frame-tag-label">04 — Cadena</span>
+      <span class="frame-tag-meta">Lectura de arriba a abajo</span>
+    </div>
+    <div class="wrap" style="padding: 2.5rem 1.5rem;">
+      <div class="spec-pangram mono" style="font-family: 'JetBrains Mono', monospace; font-weight: 700;">
+        data<br/>
+        &nbsp;&nbsp;|&gt;&nbsp;trim<br/>
+        &nbsp;&nbsp;|&gt;&nbsp;upcase<br/>
+        &nbsp;&nbsp;|&gt;&nbsp;print
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FEATURE CLAIMS ============ -->
+  <section class="frame">
+    <div class="frame-tag">
+      <span class="frame-tag-label">05 — Highlights</span>
+      <span class="frame-tag-meta">Lo que define a Espeto</span>
+    </div>
+    <div class="wrap" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1px; background: var(--ink); border-bottom: 1.5px solid var(--ink);">
+      <div style="background: var(--bg); padding: 3rem 1.75rem;">
+        <div class="display" style="font-size: clamp(2.5rem, 6vw, 4.5rem);">CLI<br/>NATIVO.</div>
+        <p style="margin-top: 1rem; font-size: 0.95rem; line-height: 1.5; max-width: 22rem;">
+          <code class="mono">program</code>, <code class="mono">cmd</code>, <code class="mono">arg</code> y <code class="mono">flag</code> son keywords. <code class="mono">--help</code>, <code class="mono">--version</code> y subcomandos generados solos.
+        </p>
+      </div>
+      <div style="background: var(--bg); padding: 3rem 1.75rem;">
+        <div class="display" style="font-size: clamp(2.5rem, 6vw, 4.5rem);">LLM<br/>FRIENDLY.</div>
+        <p style="margin-top: 1rem; font-size: 0.95rem; line-height: 1.5; max-width: 22rem;">
+          Una sola forma canónica. Sin coerciones implícitas. Sin truthiness. Igualdad estricta. Las IAs no alucinan.
+        </p>
+      </div>
+      <div style="background: var(--bg); padding: 3rem 1.75rem;">
+        <div class="display" style="font-size: clamp(2.5rem, 6vw, 4.5rem);">PIPE<br/>FIRST.</div>
+        <p style="margin-top: 1rem; font-size: 0.95rem; line-height: 1.5; max-width: 22rem;">
+          <code class="mono">|&gt;</code> es la base. Soporta lambdas inline, <code class="mono">.field</code> y placeholder <code class="mono">_</code> para reposicionar.
+        </p>
+      </div>
+      <div style="background: var(--bg); padding: 3rem 1.75rem;">
+        <div class="display" style="font-size: clamp(2.5rem, 6vw, 4.5rem);">ZERO<br/>DEPS.</div>
+        <p style="margin-top: 1rem; font-size: 0.95rem; line-height: 1.5; max-width: 22rem;">
+          Runtime sin dependencias. <code class="mono">espeto build</code> empaqueta un binario standalone vía Bun.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ STDLIB CHIPS ============ -->
+  <section class="frame">
+    <div class="frame-tag">
+      <span class="frame-tag-label">06 — Vocabulario stdlib</span>
+      <span class="frame-tag-meta">~80 funciones</span>
+    </div>
+    <div class="wrap" style="padding: 2.5rem 1.5rem;">
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 2rem;">
+
+        <div>
+          <div class="card-label" style="margin-bottom: 0.6rem;">I/O · Streams</div>
+          <span class="chip">print</span><span class="chip">read</span><span class="chip">write</span><span class="chip">read_lines</span><span class="chip">stdin_lines</span><span class="chip">sh_lines</span><span class="chip">env</span><span class="chip pred">exists?</span>
+        </div>
+
+        <div>
+          <div class="card-label" style="margin-bottom: 0.6rem;">Strings · 12</div>
+          <span class="chip">upcase</span><span class="chip">downcase</span><span class="chip">trim</span><span class="chip">split</span><span class="chip">join</span><span class="chip">replace</span><span class="chip">slice</span><span class="chip pred">contains?</span>
+        </div>
+
+        <div>
+          <div class="card-label" style="margin-bottom: 0.6rem;">Listas · 19</div>
+          <span class="chip">map</span><span class="chip">filter</span><span class="chip">reduce</span><span class="chip">sort_by</span><span class="chip">take</span><span class="chip">drop</span><span class="chip">unique</span><span class="chip">zip</span><span class="chip">range</span>
+        </div>
+
+        <div>
+          <div class="card-label" style="margin-bottom: 0.6rem;">Shell · JSON</div>
+          <span class="chip">sh</span><span class="chip">sh!</span><span class="chip">parse_json</span><span class="chip">to_json</span>
+        </div>
+
+        <div>
+          <div class="card-label" style="margin-bottom: 0.6rem;">Predicados de tipo · 9</div>
+          <span class="chip pred">is_int?</span><span class="chip pred">is_str?</span><span class="chip pred">is_bool?</span><span class="chip pred">is_list?</span><span class="chip pred">is_map?</span><span class="chip pred">is_fn?</span><span class="chip pred">is_nil?</span>
+        </div>
+
+        <div>
+          <div class="card-label" style="margin-bottom: 0.6rem;">Pipe helpers</div>
+          <span class="chip">when</span><span class="chip">unless</span><span class="chip">id</span>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ FOOTER BLEED ============ -->
+  <footer class="frame" style="border-bottom: none;">
+    <div style="padding: 0 1.5rem; overflow: hidden;">
+      <div class="bleed" style="font-size: clamp(5rem, 18vw, 18rem); padding-top: 1rem;">espeto</div>
+    </div>
+    <div class="wrap" style="display:flex; justify-content:space-between; padding: 1rem 1.5rem 2rem; font-size: 0.7rem; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700;">
+      <span>© 2026 · Hisco</span>
+      <span>Hecho con pipes</span>
+    </div>
+  </footer>
+
+</body>
+</html>
