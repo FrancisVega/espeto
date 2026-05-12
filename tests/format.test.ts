@@ -534,6 +534,47 @@ describe("format: idempotency on canonical inputs", () => {
 		].join("\n"),
 		["cmd hello do", `\t"hi" |> print`, "end", ""].join("\n"),
 		[`test "adds" do`, "\tassert 1 + 1 == 2", "end", ""].join("\n"),
+		// Phase 3 — multi-line wrap
+		[
+			"f(",
+			"\tvery_long_arg_a,",
+			"\tvery_long_arg_b,",
+			"\tvery_long_arg_c,",
+			"\tvery_long_arg_d,",
+			"\tvery_long_arg_e,",
+			"\tvery_long_arg_f,",
+			")",
+			"",
+		].join("\n"),
+		[
+			"fn(",
+			"\tvery_long_param_a,",
+			"\tvery_long_param_b,",
+			"\tvery_long_param_c,",
+			"\tvery_long_param_d,",
+			"\tvery_long_param_e,",
+			") => 1",
+			"",
+		].join("\n"),
+		// Phase 3 — chain flatten
+		[
+			"very_long_aaa",
+			"+ very_long_bbb",
+			"+ very_long_ccc",
+			"+ very_long_ddd",
+			"+ very_long_eee",
+			"+ very_long_fff",
+			"+ very_long_ggg",
+			"",
+		].join("\n"),
+		[
+			"xs",
+			"|> filter(fn x => x > 0)",
+			"|> map(fn x => x * 2)",
+			"|> reduce(fn(acc, x) => acc + x, 0)",
+			"|> debug_dump(label)",
+			"",
+		].join("\n"),
 	];
 
 	for (const src of canonical) {
@@ -557,6 +598,13 @@ describe("format: round-trip stability", () => {
 		`import "./foo"  only  [ a , b ]`,
 		"fn(x)=>x",
 		"cmd hello do\n\"hi\"|>print\nend",
+		// Phase 3 — trailing comma + multi-line variations
+		`f(1, 2, 3,)`,
+		`f( 1 , 2 , 3 )`,
+		`def f(a,b,)=a+b`,
+		`fn(a,b,)=>a+b`,
+		`a |> b |> c |> d`,
+		`a + b + c + d + e`,
 	];
 
 	for (const src of inputs) {
@@ -605,5 +653,139 @@ end`;
 	it("trailing newline always exactly one", () => {
 		expect(fmt("1").endsWith("\n")).toBe(true);
 		expect(fmt("1").endsWith("\n\n")).toBe(false);
+	});
+});
+
+describe("format: Phase 3 — wrap call args", () => {
+	it("short call stays inline", () => {
+		expect(fmt("f(1, 2, 3)")).toBe("f(1, 2, 3)\n");
+	});
+
+	it("call wraps with trailing comma when too wide", () => {
+		const src = `f(very_long_arg_a, very_long_arg_b, very_long_arg_c, very_long_arg_d, very_long_arg_e, very_long_arg_f)`;
+		expect(fmt(src)).toBe(
+			[
+				"f(",
+				"\tvery_long_arg_a,",
+				"\tvery_long_arg_b,",
+				"\tvery_long_arg_c,",
+				"\tvery_long_arg_d,",
+				"\tvery_long_arg_e,",
+				"\tvery_long_arg_f,",
+				")",
+				"",
+			].join("\n"),
+		);
+	});
+
+	it("call no args stays as ()", () => {
+		expect(fmt("now()")).toBe("now()\n");
+	});
+
+	it("nested call: outer wraps but inner stays inline", () => {
+		const src = `outer(short, inner(a, b), longer_arg_to_force_a_wrap_eventually_for_the_outer_call)`;
+		const out = fmt(src);
+		expect(out).toContain("inner(a, b)");
+	});
+});
+
+describe("format: Phase 3 — wrap def/lambda params", () => {
+	it("short def params stay inline", () => {
+		expect(fmt("def f(a, b) = a + b")).toBe("def f(a, b) = a + b\n");
+	});
+
+	it("def wraps params with trailing comma when too wide", () => {
+		const src = `def some_long_name(very_long_param_a, very_long_param_b, very_long_param_c, very_long_param_d, very_long_param_e) = 1`;
+		const out = fmt(src);
+		expect(out).toContain("def some_long_name(\n\tvery_long_param_a,");
+		expect(out).toContain(",\n) do");
+		expect(out).toContain("\nend\n");
+	});
+
+	it("multi-param lambda wraps params with trailing comma", () => {
+		const src = `fn(very_long_param_a, very_long_param_b, very_long_param_c, very_long_param_d, very_long_param_e) => 1`;
+		expect(fmt(src)).toBe(
+			[
+				"fn(",
+				"\tvery_long_param_a,",
+				"\tvery_long_param_b,",
+				"\tvery_long_param_c,",
+				"\tvery_long_param_d,",
+				"\tvery_long_param_e,",
+				") => 1",
+				"",
+			].join("\n"),
+		);
+	});
+
+	it("single-param lambda never wraps", () => {
+		expect(fmt("fn x => x + 1")).toBe("fn x => x + 1\n");
+	});
+});
+
+describe("format: Phase 3 — chain flatten binop", () => {
+	it("short + chain stays inline", () => {
+		expect(fmt("a + b + c + d")).toBe("a + b + c + d\n");
+	});
+
+	it("long + chain breaks before each operator", () => {
+		const src = `very_long_aaa + very_long_bbb + very_long_ccc + very_long_ddd + very_long_eee + very_long_fff + very_long_ggg`;
+		expect(fmt(src)).toBe(
+			[
+				"very_long_aaa",
+				"+ very_long_bbb",
+				"+ very_long_ccc",
+				"+ very_long_ddd",
+				"+ very_long_eee",
+				"+ very_long_fff",
+				"+ very_long_ggg",
+				"",
+			].join("\n"),
+		);
+	});
+
+	it("long and/or chain breaks before each operator", () => {
+		const src = `condition_one and condition_two and condition_three and condition_four and condition_five and condition_six`;
+		expect(fmt(src)).toContain("condition_one\nand condition_two");
+	});
+
+	it("cross-precedence: a + b * c + d not flattened across *", () => {
+		expect(fmt("a + b * c + d")).toBe("a + b * c + d\n");
+	});
+
+	it("cmp ops never flatten (parser rejects chain anyway)", () => {
+		expect(fmt("a < b")).toBe("a < b\n");
+	});
+});
+
+describe("format: Phase 3 — chain flatten pipe", () => {
+	it("short pipe chain stays inline", () => {
+		expect(fmt("a |> b |> c")).toBe("a |> b |> c\n");
+	});
+
+	it("long pipe chain breaks before each |>", () => {
+		const src = `xs |> filter(fn x => x > 0) |> map(fn x => x * 2) |> reduce(fn(acc, x) => acc + x, 0) |> debug_dump(label)`;
+		expect(fmt(src)).toBe(
+			[
+				"xs",
+				"|> filter(fn x => x > 0)",
+				"|> map(fn x => x * 2)",
+				"|> reduce(fn(acc, x) => acc + x, 0)",
+				"|> debug_dump(label)",
+				"",
+			].join("\n"),
+		);
+	});
+
+	it("single pipe (2 ops) stays inline form even if long", () => {
+		expect(fmt("a |> b")).toBe("a |> b\n");
+	});
+});
+
+describe("format: Phase 3 — field access never wraps", () => {
+	it("long field access chain stays inline", () => {
+		expect(fmt("very_long_obj.very_long_field_a.very_long_field_b")).toBe(
+			"very_long_obj.very_long_field_a.very_long_field_b\n",
+		);
 	});
 });

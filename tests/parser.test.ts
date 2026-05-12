@@ -308,6 +308,22 @@ describe("parser: fn_def", () => {
 	it("rejects def block missing 'end'", () => {
 		expect(() => ast(`def f() do\n  1`)).toThrow(/eof/);
 	});
+
+	it("accepts trailing comma in params", () => {
+		const p = ast(`def f(a, b,) = a`);
+		expect(p.items[0]).toMatchObject({
+			kind: "fn_def",
+			params: ["a", "b"],
+		});
+	});
+
+	it("permits newlines and trailing comma in multi-line params", () => {
+		const p = ast(`def f(\n  a,\n  b,\n) = a`);
+		expect(p.items[0]).toMatchObject({
+			kind: "fn_def",
+			params: ["a", "b"],
+		});
+	});
 });
 
 describe("parser: cmd block", () => {
@@ -823,6 +839,60 @@ describe("parser: lambdas", () => {
 				{ kind: "lambda", params: ["x"] },
 			],
 		});
+	});
+
+	it("accepts trailing comma in multi-param lambda", () => {
+		const p = ast(`fn(a, b,) => a + b`);
+		expect(p.items[0]).toMatchObject({
+			kind: "lambda",
+			params: ["a", "b"],
+		});
+	});
+
+	it("permits newlines and trailing comma in multi-line lambda params", () => {
+		const p = ast(`fn(\n  a,\n  b,\n) => a`);
+		expect(p.items[0]).toMatchObject({
+			kind: "lambda",
+			params: ["a", "b"],
+		});
+	});
+});
+
+describe("parser: call args trailing comma + multi-line (Phase 3)", () => {
+	it("accepts trailing comma in call args", () => {
+		const p = ast(`f(1, 2,)`);
+		expect(p.items[0]).toMatchObject({
+			kind: "call",
+			args: [{ kind: "int", value: 1 }, { kind: "int", value: 2 }],
+		});
+	});
+
+	it("permits newlines and trailing comma in call args", () => {
+		const p = ast(`f(\n  1,\n  2,\n)`);
+		expect(p.items[0]).toMatchObject({
+			kind: "call",
+			args: [{ kind: "int", value: 1 }, { kind: "int", value: 2 }],
+		});
+	});
+
+	it("accepts trailing comma in pipe rhs args", () => {
+		const p = ast(`x |> f(a, b,)`);
+		expect(p.items[0]).toMatchObject({
+			kind: "pipe",
+			rhs: { kind: "call", args: [{ name: "a" }, { name: "b" }] },
+		});
+	});
+
+	it("permits newlines and trailing comma in pipe rhs args", () => {
+		const p = ast(`x |> f(\n  a,\n  b,\n)`);
+		expect(p.items[0]).toMatchObject({
+			kind: "pipe",
+			rhs: { kind: "call", args: [{ name: "a" }, { name: "b" }] },
+		});
+	});
+
+	it("rejects empty call with bare comma", () => {
+		expect(() => ast(`f(,)`)).toThrow();
 	});
 });
 

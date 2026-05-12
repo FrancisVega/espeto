@@ -621,18 +621,17 @@ class Parser {
 		const exported = kw.type === "kw_def";
 		const nameTok = this.expect("ident", "function name");
 		this.expect("lparen", "'('");
+		this.skipNewlines();
 		const params: string[] = [];
 		const paramSpans: Span[] = [];
-		if (!this.match("rparen")) {
+		while (!this.match("rparen")) {
 			const p = this.expect("ident", "parameter name");
 			params.push(p.value);
 			paramSpans.push(p.span);
-			while (this.match("comma")) {
-				this.advance();
-				const next = this.expect("ident", "parameter name");
-				params.push(next.value);
-				paramSpans.push(next.span);
-			}
+			this.skipNewlines();
+			if (this.match("rparen")) break;
+			this.expect("comma", "',' or ')'");
+			this.skipNewlines();
 		}
 		this.expect("rparen", "')'");
 
@@ -718,7 +717,8 @@ class Parser {
 
 	private parseOr(): Expr {
 		let lhs = this.parseAnd();
-		while (this.match("kw_or")) {
+		while (this.peekPastNewlines() === "kw_or") {
+			this.skipNewlines();
 			this.advance();
 			this.skipNewlines();
 			const rhs = this.parseAnd();
@@ -729,7 +729,8 @@ class Parser {
 
 	private parseAnd(): Expr {
 		let lhs = this.parseComparison();
-		while (this.match("kw_and")) {
+		while (this.peekPastNewlines() === "kw_and") {
+			this.skipNewlines();
 			this.advance();
 			this.skipNewlines();
 			const rhs = this.parseComparison();
@@ -757,7 +758,11 @@ class Parser {
 
 	private parseAdditive(): Expr {
 		let lhs = this.parseMultiplicative();
-		while (this.match("plus") || this.match("minus")) {
+		while (
+			this.peekPastNewlines() === "plus" ||
+			this.peekPastNewlines() === "minus"
+		) {
+			this.skipNewlines();
 			const opTok = this.advance();
 			this.skipNewlines();
 			const rhs = this.parseMultiplicative();
@@ -774,7 +779,11 @@ class Parser {
 
 	private parseMultiplicative(): Expr {
 		let lhs = this.parseUnary();
-		while (this.match("star") || this.match("slash")) {
+		while (
+			this.peekPastNewlines() === "star" ||
+			this.peekPastNewlines() === "slash"
+		) {
+			this.skipNewlines();
 			const opTok = this.advance();
 			this.skipNewlines();
 			const rhs = this.parseUnary();
@@ -863,13 +872,14 @@ class Parser {
 
 		if (this.match("lparen")) {
 			this.advance();
+			this.skipNewlines();
 			const explicitArgs: Expr[] = [];
-			if (!this.match("rparen")) {
+			while (!this.match("rparen")) {
 				explicitArgs.push(this.parseExpr());
-				while (this.match("comma")) {
-					this.advance();
-					explicitArgs.push(this.parseExpr());
-				}
+				this.skipNewlines();
+				if (this.match("rparen")) break;
+				this.expect("comma", "',' or ')'");
+				this.skipNewlines();
 			}
 			this.expect("rparen", "')'");
 
@@ -918,13 +928,14 @@ class Parser {
 			}
 			if (this.match("lparen")) {
 				this.advance();
+				this.skipNewlines();
 				const args: Expr[] = [];
-				if (!this.match("rparen")) {
+				while (!this.match("rparen")) {
 					args.push(this.parseExpr());
-					while (this.match("comma")) {
-						this.advance();
-						args.push(this.parseExpr());
-					}
+					this.skipNewlines();
+					if (this.match("rparen")) break;
+					this.expect("comma", "',' or ')'");
+					this.skipNewlines();
 				}
 				this.expect("rparen", "')'");
 				expr = { kind: "call", callee: expr, args, span: expr.span };
@@ -1036,19 +1047,14 @@ class Parser {
 		if (this.match("lparen")) {
 			this.advance();
 			this.skipNewlines();
-			if (!this.match("rparen")) {
+			while (!this.match("rparen")) {
 				const p = this.expect("ident", "lambda parameter");
 				params.push(p.value);
 				paramSpans.push(p.span);
 				this.skipNewlines();
-				while (this.match("comma")) {
-					this.advance();
-					this.skipNewlines();
-					const next = this.expect("ident", "lambda parameter");
-					params.push(next.value);
-					paramSpans.push(next.span);
-					this.skipNewlines();
-				}
+				if (this.match("rparen")) break;
+				this.expect("comma", "',' or ')'");
+				this.skipNewlines();
 			}
 			this.expect("rparen", "')' to close lambda parameters");
 		} else if (this.match("ident")) {

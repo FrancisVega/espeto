@@ -183,10 +183,8 @@ export function render(doc: Doc, width: number): string {
 					stack.push([indent, "break", d.doc]);
 					break;
 				}
-				const trial: [number, Mode, Doc][] = [[indent, "flat", d.doc]];
-				for (let i = stack.length - 1; i >= 0; i--) {
-					trial.push(stack[i]!);
-				}
+				const trial: [number, Mode, Doc][] = stack.slice();
+				trial.push([indent, "flat", d.doc]);
 				if (fits(width - pos, trial)) {
 					stack.push([indent, "flat", d.doc]);
 				} else {
@@ -366,11 +364,35 @@ function formatBinop(e: BinaryOp): Doc {
 		e.op === "<=" ||
 		e.op === ">" ||
 		e.op === ">=";
+	if (!isCmp) {
+		const chain = collectBinopChain(e);
+		if (chain.length > 2) return formatBinopChain(chain, e.op, p);
+	}
 	const lhsMin = isCmp ? p + 1 : p;
 	const rhsMin = p + 1;
 	const lhs = formatExpr(e.lhs, lhsMin);
 	const rhs = formatExpr(e.rhs, rhsMin);
 	return concat(lhs, text(` ${e.op} `), rhs);
+}
+
+function collectBinopChain(e: BinaryOp): Expr[] {
+	const op = e.op;
+	const out: Expr[] = [e.rhs];
+	let cur: Expr = e.lhs;
+	while (cur.kind === "binop" && cur.op === op) {
+		out.unshift(cur.rhs);
+		cur = cur.lhs;
+	}
+	out.unshift(cur);
+	return out;
+}
+
+function formatBinopChain(chain: Expr[], op: BinaryOpKind, p: number): Doc {
+	const docs: Doc[] = [formatExpr(chain[0]!, p)];
+	for (let i = 1; i < chain.length; i++) {
+		docs.push(concat(text(`${op} `), formatExpr(chain[i]!, p + 1)));
+	}
+	return group(join(docs, LINE));
 }
 
 function formatUnop(e: UnaryOp): Doc {
@@ -380,9 +402,29 @@ function formatUnop(e: UnaryOp): Doc {
 }
 
 function formatPipe(e: PipeExpr): Doc {
+	const chain = collectPipeChain(e);
+	if (chain.tail.length > 1) return formatPipeChain(chain);
 	const lhs = formatExpr(e.lhs, PREC.pipe);
 	const rhs = formatPipeRhs(e.rhs);
 	return concat(lhs, text(" |> "), rhs);
+}
+
+function collectPipeChain(e: PipeExpr): { head: Expr; tail: Call[] } {
+	const tail: Call[] = [e.rhs];
+	let cur: Expr = e.lhs;
+	while (cur.kind === "pipe") {
+		tail.unshift(cur.rhs);
+		cur = cur.lhs;
+	}
+	return { head: cur, tail };
+}
+
+function formatPipeChain(chain: { head: Expr; tail: Call[] }): Doc {
+	const docs: Doc[] = [formatExpr(chain.head, PREC.pipe)];
+	for (const t of chain.tail) {
+		docs.push(concat(text("|> "), formatPipeRhs(t)));
+	}
+	return group(join(docs, LINE));
 }
 
 function formatPipeRhs(call: Call): Doc {
@@ -401,8 +443,24 @@ function formatPipeRhs(call: Call): Doc {
 
 function formatCall(e: Call): Doc {
 	const callee = formatCallee(e.callee);
+	if (e.args.length === 0) return concat(callee, text("()"));
 	const argDocs = e.args.map((a) => formatExpr(a, 1));
-	return concat(callee, text("("), join(argDocs, text(", ")), text(")"));
+	return group(
+		concat(
+			callee,
+			text("("),
+			nest(
+				1,
+				concat(
+					SOFTLINE,
+					join(argDocs, concat(text(","), LINE)),
+					ifBreak(text(","), EMPTY),
+				),
+			),
+			SOFTLINE,
+			text(")"),
+		),
+	);
 }
 
 function formatCallee(callee: Expr): Doc {
@@ -458,11 +516,35 @@ function formatMap(e: MapExpr): Doc {
 }
 
 function formatLambda(e: LambdaExpr): Doc {
-	const header =
-		e.params.length === 1
-			? `fn ${e.params[0]!} => `
-			: `fn(${e.params.join(", ")}) => `;
-	return concat(text(header), formatExpr(e.body, 1));
+	if (e.params.length === 1) {
+		return concat(text(`fn ${e.params[0]!} => `), formatExpr(e.body, 1));
+	}
+	return concat(
+		text("fn"),
+		formatParamList(e.params),
+		text(" => "),
+		formatExpr(e.body, 1),
+	);
+}
+
+function formatParamList(params: string[]): Doc {
+	if (params.length === 0) return text("()");
+	const paramDocs = params.map((p) => text(p));
+	return group(
+		concat(
+			text("("),
+			nest(
+				1,
+				concat(
+					SOFTLINE,
+					join(paramDocs, concat(text(","), LINE)),
+					ifBreak(text(","), EMPTY),
+				),
+			),
+			SOFTLINE,
+			text(")"),
+		),
+	);
 }
 
 function formatIf(e: IfExpr): Doc {
@@ -610,8 +692,7 @@ function formatAssign(s: AssignStmt): Doc {
 
 function formatFnDef(d: FnDef): Doc {
 	const kw = d.exported ? "def" : "defp";
-	const params = d.params.join(", ");
-	const header = `${kw} ${d.name}(${params})`;
+	const header = concat(text(`${kw} ${d.name}`), formatParamList(d.params));
 	const docPrefix = d.doc !== undefined ? formatDocComment(d.doc) : EMPTY;
 	if (
 		d.body.length === 1 &&
@@ -620,9 +701,10 @@ function formatFnDef(d: FnDef): Doc {
 	) {
 		const expr = d.body[0] as Expr;
 		const exprDoc = formatExpr(expr, 1);
-		const flatForm = concat(text(`${header} = `), exprDoc);
+		const flatForm = concat(header, text(" = "), exprDoc);
 		const breakForm = concat(
-			text(`${header} do`),
+			header,
+			text(" do"),
 			nest(1, concat(HARDLINE, exprDoc)),
 			HARDLINE,
 			text("end"),
@@ -632,7 +714,8 @@ function formatFnDef(d: FnDef): Doc {
 	const bodyDoc = formatStmts(d.body);
 	return concat(
 		docPrefix,
-		text(`${header} do`),
+		header,
+		text(" do"),
 		nest(1, concat(HARDLINE, bodyDoc)),
 		HARDLINE,
 		text("end"),
