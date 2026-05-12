@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Module } from "../src/ast";
-import { format } from "../src/format";
+import { EspetoError } from "../src/errors";
+import { format, formatSource } from "../src/format";
 import { lex } from "../src/lexer";
 import { parse } from "../src/parser";
 
@@ -787,5 +788,298 @@ describe("format: Phase 3 — field access never wraps", () => {
 		expect(fmt("very_long_obj.very_long_field_a.very_long_field_b")).toBe(
 			"very_long_obj.very_long_field_a.very_long_field_b\n",
 		);
+	});
+});
+
+describe("format: Phase 4 — leading comments", () => {
+	it("own-line comment before top-level stmt", () => {
+		expect(fmt("# leading\nx = 1")).toBe("# leading\nx = 1\n");
+	});
+
+	it("multiple own-line comments before stmt", () => {
+		expect(fmt("# a\n# b\n# c\nx = 1")).toBe("# a\n# b\n# c\nx = 1\n");
+	});
+
+	it("leading comment inside def body", () => {
+		const src = "def f() do\n  # before\n  x = 1\n  x\nend";
+		expect(fmt(src)).toBe(
+			["def f() do", "\t# before", "\tx = 1", "\tx", "end", ""].join("\n"),
+		);
+	});
+
+	it("leading comment inside cmd body", () => {
+		const src = `cmd hello do\n  # before\n  "hi" |> print\nend`;
+		expect(fmt(src)).toBe(
+			["cmd hello do", "\t# before", `\t"hi" |> print`, "end", ""].join("\n"),
+		);
+	});
+
+	it("leading comment inside test body", () => {
+		const src = `test "t" do\n  # note\n  assert true\nend`;
+		expect(fmt(src)).toBe(
+			[`test "t" do`, "\t# note", "\tassert true", "end", ""].join("\n"),
+		);
+	});
+
+	it("empty leading comment renders as just #", () => {
+		expect(fmt("#\nx = 1")).toBe("#\nx = 1\n");
+	});
+});
+
+describe("format: Phase 4 — trailing comments", () => {
+	it("trailing comment on assign", () => {
+		expect(fmt("x = 1 # trailing")).toBe("x = 1 # trailing\n");
+	});
+
+	it("trailing comment on call", () => {
+		expect(fmt(`"hi" |> print # log it`)).toBe(`"hi" |> print # log it\n`);
+	});
+
+	it("trailing comment on inline def", () => {
+		expect(fmt("def f() = 1 # see RFC")).toBe("def f() = 1 # see RFC\n");
+	});
+
+	it("trailing comment on do/end def lands after end", () => {
+		const src = "def f() do\n  x = 1\n  x\nend # done";
+		expect(fmt(src)).toBe(
+			["def f() do", "\tx = 1", "\tx", "end # done", ""].join("\n"),
+		);
+	});
+
+	it("trailing comment inside def body", () => {
+		const src = "def f() do\n  x = 1 # ok\n  x\nend";
+		expect(fmt(src)).toBe(
+			["def f() do", "\tx = 1 # ok", "\tx", "end", ""].join("\n"),
+		);
+	});
+
+	it("empty trailing comment renders as ' #'", () => {
+		expect(fmt("x = 1 #")).toBe("x = 1 #\n");
+	});
+});
+
+describe("format: Phase 4 — blank lines", () => {
+	it("preserves single blank line between stmts in body", () => {
+		const src = "def f() do\n  x = 1\n\n  y = 2\n  y\nend";
+		expect(fmt(src)).toBe(
+			["def f() do", "\tx = 1", "", "\ty = 2", "\ty", "end", ""].join("\n"),
+		);
+	});
+
+	it("collapses 2+ blank lines to 1 between stmts", () => {
+		const src = "def f() do\n  x = 1\n\n\n\n  y = 2\n  y\nend";
+		expect(fmt(src)).toBe(
+			["def f() do", "\tx = 1", "", "\ty = 2", "\ty", "end", ""].join("\n"),
+		);
+	});
+
+	it("strips blank line at start of body", () => {
+		const src = "def f() do\n\n  x = 1\n  x\nend";
+		expect(fmt(src)).toBe(
+			["def f() do", "\tx = 1", "\tx", "end", ""].join("\n"),
+		);
+	});
+
+	it("strips blank line at end of body", () => {
+		const src = "def f() do\n  x = 1\n  x\n\nend";
+		expect(fmt(src)).toBe(
+			["def f() do", "\tx = 1", "\tx", "end", ""].join("\n"),
+		);
+	});
+
+	it("always exactly 1 blank between top-level items (input: many blanks)", () => {
+		const src = "x = 1\n\n\n\ny = 2";
+		expect(fmt(src)).toBe("x = 1\n\ny = 2\n");
+	});
+
+	it("always exactly 1 blank between top-level items (input: no blanks)", () => {
+		const src = "x = 1\ny = 2";
+		expect(fmt(src)).toBe("x = 1\n\ny = 2\n");
+	});
+
+	it("blank line in body has no trailing tab", () => {
+		const src = "def f() do\n  x = 1\n\n  y = 2\n  y\nend";
+		const out = fmt(src);
+		// The blank line should be just "\n", not "\t\n"
+		expect(out).not.toMatch(/\t\n/);
+	});
+});
+
+describe("format: Phase 4 — dangling comments", () => {
+	it("def with only a dangling comment", () => {
+		const src = "def f() do\n  # TODO: implement\nend";
+		expect(fmt(src)).toBe(
+			["def f() do", "\t# TODO: implement", "end", ""].join("\n"),
+		);
+	});
+
+	it("def with body then dangling", () => {
+		const src = "def f() do\n  x = 1\n  x\n  # after stmt\nend";
+		expect(fmt(src)).toBe(
+			["def f() do", "\tx = 1", "\tx", "\t# after stmt", "end", ""].join("\n"),
+		);
+	});
+
+	it("cmd with only dangling comment", () => {
+		const src = "cmd foo do\n  # only comment\nend";
+		expect(fmt(src)).toBe(
+			["cmd foo do", "\t# only comment", "end", ""].join("\n"),
+		);
+	});
+
+	it("test with only dangling comment", () => {
+		const src = `test "t" do\n  # nothing yet\nend`;
+		expect(fmt(src)).toBe(
+			[`test "t" do`, "\t# nothing yet", "end", ""].join("\n"),
+		);
+	});
+
+	it("try/rescue with separate dangling per body", () => {
+		const src = [
+			"x = try do",
+			"  a",
+			"  # try dangling",
+			"rescue err =>",
+			"  b",
+			"  # rescue dangling",
+			"end",
+		].join("\n");
+		const out = fmt(src);
+		expect(out).toContain("\ta");
+		expect(out).toContain("\t# try dangling");
+		expect(out).toContain("\tb");
+		expect(out).toContain("\t# rescue dangling");
+	});
+
+	it("module-level dangling at end of file", () => {
+		const src = "x = 1\n# trailing dangling";
+		expect(fmt(src)).toBe("x = 1\n# trailing dangling\n");
+	});
+});
+
+describe("format: Phase 4 — doc + leading comments", () => {
+	it("regular # before ## doc, both pegado al def", () => {
+		const src = "# before doc\n## doc line\ndef f() = 1";
+		expect(fmt(src)).toBe("# before doc\n## doc line\ndef f() = 1\n");
+	});
+
+	it("multiple regular comments + multi-line doc + def", () => {
+		const src = "# c1\n# c2\n## doc 1\n## doc 2\ndef f() = 1";
+		expect(fmt(src)).toBe(
+			["# c1", "# c2", "## doc 1", "## doc 2", "def f() = 1", ""].join("\n"),
+		);
+	});
+});
+
+describe("format: Phase 4 — force multi-line on trivia", () => {
+	it("def with trailing comment on inner expr forces do/end", () => {
+		const src = "def f() do\n  1 # see RFC\nend";
+		expect(fmt(src)).toBe(
+			["def f() do", "\t1 # see RFC", "end", ""].join("\n"),
+		);
+	});
+
+	it("def with leading comment in body forces do/end", () => {
+		const src = "def f() do\n  # note\n  1\nend";
+		expect(fmt(src)).toBe(
+			["def f() do", "\t# note", "\t1", "end", ""].join("\n"),
+		);
+	});
+
+	it("try with comment in body forces multi-line", () => {
+		const src = "x = try do\n  # note\n  a\nrescue err =>\n  b\nend";
+		const out = fmt(src);
+		expect(out).toContain("try do\n");
+		expect(out).toContain("\t# note");
+		expect(out).toMatch(/\nend\n$/);
+	});
+});
+
+describe("format: Phase 4 — idempotency with trivia", () => {
+	const cases: string[] = [
+		"# leading\nx = 1\n",
+		"x = 1 # trailing\n",
+		"x = 1\n\ny = 2\n",
+		["def f() do", "\t# before", "\tx = 1", "\tx", "end", ""].join("\n"),
+		["def f() do", "\tx = 1 # inline", "\tx", "end", ""].join("\n"),
+		["def f() do", "\tx = 1", "", "\ty = 2", "\ty", "end", ""].join("\n"),
+		["def f() do", "\t# TODO: implement", "end", ""].join("\n"),
+		"# before doc\n## doc\ndef f() = 1\n",
+		"x = 1\n# trailing dangling\n",
+		[`test "t" do`, "\t# nothing yet", "end", ""].join("\n"),
+		["cmd foo do", "\t# only comment", "end", ""].join("\n"),
+		["def f() do", "\t1 # inline trailing", "end", ""].join("\n"),
+	];
+
+	for (const src of cases) {
+		const preview = src.replace(/\n/g, "\\n").slice(0, 60);
+		it(`idempotent: ${preview}`, () => {
+			const once = fmt(src);
+			expect(once).toBe(src);
+			const twice = fmt(once);
+			expect(twice).toBe(once);
+		});
+	}
+});
+
+describe("format: Phase 4 — round-trip stability with trivia", () => {
+	const inputs: string[] = [
+		"#leading\nx=1",
+		"x=1#trailing",
+		"x=1\n\n\n\ny=2",
+		"def f() do\n# note\nx = 1\nx\nend",
+		"def f() do\n  # only\nend",
+		"def f() do\nx=1\n\n\ny=2\ny\nend",
+		"# before doc\n## doc\ndef f()=1",
+		"x = 1\n\n# dangling",
+	];
+
+	for (const src of inputs) {
+		const preview = src.replace(/\n/g, "\\n").slice(0, 60);
+		it(`stable: ${preview}`, () => {
+			const once = fmt(src);
+			const twice = fmt(once);
+			expect(twice).toBe(once);
+		});
+	}
+});
+
+describe("formatSource", () => {
+	it("formats a valid program", () => {
+		const r = formatSource("x=1", "test.esp");
+		expect(r.ok).toBe(true);
+		if (r.ok) expect(r.output).toBe("x = 1\n");
+	});
+
+	it("returns EspetoError for unparseable source", () => {
+		const r = formatSource("if c do", "test.esp");
+		expect(r.ok).toBe(false);
+		if (!r.ok) expect(r.error).toBeInstanceOf(EspetoError);
+	});
+
+	it("strips UTF-8 BOM before lexing", () => {
+		const r = formatSource("﻿x=1", "test.esp");
+		expect(r.ok).toBe(true);
+		if (r.ok) expect(r.output).toBe("x = 1\n");
+	});
+
+	it("normalizes CRLF to LF (CRLF input gives same output as LF)", () => {
+		const crlf = formatSource("x = 1\r\ny = 2\r\n", "test.esp");
+		const lf = formatSource("x = 1\ny = 2\n", "test.esp");
+		expect(crlf.ok).toBe(true);
+		expect(lf.ok).toBe(true);
+		if (crlf.ok && lf.ok) {
+			expect(crlf.output).toBe(lf.output);
+			expect(crlf.output.includes("\r")).toBe(false);
+		}
+	});
+
+	it("is idempotent on already-formatted source", () => {
+		const r1 = formatSource("x=1\ny=2", "test.esp");
+		expect(r1.ok).toBe(true);
+		if (!r1.ok) return;
+		const r2 = formatSource(r1.output, "test.esp");
+		expect(r2.ok).toBe(true);
+		if (r2.ok) expect(r2.output).toBe(r1.output);
 	});
 });

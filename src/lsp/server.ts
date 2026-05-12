@@ -8,6 +8,7 @@ import {
 	createConnection,
 	type Definition,
 	type DefinitionParams,
+	type DocumentFormattingParams,
 	type DocumentSymbol,
 	type DocumentSymbolParams,
 	type FoldingRange,
@@ -30,8 +31,10 @@ import {
 } from "vscode-languageserver/node.js";
 import { TextDocument } from "vscode-languageserver-textdocument";
 
+import type { Module } from "../ast";
 import type { Span } from "../errors";
 import { EspetoError } from "../errors";
+import { format } from "../format";
 import { lex } from "../lexer";
 import { parse } from "../parser";
 import {
@@ -249,6 +252,7 @@ connection.onInitialize(
 			referencesProvider: true,
 			renameProvider: true,
 			documentSymbolProvider: true,
+			documentFormattingProvider: true,
 			foldingRangeProvider: true,
 			signatureHelpProvider: { triggerCharacters: ["(", ","] },
 			semanticTokensProvider: {
@@ -486,6 +490,36 @@ connection.languages.semanticTokens.on(
 		const parsed = getParsed(doc);
 		if (!parsed.ok) return { data: [] };
 		return buildSemanticTokens(parsed.module, BUILTIN_NAMES);
+	},
+);
+
+export function buildDocumentFormattingEdits(
+	text: string,
+	module: Module,
+): TextEdit[] {
+	const output = format(module);
+	if (output === text) return [];
+	const lines = text.split("\n");
+	const lastLine = lines.length - 1;
+	const lastChar = (lines[lastLine] ?? "").length;
+	return [
+		{
+			range: {
+				start: { line: 0, character: 0 },
+				end: { line: lastLine, character: lastChar },
+			},
+			newText: output,
+		},
+	];
+}
+
+connection.onDocumentFormatting(
+	(params: DocumentFormattingParams): TextEdit[] => {
+		const doc = documents.get(params.textDocument.uri);
+		if (!doc) return [];
+		const parsed = getParsed(doc);
+		if (!parsed.ok) return [];
+		return buildDocumentFormattingEdits(doc.getText(), parsed.module);
 	},
 );
 

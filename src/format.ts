@@ -6,6 +6,7 @@ import type {
 	BinaryOpKind,
 	Call,
 	Cmd,
+	Comment,
 	Expr,
 	FieldAccess,
 	FieldShorthand,
@@ -27,6 +28,9 @@ import type {
 	TryExpr,
 	UnaryOp,
 } from "./ast";
+import { EspetoError } from "./errors";
+import { lex } from "./lexer";
+import { parse } from "./parser";
 
 // ============================================================
 // Lindig "Strictly Pretty" core
@@ -197,7 +201,7 @@ export function render(doc: Doc, width: number): string {
 				break;
 		}
 	}
-	return out.join("");
+	return out.join("").replace(/[ \t]+(?=\n)/g, "");
 }
 
 // ============================================================
@@ -274,10 +278,60 @@ function isPrimaryLike(e: Expr): boolean {
 
 const WIDTH = 100;
 
+// ============================================================
+// Trivia helpers (Phase 4)
+// ============================================================
+
+type TriviaCarrier = {
+	leadingComments?: Comment[];
+	trailingComment?: Comment;
+	leadingBlankLine?: boolean;
+};
+
+function commentLine(c: Comment): string {
+	return c.text === "" ? "#" : `# ${c.text}`;
+}
+
+function hasLeadingTrivia(n: TriviaCarrier): boolean {
+	return (
+		(n.leadingComments !== undefined && n.leadingComments.length > 0) ||
+		n.leadingBlankLine === true
+	);
+}
+
+function wrapTrivia(node: TriviaCarrier, body: Doc): Doc {
+	const parts: Doc[] = [];
+	for (const c of node.leadingComments ?? []) {
+		parts.push(text(commentLine(c)), HARDLINE);
+	}
+	parts.push(body);
+	if (node.trailingComment) {
+		parts.push(text(` ${commentLine(node.trailingComment)}`));
+	}
+	return parts.length === 1 ? body : concat(...parts);
+}
+
+function formatDangling(comments: Comment[]): Doc {
+	const parts: Doc[] = [];
+	for (let i = 0; i < comments.length; i++) {
+		if (i > 0) parts.push(HARDLINE);
+		parts.push(text(commentLine(comments[i]!)));
+	}
+	return concat(...parts);
+}
+
 export function format(mod: Module): string {
-	const itemDocs = mod.items.map(formatItem);
-	const body = join(itemDocs, concat(HARDLINE, HARDLINE));
-	return render(body, WIDTH) + "\n";
+	const parts: Doc[] = [];
+	for (let i = 0; i < mod.items.length; i++) {
+		const it = mod.items[i]!;
+		if (i > 0) parts.push(HARDLINE, HARDLINE);
+		parts.push(wrapTrivia(it, formatItem(it)));
+	}
+	if (mod.danglingComments?.length) {
+		if (mod.items.length > 0) parts.push(HARDLINE);
+		parts.push(formatDangling(mod.danglingComments));
+	}
+	return render(concat(...parts), WIDTH) + "\n";
 }
 
 function formatItem(item: Item): Doc {
@@ -304,8 +358,21 @@ function formatStmt(s: Stmt): Doc {
 	return formatExpr(s, 1);
 }
 
-function formatStmts(stmts: Stmt[]): Doc {
-	return join(stmts.map(formatStmt), HARDLINE);
+function formatStmts(stmts: Stmt[], dangling?: Comment[]): Doc {
+	const parts: Doc[] = [];
+	for (let i = 0; i < stmts.length; i++) {
+		const s = stmts[i]!;
+		if (i > 0) {
+			parts.push(HARDLINE);
+			if (s.leadingBlankLine) parts.push(HARDLINE);
+		}
+		parts.push(wrapTrivia(s, formatStmt(s)));
+	}
+	if (dangling?.length) {
+		if (stmts.length > 0) parts.push(HARDLINE);
+		parts.push(formatDangling(dangling));
+	}
+	return concat(...parts);
 }
 
 function formatExpr(e: Expr, minPrec: number): Doc {
@@ -588,11 +655,22 @@ function formatIfChain(e: IfExpr): Doc {
 }
 
 function formatTry(e: TryExpr): Doc {
+	const noTryDangling =
+		e.tryDanglingComments === undefined || e.tryDanglingComments.length === 0;
+	const noRescueDangling =
+		e.rescueDanglingComments === undefined ||
+		e.rescueDanglingComments.length === 0;
 	const tryInlineable =
 		e.tryBody.length === 1 &&
 		e.tryBody[0]!.kind !== "assign" &&
+		!hasLeadingTrivia(e.tryBody[0]!) &&
+		e.tryBody[0]!.trailingComment === undefined &&
 		e.rescueBody.length === 1 &&
-		e.rescueBody[0]!.kind !== "assign";
+		e.rescueBody[0]!.kind !== "assign" &&
+		!hasLeadingTrivia(e.rescueBody[0]!) &&
+		e.rescueBody[0]!.trailingComment === undefined &&
+		noTryDangling &&
+		noRescueDangling;
 	if (!tryInlineable) return formatTryMultiLine(e);
 	const tryExpr = formatExpr(e.tryBody[0] as Expr, 1);
 	const rescueExpr = formatExpr(e.rescueBody[0] as Expr, 1);
@@ -612,10 +690,13 @@ function formatTry(e: TryExpr): Doc {
 function formatTryMultiLine(e: TryExpr): Doc {
 	return concat(
 		text("try do"),
-		nest(1, concat(HARDLINE, formatStmts(e.tryBody))),
+		nest(1, concat(HARDLINE, formatStmts(e.tryBody, e.tryDanglingComments))),
 		HARDLINE,
 		text(`rescue ${e.errBinding} =>`),
-		nest(1, concat(HARDLINE, formatStmts(e.rescueBody))),
+		nest(
+			1,
+			concat(HARDLINE, formatStmts(e.rescueBody, e.rescueDanglingComments)),
+		),
 		HARDLINE,
 		text("end"),
 	);
@@ -694,11 +775,15 @@ function formatFnDef(d: FnDef): Doc {
 	const kw = d.exported ? "def" : "defp";
 	const header = concat(text(`${kw} ${d.name}`), formatParamList(d.params));
 	const docPrefix = d.doc !== undefined ? formatDocComment(d.doc) : EMPTY;
-	if (
+	const noDangling =
+		d.danglingComments === undefined || d.danglingComments.length === 0;
+	const inlineEligible =
 		d.body.length === 1 &&
 		d.body[0]!.kind !== "assign" &&
-		(d.danglingComments === undefined || d.danglingComments.length === 0)
-	) {
+		!hasLeadingTrivia(d.body[0]!) &&
+		d.body[0]!.trailingComment === undefined &&
+		noDangling;
+	if (inlineEligible) {
 		const expr = d.body[0] as Expr;
 		const exprDoc = formatExpr(expr, 1);
 		const flatForm = concat(header, text(" = "), exprDoc);
@@ -711,7 +796,7 @@ function formatFnDef(d: FnDef): Doc {
 		);
 		return concat(docPrefix, group(ifBreak(breakForm, flatForm)));
 	}
-	const bodyDoc = formatStmts(d.body);
+	const bodyDoc = formatStmts(d.body, d.danglingComments);
 	return concat(
 		docPrefix,
 		header,
@@ -736,13 +821,26 @@ function formatDocComment(doc: string): Doc {
 
 function formatCmd(c: Cmd): Doc {
 	const parts: Doc[] = [];
-	for (const m of c.meta) parts.push(formatMeta(m));
-	for (const d of c.decls) parts.push(formatDecl(d));
-	for (const s of c.body) parts.push(formatStmt(s));
-	const body = join(parts, HARDLINE);
+	let isFirst = true;
+	const pushItem = (doc: Doc, blankBefore: boolean): void => {
+		if (!isFirst) {
+			parts.push(HARDLINE);
+			if (blankBefore) parts.push(HARDLINE);
+		}
+		parts.push(doc);
+		isFirst = false;
+	};
+	for (const m of c.meta) pushItem(formatMeta(m), false);
+	for (const d of c.decls) pushItem(formatDecl(d), false);
+	for (const s of c.body) {
+		pushItem(wrapTrivia(s, formatStmt(s)), s.leadingBlankLine === true);
+	}
+	if (c.danglingComments?.length) {
+		pushItem(formatDangling(c.danglingComments), false);
+	}
 	return concat(
 		text(`cmd ${c.name} do`),
-		nest(1, concat(HARDLINE, body)),
+		nest(1, concat(HARDLINE, concat(...parts))),
 		HARDLINE,
 		text("end"),
 	);
@@ -755,10 +853,17 @@ function formatProgram(p: ProgramDecl): Doc {
 	for (const f of p.flags) headerParts.push(formatDecl(f));
 	if (headerParts.length > 0) sections.push(join(headerParts, HARDLINE));
 	if (p.cmds.length > 0) {
-		const cmdDocs = p.cmds.map(formatCmd);
+		const cmdDocs = p.cmds.map((c) => wrapTrivia(c, formatCmd(c)));
 		sections.push(join(cmdDocs, concat(HARDLINE, HARDLINE)));
 	}
-	const body = join(sections, concat(HARDLINE, HARDLINE));
+	let body = join(sections, concat(HARDLINE, HARDLINE));
+	if (p.danglingComments?.length) {
+		const dangling = formatDangling(p.danglingComments);
+		body =
+			sections.length > 0
+				? concat(body, HARDLINE, dangling)
+				: dangling;
+	}
 	return concat(
 		text(`program ${p.name} do`),
 		nest(1, concat(HARDLINE, body)),
@@ -768,7 +873,7 @@ function formatProgram(p: ProgramDecl): Doc {
 }
 
 function formatTest(t: TestBlock): Doc {
-	const bodyDoc = formatStmts(t.body);
+	const bodyDoc = formatStmts(t.body, t.danglingComments);
 	return concat(
 		text(`test "${escapeStringPart(t.name)}" do`),
 		nest(1, concat(HARDLINE, bodyDoc)),
@@ -822,4 +927,25 @@ function formatDecl(d: ArgDecl | FlagDecl): Doc {
 		parts.push(text(`, desc: "${escapeStringPart(d.attrs.desc)}"`));
 	}
 	return concat(...parts);
+}
+
+// ============================================================
+// Source-level API (Phase 5)
+// ============================================================
+
+export type FormatSourceResult =
+	| { ok: true; output: string }
+	| { ok: false; error: EspetoError };
+
+export function formatSource(src: string, filePath: string): FormatSourceResult {
+	let normalized = src;
+	if (normalized.charCodeAt(0) === 0xfeff) normalized = normalized.slice(1);
+	normalized = normalized.replace(/\r\n/g, "\n");
+	try {
+		const module = parse(lex(normalized, filePath), normalized);
+		return { ok: true, output: format(module) };
+	} catch (e) {
+		if (e instanceof EspetoError) return { ok: false, error: e };
+		throw e;
+	}
 }

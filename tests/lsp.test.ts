@@ -23,7 +23,10 @@ import {
 	buildFoldingRanges,
 } from "../src/lsp/symbols";
 import { parse } from "../src/parser";
-import { renderResolutionHover } from "../src/lsp/server";
+import {
+	buildDocumentFormattingEdits,
+	renderResolutionHover,
+} from "../src/lsp/server";
 
 const BUILTINS = new Set(["upcase", "map", "filter", "to_str", "print"]);
 
@@ -985,5 +988,38 @@ describe("hover for def/defp with doc-comments", () => {
 		expect(hover).toBe(
 			"```espeto\nfn helper(x)\n```\n\n*private function*",
 		);
+	});
+});
+
+describe("buildDocumentFormattingEdits", () => {
+	it("returns one TextEdit replacing the full document when unformatted", () => {
+		const src = "x=1\ny=2\n";
+		const module = setup(src);
+		const edits = buildDocumentFormattingEdits(src, module);
+		expect(edits).toHaveLength(1);
+		const e = edits[0]!;
+		expect(e.range.start).toEqual({ line: 0, character: 0 });
+		expect(e.range.end).toEqual({
+			line: src.split("\n").length - 1,
+			character: 0,
+		});
+		expect(e.newText).toBe("x = 1\n\ny = 2\n");
+	});
+
+	it("returns [] when the document is already formatted", () => {
+		const src = "x = 1\n";
+		const module = setup(src);
+		const edits = buildDocumentFormattingEdits(src, module);
+		expect(edits).toEqual([]);
+	});
+
+	it("covers the last line/char when no trailing newline", () => {
+		const src = "x=1";
+		const module = setup(src);
+		const edits = buildDocumentFormattingEdits(src, module);
+		expect(edits).toHaveLength(1);
+		const e = edits[0]!;
+		expect(e.range.end).toEqual({ line: 0, character: 3 });
+		expect(e.newText).toBe("x = 1\n");
 	});
 });

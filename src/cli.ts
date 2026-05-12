@@ -1,9 +1,18 @@
 import { spawn } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import {
+	existsSync,
+	readdirSync,
+	readFileSync,
+	statSync,
+	writeFileSync,
+} from "node:fs";
+import { join } from "node:path";
 import { argv, cwd, exit, stderr, stdout } from "node:process";
 import { fileURLToPath } from "node:url";
 import { build, BuildError, type BuildTarget } from "./build";
 import { buildDocs } from "./docs";
+import { formatError } from "./errors";
+import { formatSource } from "./format";
 import { AddError, runAdd, type AddSpec } from "./moraga/add";
 import { InitError, runInit } from "./moraga/init";
 import { install, InstallError } from "./moraga/install";
@@ -45,6 +54,9 @@ usage:
   espeto run [-w|--watch] <file.esp> [cmd-args...]        run an Espeto program
   espeto build <file.esp> -o <out> [--target T]           bundle into a standalone binary
   espeto test [-w|--watch] [path]                         run *_test.esp under path (default cwd)
+  espeto format <path>                                    format file or directory in place (recursive on *.esp)
+  espeto format --check <path>                            list files needing formatting (exit 1 if any)
+  espeto format --stdin [--stdin-filepath <path>]         format stdin → stdout
   espeto docs                                             print language reference (markdown) to stdout
   espeto repl                                             start interactive REPL
   espeto lsp                                              run language server (stdio)
@@ -95,6 +107,10 @@ async function main(): Promise<number> {
 
 	if (args[0] === "docs") {
 		return runDocs(args.slice(1));
+	}
+
+	if (args[0] === "format") {
+		return runFormat(args.slice(1));
 	}
 
 	if (args[0] === "repl") {
@@ -751,6 +767,171 @@ async function runPublishCli(args: string[]): Promise<number> {
 		`published ${validation.name} ${validation.tagName} to origin\n`,
 	);
 	return 0;
+}
+
+function runFormat(args: string[]): number {
+	let check = false;
+	let useStdin = false;
+	let stdinFilepath: string | undefined;
+	let positional: string | undefined;
+	for (let i = 0; i < args.length; i++) {
+		const a = args[i]!;
+		if (a === "--check") {
+			check = true;
+			continue;
+		}
+		if (a === "--stdin") {
+			useStdin = true;
+			continue;
+		}
+		if (a === "--stdin-filepath") {
+			const v = args[++i];
+			if (!v) {
+				stderr.write("error: --stdin-filepath requires a value\n");
+				return 2;
+			}
+			stdinFilepath = v;
+			continue;
+		}
+		if (a.startsWith("--stdin-filepath=")) {
+			stdinFilepath = a.slice("--stdin-filepath=".length);
+			continue;
+		}
+		if (a.startsWith("-")) {
+			stderr.write(`error: unknown flag: ${a}\n`);
+			return 2;
+		}
+		if (positional !== undefined) {
+			stderr.write(`error: unexpected argument: ${a}\n`);
+			return 2;
+		}
+		positional = a;
+	}
+
+	if (useStdin && positional !== undefined) {
+		stderr.write("error: --stdin and <path> are mutually exclusive\n");
+		return 2;
+	}
+	if (!useStdin && stdinFilepath !== undefined) {
+		stderr.write("error: --stdin-filepath requires --stdin\n");
+		return 2;
+	}
+
+	if (useStdin) {
+		return runFormatStdin(stdinFilepath ?? "<stdin>", check);
+	}
+
+	if (positional === undefined) {
+		stderr.write("error: specify file or directory (or use --stdin)\n");
+		return 2;
+	}
+
+	return runFormatPath(positional, check);
+}
+
+function runFormatStdin(filepath: string, check: boolean): number {
+	let src: string;
+	try {
+		src = readFileSync(0, "utf-8");
+	} catch (e) {
+		stderr.write(
+			`error: cannot read stdin: ${e instanceof Error ? e.message : String(e)}\n`,
+		);
+		return 1;
+	}
+	const r = formatSource(src, filepath);
+	if (!r.ok) {
+		stderr.write(`${formatError(r.error)}\n`);
+		return 1;
+	}
+	if (check) {
+		if (r.output !== src) {
+			stdout.write(`${filepath}\n`);
+			return 1;
+		}
+		return 0;
+	}
+	stdout.write(r.output);
+	return 0;
+}
+
+function runFormatPath(path: string, check: boolean): number {
+	let stat;
+	try {
+		stat = statSync(path);
+	} catch {
+		stderr.write(`error: path not found: ${path}\n`);
+		return 2;
+	}
+
+	const files = stat.isDirectory() ? walkEspFiles(path) : [path];
+
+	let hadError = false;
+	let hadDiff = false;
+	for (const f of files) {
+		const r = formatOne(f, check);
+		if (!r.ok) hadError = true;
+		else if (r.changed) hadDiff = true;
+	}
+
+	if (hadError) return 1;
+	if (check && hadDiff) return 1;
+	return 0;
+}
+
+function formatOne(
+	filePath: string,
+	check: boolean,
+): { ok: boolean; changed: boolean } {
+	let src: string;
+	try {
+		src = readFileSync(filePath, "utf-8");
+	} catch (e) {
+		stderr.write(
+			`error: cannot read ${filePath}: ${e instanceof Error ? e.message : String(e)}\n`,
+		);
+		return { ok: false, changed: false };
+	}
+	const r = formatSource(src, filePath);
+	if (!r.ok) {
+		stderr.write(`${formatError(r.error)}\n`);
+		return { ok: false, changed: false };
+	}
+	const changed = r.output !== src;
+	if (check) {
+		if (changed) stdout.write(`${filePath}\n`);
+	} else if (changed) {
+		writeFileSync(filePath, r.output);
+	}
+	return { ok: true, changed };
+}
+
+function walkEspFiles(dir: string): string[] {
+	const out: string[] = [];
+	function walk(d: string): void {
+		let entries;
+		try {
+			entries = readdirSync(d, { withFileTypes: true });
+		} catch {
+			return;
+		}
+		for (const e of entries) {
+			if (e.isDirectory()) {
+				if (
+					e.name === ".espetos" ||
+					e.name === ".git" ||
+					e.name === "node_modules"
+				) {
+					continue;
+				}
+				walk(join(d, e.name));
+			} else if (e.isFile() && e.name.endsWith(".esp")) {
+				out.push(join(d, e.name));
+			}
+		}
+	}
+	walk(dir);
+	return out.sort();
 }
 
 async function runLsp(): Promise<number> {
