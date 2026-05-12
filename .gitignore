@@ -5,3 +5,4 @@ dist
 coverage
 .claude/settings.local.json
 src/lsp/generated.ts
+*.vsix
