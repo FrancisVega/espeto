@@ -40,7 +40,7 @@
     ::selection { background: var(--ink); color: var(--bg); }
 
     .display { font-family: 'Archivo Black', 'Inter', sans-serif; font-weight: 900; letter-spacing: -0.03em; line-height: 0.85; }
-    .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+    .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; font-feature-settings: "calt", "liga"; font-variant-ligatures: contextual; }
 
     /* ------ pill button ------ */
     .pill {
@@ -202,14 +202,14 @@
 <body>
 
   <!-- ============ HEADER BLEED ============ -->
-  <header class="bleed-wrap">
+  <header>
     <div style="padding: 0 1.5rem;">
       <h1 class="bleed">espeto</h1>
     </div>
   </header>
 
   <!-- ============ INFO CARDS ============ -->
-  <section class="wrap" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem; padding-top: 2rem; padding-bottom: 2rem;">
+  <!-- <section class="wrap" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem; padding-top: 2rem; padding-bottom: 2rem;">
     <div class="card">
       <div class="card-label">Versión</div>
       <div class="card-value">0.3.0</div>
@@ -226,10 +226,24 @@
       <div class="card-label">Publicado</div>
       <div class="card-value">11 Mayo, 2026</div>
     </div>
+  </section> -->
+
+
+  <!-- ============ SPECIMEN: NUMBERS (stdlib count) ============ -->
+  <section class="frame" style="margin-top: 80px">
+    <div class="frame-tag">
+      <span class="frame-tag-label">00 — hi there!</span>
+    </div>
+    <div class="wrap" style="padding: 2.5rem 1.5rem;">
+      <p style="max-width: 36rem; font-size: 1rem; line-height: 1.6;">
+        <em>Espeto</em> is a dynamic and functional language for building <strong>CLIs.</strong></br>
+        Human and LLM Ready.
+      </p>
+    </div>
   </section>
 
   <!-- ============ SPECIMEN: NUMBERS (stdlib count) ============ -->
-  <section class="frame">
+  <!-- <section class="frame">
     <div class="frame-tag">
       <span class="frame-tag-label">01 — Stdlib</span>
       <span class="frame-tag-meta">~80 funciones · cero imports</span>
@@ -239,7 +253,7 @@
         Stdlib auto-cargada en el prelude. <code class="mono" style="background:var(--paper); padding:2px 6px; border-radius:4px;">snake_case</code>, <code class="mono" style="background:var(--paper); padding:2px 6px; border-radius:4px;">?</code> al final de predicados, síncrona, sin loops.
       </p>
     </div>
-  </section>
+  </section> -->
 
   <!-- ============ SPECIMEN: KEYWORDS ============ -->
   <section class="frame">
@@ -248,15 +262,11 @@
       <span class="frame-tag-meta">Vocabulario completo</span>
     </div>
     <div class="wrap" style="padding: 2.5rem 1.5rem;">
-      <div class="spec-keyword">
-        cmd&nbsp; do&nbsp; end<br/>
-        def&nbsp; defp&nbsp; fn<br/>
-        if&nbsp; else&nbsp; try<br/>
-        rescue&nbsp; raise<br/>
-        arg&nbsp; flag&nbsp; desc
+            <div class="spec-pangram mono" style="font-family: 'JetBrains Mono', monospace; font-weight: 700;">
+        program cmd arg flag short desc version do end def defp fn if else try rescue raise
       </div>
       <p style="max-width: 36rem; margin-top: 2rem; font-size: 1rem; line-height: 1.6;">
-        Quince keywords. Una sola forma canónica para cada cosa.
+        17 keywords. Una sola forma canónica para cada cosa.
       </p>
     </div>
   </section>
@@ -283,18 +293,51 @@
     </div>
     <div class="wrap" style="padding: 2.5rem 1.5rem;">
       <div class="spec-pangram mono" style="font-family: 'JetBrains Mono', monospace; font-weight: 700;">
-        data<br/>
+        " espeto "<br/>
         &nbsp;&nbsp;|&gt;&nbsp;trim<br/>
         &nbsp;&nbsp;|&gt;&nbsp;upcase<br/>
         &nbsp;&nbsp;|&gt;&nbsp;print
+        <br/>
+        <br/>
+        <span style="color:darkgray"># ESPETO</span>
       </div>
+    </div>
+  </section>
+
+  <!-- ============ SPECIMEN: PROGRAMA BÁSICO (inverso) ============ -->
+  <section class="frame" style="background: var(--ink); color: var(--bg);">
+    <div class="frame-tag">
+      <span class="frame-tag-label" style="border-bottom-color: var(--bg);">05 — Hello, world</span>
+      <span class="frame-tag-meta" style="color: rgba(255,255,255,0.55);">Un CLI completo</span>
+    </div>
+    <div class="wrap" style="padding: 2.5rem 1.5rem;">
+      <p style="max-width: 36rem; font-size: 1rem; line-height: 1.6; margin: 0 0 2.5rem;">
+        Diez líneas. <code class="mono" style="background:rgba(255,255,255,0.1); padding:2px 6px; border-radius:4px;">--help</code>, validación de args y subcomandos — todo generado.
+      </p>
+      <pre class="code-panel" style="margin: 0; font-size: clamp(1.5rem, 3vw, 2.5rem); line-height: 1.5;"><strong>program</strong> greet <strong>do</strong>
+  <strong>desc</strong> "Saluda a la peña"
+
+  <strong>cmd</strong> hola <strong>do</strong>
+    <strong>arg</strong> name: str
+    <strong>flag</strong> loud: bool = false
+
+    "Hola, #{name}!"
+      |&gt; when(loud, upcase)
+      |&gt; print
+  <strong>end</strong>
+<strong>end</strong>
+<br/>
+greet.esp hola Caracola --loud # HOLA CARACOLA
+</pre>
+
+<br/>
     </div>
   </section>
 
   <!-- ============ FEATURE CLAIMS ============ -->
   <section class="frame">
     <div class="frame-tag">
-      <span class="frame-tag-label">05 — Highlights</span>
+      <span class="frame-tag-label">06 — Highlights</span>
       <span class="frame-tag-meta">Lo que define a Espeto</span>
     </div>
     <div class="wrap" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1px; background: var(--ink); border-bottom: 1.5px solid var(--ink);">
@@ -322,13 +365,31 @@
           Runtime sin dependencias. <code class="mono">espeto build</code> empaqueta un binario standalone vía Bun.
         </p>
       </div>
+      <div style="background: var(--bg); padding: 3rem 1.75rem;">
+        <div class="display" style="font-size: clamp(2.5rem, 6vw, 4.5rem);">MORAGA<br/>INSIDE.</div>
+        <p style="margin-top: 1rem; font-size: 0.95rem; line-height: 1.5; max-width: 22rem;">
+          Package manager basado en Git. <code class="mono">espeto add &lt;url&gt;@&lt;ver&gt;</code> resuelve y clona desde cualquier repo. Sin registry, sin tokens.
+        </p>
+      </div>
+      <div style="background: var(--bg); padding: 3rem 1.75rem;">
+        <div class="display" style="font-size: clamp(2.5rem, 6vw, 4.5rem);">TESTS<br/>NATIVOS.</div>
+        <p style="margin-top: 1rem; font-size: 0.95rem; line-height: 1.5; max-width: 22rem;">
+          <code class="mono">espeto test</code> ejecuta los <code class="mono">*_test.esp</code> junto al código. Golden files (<code class="mono">args.txt</code> + <code class="mono">expected_stdout.txt</code>) para CLIs end-to-end.
+        </p>
+      </div>
+      <div style="background: var(--bg); padding: 3rem 1.75rem;">
+        <div class="display" style="font-size: clamp(2.5rem, 6vw, 4.5rem);">CROSS<br/>PLATFORM.</div>
+        <p style="margin-top: 1rem; font-size: 0.95rem; line-height: 1.5; max-width: 22rem;">
+          <code class="mono">espeto build --target linux-x64</code>. macOS, Linux y Windows desde el mismo host — sin runtime ni intérprete que distribuir.
+        </p>
+      </div>
     </div>
   </section>
 
   <!-- ============ STDLIB CHIPS ============ -->
   <section class="frame">
     <div class="frame-tag">
-      <span class="frame-tag-label">06 — Vocabulario stdlib</span>
+      <span class="frame-tag-label">07 — Vocabulario stdlib</span>
       <span class="frame-tag-meta">~80 funciones</span>
     </div>
     <div class="wrap" style="padding: 2.5rem 1.5rem;">
@@ -375,7 +436,7 @@
     </div>
     <div class="wrap" style="display:flex; justify-content:space-between; padding: 1rem 1.5rem 2rem; font-size: 0.7rem; letter-spacing: 0.18em; text-transform: uppercase; font-weight: 700;">
       <span>© 2026 · Hisco</span>
-      <span>Hecho con pipes</span>
+      <span>Hecho en Málaga.</span>
     </div>
   </footer>
 
